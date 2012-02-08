@@ -1,0 +1,3356 @@
+<HTML>
+<HEAD>
+<TITLE>nic_wishbone_slave</TITLE>
+<STYLE TYPE="text/css" MEDIA="all">
+
+	<!--
+  BODY  { background: white; color: black;
+  			  font-family: Arial,Helvetica; font-size:12; }
+	h1 { font-family: Trebuchet MS,Arial,Helvetica; font-size:30; color:#404040; }
+	h2 { font-family: Trebuchet MS,Arial,Helvetica; font-size:22; color:#404040; }
+	h3 { font-family: Trebuchet MS,Arial,Helvetica; font-size:16; color:#404040; }
+	.td_arrow_left { padding:0px; background: #ffffff; text-align: right; font-size:12;}
+	.td_arrow_right { padding:0px; background: #ffffff; text-align: left; font-size:12;}
+	.td_code { font-family:Courier New,Courier; padding: 3px; }
+	.td_desc { padding: 3px; }
+	.td_sym_center { background: #e0e0f0; padding: 3px; }
+	.td_port_name { font-family:Courier New,Courier; background: #e0e0f0; text-align: right; font-weight:bold;padding: 3px; width:200px; }
+	.td_pblock_left { font-family:Courier New,Courier; background: #e0e0f0; padding: 0px; text-align: left; }
+	.td_pblock_right { font-family:Courier New,Courier; background: #e0e0f0; padding: 0px; text-align: right; }
+	.td_bit { background: #ffffff; color:#404040; font-size:10; width: 70px; font-family:Courier New,Courier; padding: 3px; text-align:center; }
+	.td_field { background: #e0e0f0; padding: 3px; text-align:center; }
+	.td_unused { background: #a0a0a0; padding: 3px; text-align:center;  }
+	th { font-weight:bold; color:#ffffff; background: #202080; padding:3px; }
+	.tr_even { background: #f0eff0; }
+	.tr_odd { background: #e0e0f0; }
+	-->
+</STYLE>
+</HEAD>
+<BODY>
+<h1 class="heading">nic_wishbone_slave</h1>
+<h3>White Rabbit Switch NIC's spec</h3>
+<p>This NIC is in between the endpoints and the on-board Linux CPU of the White Rabbit Switch.<br>   <br>   Operation <br>   ~~~~~~~ <br>      * There's a pool of n TX descriptors and a pool of n RX descriptors. <br>      * In fact, we should have n for TX and m for RX since 32K / 1536 = 21.3. Anyway, to make things simple, first let's do n and n; we can fine-tune later on. <br>      * Software keeps track of which buffers are marked to be used with the READY/EMPTY flags. <br>      * Interrupts are useed by software to update the state, e.g. when frames are received or when a frame has been sent. <br>      * Endianness: all multi-byte registers are Little Endian <br>   <br>   Frame transmission <br>   ~~~~~~~~~~~~~~~ <br>      * Enable Transmission in the Control Register <br>      * Store the frame in memory <br>      * Fill in the corresponding descriptor from the TX pool <br>      * Set READY bit to 1 <br>      * Interrupt arrives--if enabled-- and software updates stats reading the descriptor (READY has been set to 0 by the NIC). <br>   <br>   Frame reception <br>   ~~~~~~~~~~~~~ <br>      * Enable Reception in the Control Register <br>      * Initialize a descriptor from the RX descriptors pool. Mark it as EMPTY <br>      * A frame is received and, if enabled, the NIC raises an interrupt <br>      * With EMPTY set to 0, the frame can now be copied from the NIC's memory and stats can be updated <br>      * Set READY bit to 1 <br>   <br>   Todo <br>   ~~~~ <br>      * Descriptors in RAM, not as registers. wbgen2 doesn't support this yet. Working on it. <br>   Known issues <br>   ~~~~~~~~~~~ <br>      * Only 32-bit aligned addresses are supported</p>
+<h3>Contents:</h3>
+<span style="margin-left: 0px; ">1. <A href="#sect_1_0">Memory map summary</a></span><br/>
+<span style="margin-left: 0px; ">2. <A href="#sect_2_0">HDL symbol</a></span><br/>
+<span style="margin-left: 0px; ">3. <A href="#sect_3_0">Register description</a></span><br/>
+<span style="margin-left: 20px; ">3.1. <A href="#sect_3_1">NIC Control Register</a></span><br/>
+<span style="margin-left: 20px; ">3.2. <A href="#sect_3_2">NIC Status Register</a></span><br/>
+<span style="margin-left: 20px; ">3.3. <A href="#sect_3_3">SW_Reset</a></span><br/>
+<span style="margin-left: 20px; ">3.4. <A href="#sect_3_4">Interrupt disable register</a></span><br/>
+<span style="margin-left: 20px; ">3.5. <A href="#sect_3_5">Interrupt enable register</a></span><br/>
+<span style="margin-left: 20px; ">3.6. <A href="#sect_3_6">Interrupt mask register</a></span><br/>
+<span style="margin-left: 20px; ">3.7. <A href="#sect_3_7">Interrupt status register</a></span><br/>
+<span style="margin-left: 0px; ">4. <A href="#sect_4_0">Memory blocks</a></span><br/>
+<span style="margin-left: 20px; ">4.1. <A href="#sect_4_1">TX descriptors mem</a></span><br/>
+<span style="margin-left: 20px; ">4.2. <A href="#sect_4_2">RX descriptors mem</a></span><br/>
+<span style="margin-left: 0px; ">5. <A href="#sect_5_0">Interrupts</a></span><br/>
+<span style="margin-left: 20px; ">5.1. <A href="#sect_5_1">Receive Complete</a></span><br/>
+<span style="margin-left: 20px; ">5.2. <A href="#sect_5_2">Transmit Complete</a></span><br/>
+<span style="margin-left: 20px; ">5.3. <A href="#sect_5_3">Transmit Error</a></span><br/>
+<h3><a name="sect_1_0">1. Memory map summary</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<th >
+H/W Address
+</th>
+<th >
+Type
+</th>
+<th >
+Name
+</th>
+<th >
+VHDL/Verilog prefix
+</th>
+<th >
+C prefix
+</th>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x0
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#CR">NIC Control Register</a>
+</td>
+<td  class="td_code">
+nic_cr
+</td>
+<td  class="td_code">
+CR
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0x1
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#SR">NIC Status Register</a>
+</td>
+<td  class="td_code">
+nic_sr
+</td>
+<td  class="td_code">
+SR
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x2
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#RESET">SW_Reset</a>
+</td>
+<td  class="td_code">
+nic_reset
+</td>
+<td  class="td_code">
+RESET
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0x8
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#EIC_IDR">Interrupt disable register</a>
+</td>
+<td  class="td_code">
+nic_eic_idr
+</td>
+<td  class="td_code">
+EIC_IDR
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x9
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#EIC_IER">Interrupt enable register</a>
+</td>
+<td  class="td_code">
+nic_eic_ier
+</td>
+<td  class="td_code">
+EIC_IER
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0xa
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#EIC_IMR">Interrupt mask register</a>
+</td>
+<td  class="td_code">
+nic_eic_imr
+</td>
+<td  class="td_code">
+EIC_IMR
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0xb
+</td>
+<td >
+REG
+</td>
+<td >
+<A href="#EIC_ISR">Interrupt status register</a>
+</td>
+<td  class="td_code">
+nic_eic_isr
+</td>
+<td  class="td_code">
+EIC_ISR
+</td>
+</tr>
+<tr class="tr_even">
+<td  class="td_code">
+0x20 - 0x3f
+</td>
+<td >
+MEM
+</td>
+<td >
+<A href="#DTX">TX descriptors mem</a>
+</td>
+<td  class="td_code">
+nic_dtx
+</td>
+<td  class="td_code">
+DTX
+</td>
+</tr>
+<tr class="tr_odd">
+<td  class="td_code">
+0x40 - 0x5f
+</td>
+<td >
+MEM
+</td>
+<td >
+<A href="#DRX">RX descriptors mem</a>
+</td>
+<td  class="td_code">
+nic_drx
+</td>
+<td  class="td_code">
+DRX
+</td>
+</tr>
+</table>
+
+<h3><a name="sect_2_0">2. HDL symbol</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+rst_n_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>NIC Control Register:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_clk_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_cr_rx_en_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_addr_i[6:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_cr_tx_en_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_data_i[31:0]
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&lArr;
+</td>
+<td  class="td_pblock_left">
+wb_data_o[31:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>NIC Status Register:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_cyc_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_bna_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+wb_sel_i[3:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_rec_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_stb_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_rec_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+wb_we_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_rec_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&larr;
+</td>
+<td  class="td_pblock_left">
+wb_ack_o
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_done_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&larr;
+</td>
+<td  class="td_pblock_left">
+wb_irq_o
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_done_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_done_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_error_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_error_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_tx_error_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_cur_tx_desc_i[2:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_sr_cur_rx_desc_i[2:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>SW_Reset:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_reset_o[31:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_reset_wr_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Receive Complete:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_rcomp_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_rcomp_ack_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Transmit Complete:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_tcomp_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_tcomp_ack_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_tcomp_mask_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>Transmit Error:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_txerr_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_txerr_ack_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+irq_txerr_mask_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>TX descriptors mem:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_addr_i[4:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_data_o[31:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_rd_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_data_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_wr_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+&nbsp;
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+<b>RX descriptors mem:</b>
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_addr_i[4:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_data_o[31:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_rd_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_data_i[31:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_wr_i
+</td>
+<td  class="td_arrow_right">
+&larr;
+</td>
+</tr>
+</table>
+
+<h3><a name="sect_3_0">3. Register description</a></h3>
+<a name="CR"></a>
+<h3><a name="sect_3_1">3.1. NIC Control Register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_cr
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x0
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+CR
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x0
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TX_EN
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+RX_EN
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RX_EN
+</b>[<i>read/write</i>]: Receive enable
+<br>Enables the NIC to receive data
+<li><b>
+TX_EN
+</b>[<i>read/write</i>]: Transmit enable
+<br>Enables the NIC to transmit data. When reset, the internal transmit pointer points to the first entry in the TX descriptor pool
+</ul>
+<a name="SR"></a>
+<h3><a name="sect_3_2">3.2. NIC Status Register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_sr
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x1
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+SR
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x4
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=3  class="td_field">
+CUR_RX_DESC[2:0]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=3  class="td_field">
+CUR_TX_DESC[2:0]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TX_ERROR
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TX_DONE
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+REC
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+BNA
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+BNA
+</b>[<i>read-only</i>]: Buffer Not Available
+<br>No buffers were available when receiving a packet.
+<li><b>
+REC
+</b>[<i>read/write</i>]: Frame Received
+<br>One or more frames have been received.<br>				 Cleared by writing a one to this bit
+<li><b>
+TX_DONE
+</b>[<i>read/write</i>]: Transmission done
+<br>read 1: All non-empty TX descriptors have been transmitted<br>				                read 0: Transmission in progress<br>				 write 1: Clears the flag<br>				 write 0: No effect
+<li><b>
+TX_ERROR
+</b>[<i>read/write</i>]: Transmission error
+<br>read 1: A TX error occured and the transmission was stopped. CUR_TX_DESC is pointing the TX descriptor for which the error occured<br>				                read 0: No TX error<br>				 write 1: Clears the flag<br>				 write 0: No effect
+<li><b>
+CUR_TX_DESC
+</b>[<i>read-only</i>]: Current TX descriptor
+<br>Index of the currently handled TX descriptor
+<li><b>
+CUR_RX_DESC
+</b>[<i>read-only</i>]: Current RX descriptor
+<br>Index of the currently handled RX descriptor
+</ul>
+<a name="RESET"></a>
+<h3><a name="sect_3_3">3.3. SW_Reset</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_reset
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x2
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+RESET
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x8
+</td>
+</tr>
+</table>
+<p>
+Writing to this register resets the NIC, zeroing all registers and resetting the state of the module
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+RESET[31:24]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+RESET[23:16]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+RESET[15:8]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td style="border: solid 1px black;" colspan=8  class="td_field">
+RESET[7:0]
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+<td >
+
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RESET
+</b>[<i>write-only</i>]: Software reset
+</ul>
+<a name="EIC_IDR"></a>
+<h3><a name="sect_3_4">3.4. Interrupt disable register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_eic_idr
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x8
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+EIC_IDR
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x20
+</td>
+</tr>
+</table>
+<p>
+Writing 1 disables handling of the interrupt associated with corresponding bit. Writin 0 has no effect.
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TXERR
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TCOMP
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+RCOMP
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RCOMP
+</b>[<i>write-only</i>]: Receive Complete
+<br>write 1: disable interrupt 'Receive Complete'<br>write 0: no effect
+<li><b>
+TCOMP
+</b>[<i>write-only</i>]: Transmit Complete
+<br>write 1: disable interrupt 'Transmit Complete'<br>write 0: no effect
+<li><b>
+TXERR
+</b>[<i>write-only</i>]: Transmit Error
+<br>write 1: disable interrupt 'Transmit Error'<br>write 0: no effect
+</ul>
+<a name="EIC_IER"></a>
+<h3><a name="sect_3_5">3.5. Interrupt enable register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_eic_ier
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0x9
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+EIC_IER
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x24
+</td>
+</tr>
+</table>
+<p>
+Writing 1 enables handling of the interrupt associated with corresponding bit. Writin 0 has no effect.
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TXERR
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TCOMP
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+RCOMP
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RCOMP
+</b>[<i>write-only</i>]: Receive Complete
+<br>write 1: enable interrupt 'Receive Complete'<br>write 0: no effect
+<li><b>
+TCOMP
+</b>[<i>write-only</i>]: Transmit Complete
+<br>write 1: enable interrupt 'Transmit Complete'<br>write 0: no effect
+<li><b>
+TXERR
+</b>[<i>write-only</i>]: Transmit Error
+<br>write 1: enable interrupt 'Transmit Error'<br>write 0: no effect
+</ul>
+<a name="EIC_IMR"></a>
+<h3><a name="sect_3_6">3.6. Interrupt mask register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_eic_imr
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0xa
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+EIC_IMR
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x28
+</td>
+</tr>
+</table>
+<p>
+Shows which interrupts are enabled. 1 means that the interrupt associated with the bitfield is enabled
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TXERR
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TCOMP
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+RCOMP
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RCOMP
+</b>[<i>read-only</i>]: Receive Complete
+<br>read 1: interrupt 'Receive Complete' is enabled<br>read 0: interrupt 'Receive Complete' is disabled
+<li><b>
+TCOMP
+</b>[<i>read-only</i>]: Transmit Complete
+<br>read 1: interrupt 'Transmit Complete' is enabled<br>read 0: interrupt 'Transmit Complete' is disabled
+<li><b>
+TXERR
+</b>[<i>read-only</i>]: Transmit Error
+<br>read 1: interrupt 'Transmit Error' is enabled<br>read 0: interrupt 'Transmit Error' is disabled
+</ul>
+<a name="EIC_ISR"></a>
+<h3><a name="sect_3_7">3.7. Interrupt status register</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td  class="td_code">
+nic_eic_isr
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td  class="td_code">
+0xb
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td  class="td_code">
+EIC_ISR
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td  class="td_code">
+0x2c
+</td>
+</tr>
+</table>
+<p>
+Each bit represents the state of corresponding interrupt. 1 means the interrupt is pending. Writing 1 to a bit clears the corresponding interrupt. Writing 0 has no effect.
+</p>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+31
+</td>
+<td  class="td_bit">
+30
+</td>
+<td  class="td_bit">
+29
+</td>
+<td  class="td_bit">
+28
+</td>
+<td  class="td_bit">
+27
+</td>
+<td  class="td_bit">
+26
+</td>
+<td  class="td_bit">
+25
+</td>
+<td  class="td_bit">
+24
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+23
+</td>
+<td  class="td_bit">
+22
+</td>
+<td  class="td_bit">
+21
+</td>
+<td  class="td_bit">
+20
+</td>
+<td  class="td_bit">
+19
+</td>
+<td  class="td_bit">
+18
+</td>
+<td  class="td_bit">
+17
+</td>
+<td  class="td_bit">
+16
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+15
+</td>
+<td  class="td_bit">
+14
+</td>
+<td  class="td_bit">
+13
+</td>
+<td  class="td_bit">
+12
+</td>
+<td  class="td_bit">
+11
+</td>
+<td  class="td_bit">
+10
+</td>
+<td  class="td_bit">
+9
+</td>
+<td  class="td_bit">
+8
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+</tr>
+</table>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_bit">
+7
+</td>
+<td  class="td_bit">
+6
+</td>
+<td  class="td_bit">
+5
+</td>
+<td  class="td_bit">
+4
+</td>
+<td  class="td_bit">
+3
+</td>
+<td  class="td_bit">
+2
+</td>
+<td  class="td_bit">
+1
+</td>
+<td  class="td_bit">
+0
+</td>
+</tr>
+<tr>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td  class="td_unused">
+-
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TXERR
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+TCOMP
+</td>
+<td style="border: solid 1px black;" colspan=1  class="td_field">
+RCOMP
+</td>
+</tr>
+</table>
+<ul>
+<li><b>
+RCOMP
+</b>[<i>read/write</i>]: Receive Complete
+<br>read 1: interrupt 'Receive Complete' is pending<br>read 0: interrupt not pending<br>write 1: clear interrupt 'Receive Complete'<br>write 0: no effect
+<li><b>
+TCOMP
+</b>[<i>read/write</i>]: Transmit Complete
+<br>read 1: interrupt 'Transmit Complete' is pending<br>read 0: interrupt not pending<br>write 1: clear interrupt 'Transmit Complete'<br>write 0: no effect
+<li><b>
+TXERR
+</b>[<i>read/write</i>]: Transmit Error
+<br>read 1: interrupt 'Transmit Error' is pending<br>read 0: interrupt not pending<br>write 1: clear interrupt 'Transmit Error'<br>write 0: no effect
+</ul>
+
+<a name="DTX"></a>
+<h3><a name="sect_4_1">4.1. TX descriptors mem</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td >
+nic_dtx
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td >
+0x20
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td >
+DTX
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td >
+0x80
+</td>
+</tr>
+<tr>
+<td >
+<b>Size: </b>
+</td>
+<td >
+32 32-bit words
+</td>
+</tr>
+<tr>
+<td >
+<b>Data width: </b>
+</td>
+<td >
+32
+</td>
+</tr>
+<tr>
+<td >
+<b>Access (bus): </b>
+</td>
+<td >
+read/write
+</td>
+</tr>
+<tr>
+<td >
+<b>Access (device): </b>
+</td>
+<td >
+read/write
+</td>
+</tr>
+<tr>
+<td >
+<b>Mirrored: </b>
+</td>
+<td >
+no
+</td>
+</tr>
+<tr>
+<td >
+<b>Byte-addressable: </b>
+</td>
+<td >
+no
+</td>
+</tr>
+<tr>
+<td >
+<b>Peripheral port: </b>
+</td>
+<td >
+bus-synchronous
+</td>
+</tr>
+</table>
+<br>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+nic_dtx_addr_i[4:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_dtx_data_o[31:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+nic_dtx_rd_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+nic_dtx_data_i[31:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+nic_dtx_wr_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+</table>
+<a name="DRX"></a>
+<h3><a name="sect_4_2">4.2. RX descriptors mem</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td >
+nic_drx
+</td>
+</tr>
+<tr>
+<td >
+<b>HW address: </b>
+</td>
+<td >
+0x40
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td >
+DRX
+</td>
+</tr>
+<tr>
+<td >
+<b>C offset: </b>
+</td>
+<td >
+0x100
+</td>
+</tr>
+<tr>
+<td >
+<b>Size: </b>
+</td>
+<td >
+32 32-bit words
+</td>
+</tr>
+<tr>
+<td >
+<b>Data width: </b>
+</td>
+<td >
+32
+</td>
+</tr>
+<tr>
+<td >
+<b>Access (bus): </b>
+</td>
+<td >
+read/write
+</td>
+</tr>
+<tr>
+<td >
+<b>Access (device): </b>
+</td>
+<td >
+read/write
+</td>
+</tr>
+<tr>
+<td >
+<b>Mirrored: </b>
+</td>
+<td >
+no
+</td>
+</tr>
+<tr>
+<td >
+<b>Byte-addressable: </b>
+</td>
+<td >
+no
+</td>
+</tr>
+<tr>
+<td >
+<b>Peripheral port: </b>
+</td>
+<td >
+bus-synchronous
+</td>
+</tr>
+</table>
+<br>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+nic_drx_addr_i[4:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+nic_drx_data_o[31:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+nic_drx_rd_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rArr;
+</td>
+<td  class="td_pblock_left">
+nic_drx_data_i[31:0]
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+&rarr;
+</td>
+<td  class="td_pblock_left">
+nic_drx_wr_i
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+
+</td>
+<td  class="td_arrow_right">
+
+</td>
+</tr>
+</table>
+
+<h3><a name="sect_5_0">5. Interrupts</a></h3>
+<a name="RCOMP"></a>
+<h3><a name="sect_5_1">5.1. Receive Complete</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td >
+nic_rcomp
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td >
+RCOMP
+</td>
+</tr>
+<tr>
+<td >
+<b>Trigger: </b>
+</td>
+<td >
+high level
+</td>
+</tr>
+</table>
+<p>A frame has been stored in memory.</p>
+<a name="TCOMP"></a>
+<h3><a name="sect_5_2">5.2. Transmit Complete</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td >
+nic_tcomp
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td >
+TCOMP
+</td>
+</tr>
+<tr>
+<td >
+<b>Trigger: </b>
+</td>
+<td >
+high level
+</td>
+</tr>
+</table>
+<p>Frame successfully transmitted</p>
+<a name="TXERR"></a>
+<h3><a name="sect_5_3">5.3. Transmit Error</a></h3>
+<table cellpadding=0 cellspacing=0 border=0>
+<tr>
+<td >
+<b>HW prefix: </b>
+</td>
+<td >
+nic_txerr
+</td>
+</tr>
+<tr>
+<td >
+<b>C prefix: </b>
+</td>
+<td >
+TXERR
+</td>
+</tr>
+<tr>
+<td >
+<b>Trigger: </b>
+</td>
+<td >
+high level
+</td>
+</tr>
+</table>
+
+</BODY>
+</HTML>
