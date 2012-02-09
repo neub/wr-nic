@@ -9,4 +9,7 @@ syn_package = "fgg484"
 syn_top = "wr_nic_top"
 syn_project = "wr_nic.xise"
 
-modules = { "local" : [ "../../top/spec" ] }
+modules = { "local" : 
+              [ "../../top/spec",
+								"../../platform/xilinx/chipscope" ] 
+              }
