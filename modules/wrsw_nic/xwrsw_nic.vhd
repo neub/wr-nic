@@ -107,21 +107,24 @@ architecture rtl of xwrsw_nic is
 
   component nic_buffer
     generic (
-      g_memsize_log2 : integer);
+      g_memsize_log2 : integer;
+      g_USE_DMA      : boolean);
     port (
-      clk_sys_i : in  std_logic;
-      rst_n_i   : in  std_logic;
-      addr_i    : in  std_logic_vector(g_memsize_log2-1 downto 0);
-      data_i    : in  std_logic_vector(31 downto 0);
-      wr_i      : in  std_logic;
-      data_o    : out std_logic_vector(31 downto 0);
-      wb_data_i : in  std_logic_vector(31 downto 0);
-      wb_data_o : out std_logic_vector(31 downto 0);
-      wb_addr_i : in  std_logic_vector(g_memsize_log2-1 downto 0);
-      wb_cyc_i  : in  std_logic;
-      wb_stb_i  : in  std_logic;
-      wb_we_i   : in  std_logic;
-      wb_ack_o  : out std_logic);
+      clk_sys_i  : in  std_logic;
+      rst_n_i    : in  std_logic;
+      addr_i     : in  std_logic_vector(g_memsize_log2-1 downto 0);
+      data_i     : in  std_logic_vector(31 downto 0);
+      wr_i       : in  std_logic;
+      data_o     : out std_logic_vector(31 downto 0);
+      wb_data_i  : in  std_logic_vector(31 downto 0);
+      wb_data_o  : out std_logic_vector(31 downto 0);
+      wb_addr_i  : in  std_logic_vector(g_memsize_log2-1 downto 0);
+      wb_sel_i   : in  std_logic_vector(3 downto 0) := x"f";
+      wb_cyc_i   : in  std_logic;
+      wb_stb_i   : in  std_logic;
+      wb_we_i    : in  std_logic;
+      wb_ack_o   : out std_logic;
+      wb_stall_o : out std_logic);
   end component;
 
   component nic_wishbone_slave
