@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk
 -- Company    : Elproma
 -- Created    : 2012-02-08
--- Last update: 2012-02-09
+-- Last update: 2012-02-20
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -25,11 +25,11 @@
 -- Revisions  :
 -- Date        Version  Author          Description
 -- 2012-02-08  1.0      greg.d          Created
+-- 2012-02-20  1.1      greg.d          added GN4124 to wrsw_nic DMA connection
 -------------------------------------------------------------------------------
 -- TODO:
 -- testing
 -- add DIO core
--- use GN4124 core DMA for packets transmission
 
 
 -- Memory map:
@@ -58,8 +58,7 @@ use work.wishbone_pkg.all;
 entity wr_nic_top is
   generic
     (
-      TAR_ADDR_WDTH : integer := 13     -- not used for this project
-      );
+      g_nic_usedma : boolean := true);
   port
     (
       -- Global ports
@@ -404,6 +403,7 @@ architecture rtl of wr_nic_top is
   component xwrsw_nic
     generic
       (
+        g_use_dma             : boolean                        := false;
         g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
         g_address_granularity : t_wishbone_address_granularity := WORD
         );
@@ -422,8 +422,10 @@ architecture rtl of wr_nic_top is
       rtu_rsp_valid_o     : out std_logic;
       rtu_rsp_ack_i       : in  std_logic;
 
-      wb_i : in  t_wishbone_slave_in;
-      wb_o : out t_wishbone_slave_out
+      wb_i  : in  t_wishbone_slave_in;
+      wb_o  : out t_wishbone_slave_out;
+      dma_i : in  t_wishbone_slave_in;
+      dma_o : out t_wishbone_slave_out
       );
   end component;
 
@@ -601,8 +603,8 @@ architecture rtl of wr_nic_top is
   signal nic_src_in  : t_wrf_source_in;
   signal nic_snk_out : t_wrf_sink_out;
   signal nic_snk_in  : t_wrf_sink_in;
-  signal nic_wb_out  : t_wishbone_master_out;
-  signal nic_wb_in   : t_wishbone_master_in;
+  signal nic_dma_in  : t_wishbone_slave_in;
+  signal nic_dma_out : t_wishbone_slave_out;
 
   -------------------
   -- WB Crossbar
@@ -957,6 +959,7 @@ begin
   -------------------------------------
   U_NIC : xwrsw_nic
     generic map(
+      g_use_dma             => g_nic_usedma,
       g_interface_mode      => PIPELINED,
       g_address_granularity => WORD)
     port map(
@@ -974,9 +977,30 @@ begin
       rtu_rsp_valid_o     => open,
       rtu_rsp_ack_i       => '1',
 
-      wb_i => cbar_master_o(1),
-      wb_o => cbar_master_i(1)
+      wb_i  => cbar_master_o(1),
+      wb_o  => cbar_master_i(1),
+      dma_i => nic_dma_in,
+      dma_o => nic_dma_out
     );
+
+  GEN_DMA : if(g_nic_usedma) generate
+      nic_dma_in.cyc <= dma_cyc;
+      nic_dma_in.stb <= dma_stb;
+      nic_dma_in.we  <= dma_we;
+      nic_dma_in.adr <= dma_adr;
+      nic_dma_in.sel <= dma_sel;
+      nic_dma_in.dat <= dma_dat_o;
+
+      dma_dat_i(31 downto 0) <= nic_dma_out.dat;
+      dma_ack                <= nic_dma_out.ack;
+      dma_stall              <= nic_dma_out.stall;
+  end generate;
+
+  GEN_CLASSIC : if(not(g_nic_usedma)) generate
+      nic_dma_in <= cc_dummy_slave_in;
+      dma_ack    <= '0';
+      dma_stall  <= '0';
+  end generate;
 
   -------------------------------------
   -- VIC 
