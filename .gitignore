@@ -10,3 +10,4 @@ transcript
 *.vstf
 *.bak
 *.vcd
+ip_cores/
