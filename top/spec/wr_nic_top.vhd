@@ -37,6 +37,7 @@
 --  0x00010000: WRSW NIC
 --  0x00011000: VIC
 --  0x00012000: TxTSU
+--  0x00013000: DIO
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -105,7 +106,7 @@ entity wr_nic_top is
       TX_ERROR   : in std_logic;        -- Transmit Error
       VC_RDY     : in std_logic_vector(1 downto 0);  -- Channel ready
 
-      -- Font panel LEDs
+      -- Front panel LEDs
       LED_RED   : out std_logic;
       LED_GREEN : out std_logic;
 
@@ -267,6 +268,7 @@ architecture rtl of wr_nic_top is
         );
   end component;  --  gn4124_core
 
+  -- WR PTP Core
   component xwr_core is
   generic(
     g_simulation          : integer                        := 0;
@@ -407,6 +409,7 @@ architecture rtl of wr_nic_top is
       dac_din_o   : out std_logic);
   end component;
 
+  -- NIC
   component xwrsw_nic
     generic
       (
@@ -455,6 +458,7 @@ architecture rtl of wr_nic_top is
       );
   end component;
 
+  -- IRQ Gen
   component xwb_vic
     generic (
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
@@ -485,6 +489,39 @@ architecture rtl of wr_nic_top is
       wb_o             : out t_wishbone_slave_out
     );
   end component;
+
+  -- DIO core
+  component dio_core
+    generic (
+      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
+      g_address_granularity : t_wishbone_address_granularity := WORD
+      );
+    port (
+      clk_sys_i      : in  std_logic;
+      rst_n_i        : in  std_logic;
+		
+      dio_clk_p_i    : in std_logic;
+      dio_clk_n_i    : in std_logic;
+      dio_n_i        : in std_logic_vector(4 downto 0);
+      dio_p_i        : in std_logic_vector(4 downto 0);
+      dio_n_o        : out std_logic_vector(4 downto 0);
+      dio_p_o        : out std_logic_vector(4 downto 0);
+      dio_oe_n_o     : out std_logic_vector(4 downto 0);
+      dio_term_en_o  : out std_logic_vector(4 downto 0);
+      dio_onewire_b  : inout std_logic;
+      dio_sdn_n_o    : out std_logic;
+      dio_sdn_ck_n_o : out std_logic;
+      dio_led_top_o  : out std_logic;
+      dio_led_bot_o  : out std_logic;		
+
+      tm_time_valid_i : in std_logic;
+      tm_utc_i        : in std_logic_vector(39 downto 0);
+      tm_cycles_i     : in std_logic_vector(27 downto 0);
+		
+      slave_i         : in  t_wishbone_slave_in;
+      slave_o         : out t_wishbone_slave_out
+  );
+  end component; --DIO core
 
   --component chipscope_ila
   --  port (
@@ -624,13 +661,15 @@ architecture rtl of wr_nic_top is
     (0 => x"00000000",                  -- WRPC
      1 => x"00010000",                  -- NIC
      2 => x"00011000",                  -- VIC (IRQ gen)
-     3 => x"00012000");                 -- TxTSU
+     3 => x"00012000",                  -- TxTSU
+	  4 => x"00013000");                 -- DIO
 
   constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
     (0 => x"000f0000",
      1 => x"000ff000",
      2 => x"000ff000",
-     3 => x"000ff000");
+     3 => x"000ff000",
+     4 => x"000ff000");
 
   signal cbar_slave_i  : t_wishbone_slave_in;
   signal cbar_slave_o  : t_wishbone_slave_out;
@@ -765,7 +804,7 @@ begin
   WB_INTERCON : xwb_crossbar
     generic map(
       g_num_masters => 1,
-      g_num_slaves  => 4,
+      g_num_slaves  => 5,
       g_registered  => true
       )
     port map(
@@ -1142,6 +1181,38 @@ begin
       rst_n_i    => local_reset_n,
       pulse_i    => pps,
       extended_o => dio_led_top_o);
+
+
+  -- DIO core
+  component dio_core
+    generic map (
+      g_interface_mode      => CLASSIC,
+      g_address_granularity => WORD)
+    )
+    port (
+      clk_sys_i      : in  std_logic;
+      rst_n_i        : in  std_logic;
+		
+      dio_clk_i    : in std_logic;
+      dio_in_i     : in std_logic_vector(4 downto 0);
+      dio_out_o      : out std_logic_vector(4 downto 0);
+      dio_oe_n_o     : out std_logic_vector(4 downto 0);
+      dio_term_en_o  : out std_logic_vector(4 downto 0);
+      dio_onewire_b  : inout std_logic;
+      dio_sdn_n_o    : out std_logic;
+      dio_sdn_ck_n_o : out std_logic;
+      dio_led_top_o  : out std_logic;
+      dio_led_bot_o  : out std_logic;		
+
+      tm_time_valid_i : in std_logic;
+      tm_utc_i        : in std_logic_vector(39 downto 0);
+      tm_cycles_i     : in std_logic_vector(27 downto 0);
+		
+      slave_i         : in  t_wishbone_slave_in;
+      slave_o         : out t_wishbone_slave_out
+  );
+  end component; --DIO core
+
 
 
   gen_dio_iobufs : for i in 0 to 4 generate
