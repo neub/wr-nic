@@ -2,10 +2,13 @@
 \#*
 .\#*
 *.*~
-work
 *.wlf
 modelsim.ini
 transcript
 *.vstf
 *.bak
 *.vcd
+work
+syn
+!syn/spec/Manifest.py
+!syn/spec/wr_nic.xise
