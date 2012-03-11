@@ -8,19 +8,19 @@ NET "clk_125m_pllref_n_i" IOSTANDARD = "LVDS_25";
 NET "clk_125m_pllref_p_i" LOC = G9;
 NET "clk_125m_pllref_p_i" IOSTANDARD = "LVDS_25";
 
-NET "dac_cs1_n_o" LOC = A3;
-NET "dac_cs1_n_o" IOSTANDARD = "LVCMOS25";
-
-NET "dac_cs2_n_o" LOC = B3;
-NET "dac_cs2_n_o" IOSTANDARD = "LVCMOS25";
-
-#NET "dac_clr_n_o" LOC = F7;
-#NET "dac_clr_n_o" IOSTANDARD = "LVCMOS25";
-NET "dac_din_o" LOC = C4;
-NET "dac_din_o" IOSTANDARD = "LVCMOS25";
-
-NET "dac_sclk_o" LOC = A4;
-NET "dac_sclk_o" IOSTANDARD = "LVCMOS25";
+#NET "dac_cs1_n_o" LOC = A3;
+#NET "dac_cs1_n_o" IOSTANDARD = "LVCMOS25";
+#
+#NET "dac_cs2_n_o" LOC = B3;
+#NET "dac_cs2_n_o" IOSTANDARD = "LVCMOS25";
+#
+##NET "dac_clr_n_o" LOC = F7;
+##NET "dac_clr_n_o" IOSTANDARD = "LVCMOS25";
+#NET "dac_din_o" LOC = C4;
+#NET "dac_din_o" IOSTANDARD = "LVCMOS25";
+#
+#NET "dac_sclk_o" LOC = A4;
+#NET "dac_sclk_o" IOSTANDARD = "LVCMOS25";
 
 #NET "SI57X_CLK_N" LOC = F15;
 #NET "SI57X_CLK_N" IOSTANDARD = "LVDS_25";
@@ -37,40 +37,40 @@ NET "THERMO_ID" IOSTANDARD = "LVCMOS25";
 #NET "PRSNT_M2C_L" LOC = A2;
 #NET "PRSNT_M2C_L" IOSTANDARD = "LVCMOS25";
 
-NET "SFP_MOD_DEF1_b" LOC = C17;
-NET "SFP_MOD_DEF1_b" IOSTANDARD = "LVCMOS25";
-NET "SFP_MOD_DEF0_b" LOC = G15;
-NET "SFP_MOD_DEF0_b" IOSTANDARD = "LVCMOS25";
-NET "SFP_MOD_DEF2_b" LOC = G16;
-NET "SFP_MOD_DEF2_b" IOSTANDARD = "LVCMOS25";
-NET "SFP_RATE_SELECT_b" LOC = H14;
-NET "SFP_RATE_SELECT_b" IOSTANDARD = "LVCMOS25";
-NET "SFP_TX_FAULT_i" LOC = A17;
-NET "SFP_TX_FAULT_i" IOSTANDARD = "LVCMOS25";
-NET "SFP_TX_DISABLE_o" LOC = F17;
-NET "SFP_TX_DISABLE_o" IOSTANDARD = "LVCMOS25";
-NET "SFP_LOS_i" LOC = D18;
-NET "SFP_LOS_i" IOSTANDARD = "LVCMOS25";
-
-#NET "sfp_rxp_i" IOSTANDARD = "LVDS_12";
-NET "sfp_rxp_i" LOC= D15;
-#NET "sfp_rxn_i" IOSTANDARD = "LVDS_12";
-NET "sfp_rxn_i" LOC= C15;
-
-#NET "sfp_txp_o" IOSTANDARD = "LVDS_12";
-NET "sfp_txp_o" LOC= B16;
-#NET "sfp_txn_o" IOSTANDARD = "LVDS_12";
-NET "sfp_txn_o" LOC= A16;
+#NET "SFP_MOD_DEF1_b" LOC = C17;
+#NET "SFP_MOD_DEF1_b" IOSTANDARD = "LVCMOS25";
+#NET "SFP_MOD_DEF0_b" LOC = G15;
+#NET "SFP_MOD_DEF0_b" IOSTANDARD = "LVCMOS25";
+#NET "SFP_MOD_DEF2_b" LOC = G16;
+#NET "SFP_MOD_DEF2_b" IOSTANDARD = "LVCMOS25";
+#NET "SFP_RATE_SELECT_b" LOC = H14;
+#NET "SFP_RATE_SELECT_b" IOSTANDARD = "LVCMOS25";
+#NET "SFP_TX_FAULT_i" LOC = A17;
+#NET "SFP_TX_FAULT_i" IOSTANDARD = "LVCMOS25";
+#NET "SFP_TX_DISABLE_o" LOC = F17;
+#NET "SFP_TX_DISABLE_o" IOSTANDARD = "LVCMOS25";
+#NET "SFP_LOS_i" LOC = D18;
+#NET "SFP_LOS_i" IOSTANDARD = "LVCMOS25";
+#
+##NET "sfp_rxp_i" IOSTANDARD = "LVDS_12";
+#NET "sfp_rxp_i" LOC= D15;
+##NET "sfp_rxn_i" IOSTANDARD = "LVDS_12";
+#NET "sfp_rxn_i" LOC= C15;
+#
+##NET "sfp_txp_o" IOSTANDARD = "LVDS_12";
+#NET "sfp_txp_o" LOC= B16;
+##NET "sfp_txn_o" IOSTANDARD = "LVDS_12";
+#NET "sfp_txn_o" LOC= A16;
 
 
 #NET "TRST_TO_FMC" LOC = E6;
 #NET "TRST_TO_FMC" IOSTANDARD = "LVCMOS25";
 #NET "CLK0_M2C_P" LOC = E16;
 #NET "CLK0_M2C_P" IOSTANDARD = "LVDS_25";
-NET "FPGA_SCL_B" LOC = F7;
-NET "FPGA_SCL_B" IOSTANDARD = "LVCMOS25";
-NET "FPGA_SDA_B" LOC = F8;
-NET "FPGA_SDA_B" IOSTANDARD = "LVCMOS25";
+NET "FMC_SCL_B" LOC = F7;
+NET "FMC_SDA_B" LOC = F8;
+NET "FMC_SCL_B" IOSTANDARD = "LVCMOS25";
+NET "FMC_SDA_B" IOSTANDARD = "LVCMOS25";
 
 NET "BUTTON1_I" LOC = C22;
 NET "BUTTON1_I" IOSTANDARD = "LVCMOS18";
@@ -218,10 +218,10 @@ NET "P2L_DATA[15]" IOSTANDARD = "SSTL18_I";
 #NET "CLK1_M2C_P" IOSTANDARD = "LVDS_18";
 #NET "CLK1_M2C_N" LOC = L22;
 #NET "CLK1_M2C_N" IOSTANDARD = "LVDS_18";
-NET "GPIO[1]" LOC = U16;
-NET "GPIO[1]" IOSTANDARD = "LVCMOS25";
-NET "GPIO[0]" LOC = AB19;
-NET "GPIO[0]" IOSTANDARD = "LVCMOS25";
+#NET "GPIO[1]" LOC = U16;
+#NET "GPIO[1]" IOSTANDARD = "LVCMOS25";
+#NET "GPIO[0]" LOC = AB19;
+#NET "GPIO[0]" IOSTANDARD = "LVCMOS25";
 
 
 #NET "LA00_N" LOC = AB11;
@@ -397,10 +397,10 @@ NET "GPIO[0]" IOSTANDARD = "LVCMOS25";
 #NET "DDR3_UDQS_P" IOSTANDARD = "LVCMOS15";
 #NET "DDR3_WE_N" LOC = H2;
 #NET "DDR3_WE_N" IOSTANDARD = "LVCMOS15";
-NET "LED_RED" LOC = D5;
-NET "LED_RED" IOSTANDARD = "LVCMOS25";
-NET "LED_GREEN" LOC = E5;
-NET "LED_GREEN" IOSTANDARD = "LVCMOS25";
+#NET "LED_RED" LOC = D5;
+#NET "LED_RED" IOSTANDARD = "LVCMOS25";
+#NET "LED_GREEN" LOC = E5;
+#NET "LED_GREEN" IOSTANDARD = "LVCMOS25";
 
 #NET "PCB_VER[0]" LOC = P5;
 #NET "PCB_VER[0]" IOSTANDARD = "LVCMOS15";
@@ -531,29 +531,29 @@ NET "dio_sdn_ck_n_o" IOSTANDARD=LVCMOS25;
 
 # DIO output enable/termination enable
 
-NET "dio_oe_n_o[4]" LOC=  AA6;
-NET "dio_oe_n_o[3]" LOC=  W10;
-NET "dio_oe_n_o[2]" LOC=  W11;
-NET "dio_oe_n_o[1]" LOC= Y14;
-NET "dio_oe_n_o[0]" LOC= V17;
-
-NET "dio_oe_n_o[4]"  IOSTANDARD=LVCMOS25;
-NET "dio_oe_n_o[3]"  IOSTANDARD=LVCMOS25;
-NET "dio_oe_n_o[2]"  IOSTANDARD=LVCMOS25;
-NET "dio_oe_n_o[1]"  IOSTANDARD=LVCMOS25;
-NET "dio_oe_n_o[0]"  IOSTANDARD=LVCMOS25;
-
-NET "dio_term_en_o[4]" LOC=AB7;
-NET "dio_term_en_o[3]" LOC=Y7;
-NET "dio_term_en_o[2]" LOC=AB6;
-NET "dio_term_en_o[1]" LOC=AB5;
-NET "dio_term_en_o[0]" LOC=W18;
-
-NET "dio_term_en_o[4]"  IOSTANDARD=LVCMOS25;
-NET "dio_term_en_o[3]"  IOSTANDARD=LVCMOS25;
-NET "dio_term_en_o[2]"  IOSTANDARD=LVCMOS25;
-NET "dio_term_en_o[1]"  IOSTANDARD=LVCMOS25;
-NET "dio_term_en_o[0]"  IOSTANDARD=LVCMOS25;
+#NET "dio_oe_n_o[4]" LOC=  AA6;
+#NET "dio_oe_n_o[3]" LOC=  W10;
+#NET "dio_oe_n_o[2]" LOC=  W11;
+#NET "dio_oe_n_o[1]" LOC= Y14;
+#NET "dio_oe_n_o[0]" LOC= V17;
+#
+#NET "dio_oe_n_o[4]"  IOSTANDARD=LVCMOS25;
+#NET "dio_oe_n_o[3]"  IOSTANDARD=LVCMOS25;
+#NET "dio_oe_n_o[2]"  IOSTANDARD=LVCMOS25;
+#NET "dio_oe_n_o[1]"  IOSTANDARD=LVCMOS25;
+#NET "dio_oe_n_o[0]"  IOSTANDARD=LVCMOS25;
+#
+#NET "dio_term_en_o[4]" LOC=AB7;
+#NET "dio_term_en_o[3]" LOC=Y7;
+#NET "dio_term_en_o[2]" LOC=AB6;
+#NET "dio_term_en_o[1]" LOC=AB5;
+#NET "dio_term_en_o[0]" LOC=W18;
+#
+#NET "dio_term_en_o[4]"  IOSTANDARD=LVCMOS25;
+#NET "dio_term_en_o[3]"  IOSTANDARD=LVCMOS25;
+#NET "dio_term_en_o[2]"  IOSTANDARD=LVCMOS25;
+#NET "dio_term_en_o[1]"  IOSTANDARD=LVCMOS25;
+#NET "dio_term_en_o[0]"  IOSTANDARD=LVCMOS25;
 
 NET "dio_onewire_b" LOC=AB16;
 NET "dio_onewire_b" IOSTANDARD=LVCMOS25;
@@ -598,10 +598,10 @@ NET "dio_led_bot_o" IOSTANDARD=LVCMOS25;
 
 
 
-NET "uart_rxd_i" LOC= A2;
-NET "uart_rxd_i" IOSTANDARD=LVCMOS25;
-NET "uart_txd_o" LOC= B2;
-NET "uart_txd_o" IOSTANDARD=LVCMOS25;
+#NET "uart_rxd_i" LOC= A2;
+#NET "uart_rxd_i" IOSTANDARD=LVCMOS25;
+#NET "uart_txd_o" LOC= B2;
+#NET "uart_txd_o" IOSTANDARD=LVCMOS25;
 
 
 # System clock
@@ -622,11 +622,13 @@ TIMESPEC TS_clk_125m_pllref_p_i = PERIOD "clk_125m_pllref_p_i" 8 ns HIGH 50%;
 NET "clk_125m_pllref_n_i" TNM_NET = clk_125m_pllref_n_i;
 TIMESPEC TS_clk_125m_pllref_n_i = PERIOD "clk_125m_pllref_n_i" 8 ns HIGH 50%;
 
-PIN "clk_125m_pllref_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE; 
-PIN "U_GTP/U_Rbclk_bufg_ch1.O" CLOCK_DEDICATED_ROUTE = FALSE;
+#PIN "clk_125m_pllref_BUFG.O" CLOCK_DEDICATED_ROUTE = FALSE; 
+#PIN "U_GTP/U_Rbclk_bufg_ch1.O" CLOCK_DEDICATED_ROUTE = FALSE;
+
 #Created by Constraints Editor (xc6slx45t-fgg484-3) - 2011/06/09
-NET "U_GTP/ch0_gtp_clkout_int<1>" TNM_NET = U_GTP/ch0_gtp_clkout_int<1>;
-TIMESPEC TS_U_GTP_ch0_gtp_clkout_int_1_ = PERIOD "U_GTP/ch0_gtp_clkout_int<1>" 8 ns HIGH 50%;
-NET "U_GTP/ch1_gtp_clkout_int<1>" TNM_NET = U_GTP/ch1_gtp_clkout_int<1>;
-TIMESPEC TS_U_GTP_ch1_gtp_clkout_int_1_ = PERIOD "U_GTP/ch1_gtp_clkout_int<1>" 8 ns HIGH 50%;
- PIN "cmp_clk_dmtd_buf.O" CLOCK_DEDICATED_ROUTE = FALSE; 
+
+#NET "U_GTP/ch0_gtp_clkout_int<1>" TNM_NET = U_GTP/ch0_gtp_clkout_int<1>;
+#TIMESPEC TS_U_GTP_ch0_gtp_clkout_int_1_ = PERIOD "U_GTP/ch0_gtp_clkout_int<1>" 8 ns HIGH 50%;
+#NET "U_GTP/ch1_gtp_clkout_int<1>" TNM_NET = U_GTP/ch1_gtp_clkout_int<1>;
+#TIMESPEC TS_U_GTP_ch1_gtp_clkout_int_1_ = PERIOD "U_GTP/ch1_gtp_clkout_int<1>" 8 ns HIGH 50%;
+# PIN "cmp_clk_dmtd_buf.O" CLOCK_DEDICATED_ROUTE = FALSE; 

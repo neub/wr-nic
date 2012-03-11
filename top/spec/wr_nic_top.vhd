@@ -37,7 +37,7 @@
 --  0x00010000: WRSW NIC
 --  0x00011000: VIC
 --  0x00012000: TxTSU
---  0x00013000: DIO
+--  0x00020000: DIO
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -116,8 +116,8 @@ entity wr_nic_top is
       dac_cs1_n_o : out std_logic;
       dac_cs2_n_o : out std_logic;
 
-      fpga_scl_b : inout std_logic;
-      fpga_sda_b : inout std_logic;
+      fmc_scl_b  : inout std_logic;
+      fmc_sda_b  : inout std_logic;
 
       button1_i : in std_logic;
       button2_i : in std_logic;
@@ -127,20 +127,20 @@ entity wr_nic_top is
       -------------------------------------------------------------------------
       -- SFP pins
       -------------------------------------------------------------------------
-
-      sfp_txp_o : out std_logic;
-      sfp_txn_o : out std_logic;
-
-      sfp_rxp_i : in std_logic;
-      sfp_rxn_i : in std_logic;
-
-      sfp_mod_def0_b    : inout std_logic;  -- sfp detect
-      sfp_mod_def1_b    : inout std_logic;  -- scl
-      sfp_mod_def2_b    : inout std_logic;  -- sda
-      sfp_rate_select_b : inout std_logic;
-      sfp_tx_fault_i    : in    std_logic;
-      sfp_tx_disable_o  : out   std_logic;
-      sfp_los_i         : in    std_logic;
+--
+--      sfp_txp_o : out std_logic;
+--      sfp_txn_o : out std_logic;
+--
+--      sfp_rxp_i : in std_logic;
+--      sfp_rxn_i : in std_logic;
+--
+--      sfp_mod_def0_b    : inout std_logic;  -- sfp detect
+--      sfp_mod_def1_b    : inout std_logic;  -- scl
+--      sfp_mod_def2_b    : inout std_logic;  -- sda
+--      sfp_rate_select_b : inout std_logic;
+--      sfp_tx_fault_i    : in    std_logic;
+--      sfp_tx_disable_o  : out   std_logic;
+--      sfp_los_i         : in    std_logic;
 
 
       -------------------------------------------------------------------------
@@ -491,21 +491,19 @@ architecture rtl of wr_nic_top is
   end component;
 
   -- DIO core
-  component dio_core
+  component wrsw_dio
     generic (
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity : t_wishbone_address_granularity := WORD
       );
     port (
       clk_sys_i      : in  std_logic;
+      clk_ref_i      : in  std_logic;		
       rst_n_i        : in  std_logic;
 		
-      dio_clk_p_i    : in std_logic;
-      dio_clk_n_i    : in std_logic;
-      dio_n_i        : in std_logic_vector(4 downto 0);
-      dio_p_i        : in std_logic_vector(4 downto 0);
-      dio_n_o        : out std_logic_vector(4 downto 0);
-      dio_p_o        : out std_logic_vector(4 downto 0);
+      dio_clk_i      : in std_logic;
+      dio_in_i       : in std_logic_vector(4 downto 0);
+      dio_out_o      : out std_logic_vector(4 downto 0);
       dio_oe_n_o     : out std_logic_vector(4 downto 0);
       dio_term_en_o  : out std_logic_vector(4 downto 0);
       dio_onewire_b  : inout std_logic;
@@ -514,36 +512,44 @@ architecture rtl of wr_nic_top is
       dio_led_top_o  : out std_logic;
       dio_led_bot_o  : out std_logic;		
 
+      fmc_scl_b       : inout std_logic;
+      fmc_sda_b       : inout std_logic;
+
       tm_time_valid_i : in std_logic;
       tm_utc_i        : in std_logic_vector(39 downto 0);
       tm_cycles_i     : in std_logic_vector(27 downto 0);
+
+      TRIG0           : out std_logic_vector(31 downto 0);
+      TRIG1           : out std_logic_vector(31 downto 0);
+      TRIG2           : out std_logic_vector(31 downto 0);
+      TRIG3           : out std_logic_vector(31 downto 0);
 		
       slave_i         : in  t_wishbone_slave_in;
       slave_o         : out t_wishbone_slave_out
   );
   end component; --DIO core
 
-  --component chipscope_ila
-  --  port (
-  --    CONTROL : inout std_logic_vector(35 downto 0);
-  --    CLK     : in    std_logic;
-  --    TRIG0   : in    std_logic_vector(31 downto 0);
-  --    TRIG1   : in    std_logic_vector(31 downto 0);
-  --    TRIG2   : in    std_logic_vector(31 downto 0);
-  --    TRIG3   : in    std_logic_vector(31 downto 0));
-  --end component;
+  component chipscope_ila
+    port (
+      CONTROL : inout std_logic_vector(35 downto 0);
+      CLK     : in    std_logic;
+      TRIG0   : in    std_logic_vector(31 downto 0);
+      TRIG1   : in    std_logic_vector(31 downto 0);
+      TRIG2   : in    std_logic_vector(31 downto 0);
+      TRIG3   : in    std_logic_vector(31 downto 0));
+  end component;
 
-  --signal CONTROL : std_logic_vector(35 downto 0);
-  --signal CLK     : std_logic;
-  --signal TRIG0   : std_logic_vector(31 downto 0);
-  --signal TRIG1   : std_logic_vector(31 downto 0);
-  --signal TRIG2   : std_logic_vector(31 downto 0);
-  --signal TRIG3   : std_logic_vector(31 downto 0);
+  signal CONTROL : std_logic_vector(35 downto 0);
+  signal CLK     : std_logic;
+  signal TRIG0   : std_logic_vector(31 downto 0);
+  signal TRIG1   : std_logic_vector(31 downto 0);
+  signal TRIG2   : std_logic_vector(31 downto 0);
+  signal TRIG3   : std_logic_vector(31 downto 0);
 
-  --component chipscope_icon
-  --  port (
-  --    CONTROL0 : inout std_logic_vector (35 downto 0));
-  --end component;
+  component chipscope_icon
+    port (
+      CONTROL0 : inout std_logic_vector (35 downto 0));
+  end component;
 
   ------------------------------------------------------------------------------
   -- Constants declaration
@@ -644,6 +650,12 @@ architecture rtl of wr_nic_top is
   signal wrpc_ts_o     : t_txtsu_timestamp;
   signal wrpc_ts_ack_i : std_logic;
 
+  -- Timecode output
+  signal tm_time_valid : std_logic;
+  signal tm_utc        : std_logic_vector(39 downto 0);
+  signal tm_cycles     : std_logic_vector(27 downto 0);
+
+
   -------------------
   -- NIC
   -------------------
@@ -657,30 +669,37 @@ architecture rtl of wr_nic_top is
   -------------------
   -- WB Crossbar
   -------------------
-  constant c_cfg_base_addr : t_wishbone_address_array(3 downto 0) :=
+  constant c_cfg_base_addr : t_wishbone_address_array(4 downto 0) :=
     (0 => x"00000000",                  -- WRPC
      1 => x"00010000",                  -- NIC
      2 => x"00011000",                  -- VIC (IRQ gen)
      3 => x"00012000",                  -- TxTSU
-	  4 => x"00013000");                 -- DIO
+	  4 => x"00020000");                 -- DIO
 
-  constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
+  constant c_cfg_base_mask : t_wishbone_address_array(4 downto 0) :=
     (0 => x"000f0000",
      1 => x"000ff000",
      2 => x"000ff000",
      3 => x"000ff000",
-     4 => x"000ff000");
+     4 => x"ffffff00");
 
   signal cbar_slave_i  : t_wishbone_slave_in;
   signal cbar_slave_o  : t_wishbone_slave_out;
-  signal cbar_master_i : t_wishbone_master_in_array(3 downto 0);
-  signal cbar_master_o : t_wishbone_master_out_array(3 downto 0);
+  signal cbar_master_i : t_wishbone_master_in_array(4 downto 0);
+  signal cbar_master_o : t_wishbone_master_out_array(4 downto 0);
 
   -------------------
   -- WB VIC
   -------------------
   signal vic_irq       : std_logic;
   signal vic_slave_irq : std_logic_vector(2 downto 0);
+
+  -------------------
+  -- DIO core
+  -------------------
+  signal scl_pad_in, scl_pad_out, scl_pad_oen : std_logic;
+  signal sda_pad_in, sda_pad_out, sda_pad_oen : std_logic;
+
 
 begin
 
@@ -882,14 +901,14 @@ begin
       ---------------------------------------------------------
       -- Interrupt interface
       dma_irq_o => open,
-      irq_p_i   => vic_irq,
+      irq_p_i   => '0', --vic_irq,
       irq_p_o   => GPIO(0),
 
       ---------------------------------------------------------
       -- Target Interface (Wishbone master)
       wb_clk_i    => clk_sys,
-      --wb_adr_o    => wrc_slave_i.adr(c_BAR0_APERTURE-priv_log2_ceil(c_CSR_WB_SLAVES_NB+1)-1 downto 0),
-      wb_adr_o    => wb_adr,
+      wb_adr_o    => cbar_slave_i.adr(18 downto 0),
+      --wb_adr_o    => wb_adr,
       wb_dat_o    => cbar_slave_i.dat,
       wb_sel_o    => cbar_slave_i.sel,
       wb_stb_o    => cbar_slave_i.stb,
@@ -912,8 +931,8 @@ begin
       dma_stall_i => dma_stall
       );
 
-  cbar_slave_i.adr(16 downto 0)  <= wb_adr(16 downto 0);
-  cbar_slave_i.adr(31 downto 17) <= (others => '0');
+--  cbar_slave_i.adr(16 downto 0)  <= wb_adr(16 downto 0);
+--  cbar_slave_i.adr(31 downto 17) <= (others => '0');
 
   process(clk_sys, rst)
   begin
@@ -922,15 +941,16 @@ begin
     end if;
   end process;
 
-  fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
-  fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
-  wrc_scl_i  <= fpga_scl_b;
-  wrc_sda_i  <= fpga_sda_b;
+-- ??????????????????????????????????????????
+--  fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
+--  fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
+--  wrc_scl_i  <= fpga_scl_b;
+--  wrc_sda_i  <= fpga_sda_b;
 
-  sfp_mod_def1_b <= '0' when sfp_scl_o = '0' else 'Z';
-  sfp_mod_def2_b <= '0' when sfp_sda_o = '0' else 'Z';
-  sfp_scl_i      <= sfp_mod_def1_b;
-  sfp_sda_i      <= sfp_mod_def2_b;
+--  sfp_mod_def1_b <= '0' when sfp_scl_o = '0' else 'Z';
+--  sfp_mod_def2_b <= '0' when sfp_sda_o = '0' else 'Z';
+--  sfp_scl_i      <= sfp_mod_def1_b;
+--  sfp_sda_i      <= sfp_mod_def2_b;
 
   thermo_id <= '0' when owr_en(0) = '1' else 'Z';
   owr_i(0)  <= thermo_id;
@@ -938,132 +958,132 @@ begin
   -------------------------------------
   -- WR PTP Core
   -------------------------------------
-  U_WR_CORE : xwr_core
-    generic map (
-      g_simulation          => 0,
-      g_phys_uart           => true,
-      g_virtual_uart        => false,
-      g_ep_rxbuf_size_log2  => 12,
-      g_dpram_initf         => "",
-      g_dpram_size          => 16384,
-      g_interface_mode      => PIPELINED,
-      g_address_granularity => WORD)
-    port map (
-      clk_sys_i  => clk_sys,
-      clk_dmtd_i => clk_dmtd,
-      clk_ref_i  => clk_125m_pllref,
-      clk_aux_i  => '0',
-      rst_n_i    => local_reset_n,
-
-      dac_hpll_load_p1_o => dac_hpll_load_p1,
-      dac_hpll_data_o    => dac_hpll_data,
-      dac_dpll_load_p1_o => dac_dpll_load_p1,
-      dac_dpll_data_o    => dac_dpll_data,
-
-      phy_ref_clk_i      => clk_125m_pllref,
-      phy_tx_data_o      => phy_tx_data,
-      phy_tx_k_o         => phy_tx_k,
-      phy_tx_disparity_i => phy_tx_disparity,
-      phy_tx_enc_err_i   => phy_tx_enc_err,
-      phy_rx_data_i      => phy_rx_data,
-      phy_rx_rbclk_i     => phy_rx_rbclk,
-      phy_rx_k_i         => phy_rx_k,
-      phy_rx_enc_err_i   => phy_rx_enc_err,
-      phy_rx_bitslide_i  => phy_rx_bitslide,
-      phy_rst_o          => phy_rst,
-      phy_loopen_o       => phy_loopen,
-
-      led_red_o   => LED_RED,
-      led_green_o => LED_GREEN,
-      scl_o       => wrc_scl_o,
-      scl_i       => wrc_scl_i,
-      sda_o       => wrc_sda_o,
-      sda_i       => wrc_sda_i,
-      sfp_scl_o   => sfp_scl_o,
-      sfp_scl_i   => sfp_scl_i,
-      sfp_sda_o   => sfp_sda_o,
-      sfp_sda_i   => sfp_sda_i,
-      sfp_det_i   => sfp_mod_def0_b,
-      btn1_i      => button1_i,
-      btn2_i      => button2_i,
-
-      uart_rxd_i => uart_rxd_i,
-      uart_txd_o => uart_txd_o,
-
-      owr_en_o => owr_en,
-      owr_i    => owr_i,
-
-      slave_i => cbar_master_o(0),
-      slave_o => cbar_master_i(0),
-
-      wrf_src_o => nic_snk_in,
-      wrf_src_i => nic_snk_out,
-      wrf_snk_o => nic_src_in,
-      wrf_snk_i => nic_src_out,
-
-      timestamps_o     => wrpc_ts_o,
-      timestamps_ack_i => wrpc_ts_ack_i,
-
-      tm_dac_value_o       => open,
-      tm_dac_wr_o          => open,
-      tm_clk_aux_lock_en_i => '0',
-      tm_clk_aux_locked_o  => open,
-      tm_time_valid_o      => open,
-      tm_utc_o             => open,
-      tm_cycles_o          => open,
-      pps_p_o              => pps,
-
-      dio_o       => dio_out(4 downto 1),
-      rst_aux_n_o => open
-    );
+--  U_WR_CORE : xwr_core
+--    generic map (
+--      g_simulation          => 0,
+--      g_phys_uart           => true,
+--      g_virtual_uart        => false,
+--      g_ep_rxbuf_size_log2  => 12,
+--      g_dpram_initf         => "",
+--      g_dpram_size          => 16384,
+--      g_interface_mode      => PIPELINED,
+--      g_address_granularity => WORD)
+--    port map (
+--      clk_sys_i  => clk_sys,
+--      clk_dmtd_i => clk_dmtd,
+--      clk_ref_i  => clk_125m_pllref,
+--      clk_aux_i  => '0',
+--      rst_n_i    => local_reset_n,
+--
+--      dac_hpll_load_p1_o => dac_hpll_load_p1,
+--      dac_hpll_data_o    => dac_hpll_data,
+--      dac_dpll_load_p1_o => dac_dpll_load_p1,
+--      dac_dpll_data_o    => dac_dpll_data,
+--
+--      phy_ref_clk_i      => clk_125m_pllref,
+--      phy_tx_data_o      => phy_tx_data,
+--      phy_tx_k_o         => phy_tx_k,
+--      phy_tx_disparity_i => phy_tx_disparity,
+--      phy_tx_enc_err_i   => phy_tx_enc_err,
+--      phy_rx_data_i      => phy_rx_data,
+--      phy_rx_rbclk_i     => phy_rx_rbclk,
+--      phy_rx_k_i         => phy_rx_k,
+--      phy_rx_enc_err_i   => phy_rx_enc_err,
+--      phy_rx_bitslide_i  => phy_rx_bitslide,
+--      phy_rst_o          => phy_rst,
+--      phy_loopen_o       => phy_loopen,
+--
+--      led_red_o   => LED_RED,
+--      led_green_o => LED_GREEN,
+--      scl_o       => wrc_scl_o,
+--      scl_i       => wrc_scl_i,
+--      sda_o       => wrc_sda_o,
+--      sda_i       => wrc_sda_i,
+--      sfp_scl_o   => sfp_scl_o,
+--      sfp_scl_i   => sfp_scl_i,
+--      sfp_sda_o   => sfp_sda_o,
+--      sfp_sda_i   => sfp_sda_i,
+--      sfp_det_i   => sfp_mod_def0_b,
+--      btn1_i      => button1_i,
+--      btn2_i      => button2_i,
+--
+--      uart_rxd_i => uart_rxd_i,
+--      uart_txd_o => uart_txd_o,
+--
+--      owr_en_o => owr_en,
+--      owr_i    => owr_i,
+--
+--      slave_i => cbar_master_o(0),
+--      slave_o => cbar_master_i(0),
+--
+--      wrf_src_o => nic_snk_in,
+--      wrf_src_i => nic_snk_out,
+--      wrf_snk_o => nic_src_in,
+--      wrf_snk_i => nic_src_out,
+--
+--      timestamps_o     => wrpc_ts_o,
+--      timestamps_ack_i => wrpc_ts_ack_i,
+--
+--      tm_dac_value_o       => open,
+--      tm_dac_wr_o          => open,
+--      tm_clk_aux_lock_en_i => '0',
+--      tm_clk_aux_locked_o  => open,
+--      tm_time_valid_o      => tm_time_valid,
+--      tm_utc_o             => tm_utc,
+--      tm_cycles_o          => tm_cycles,
+--      pps_p_o              => pps,
+--
+--      dio_o       => open, --dio_out(4 downto 1),
+--      rst_aux_n_o => open
+--    );
 
   -------------------------------------
   -- NIC
   -------------------------------------
-  U_NIC : xwrsw_nic
-    generic map(
-      g_use_dma             => g_nic_usedma,
-      g_interface_mode      => PIPELINED,
-      g_address_granularity => WORD)
-    port map(
-      clk_sys_i => clk_sys,
-      rst_n_i   => local_reset_n,
-
-      snk_i => nic_snk_in,
-      snk_o => nic_snk_out,
-      src_i => nic_src_in,
-      src_o => nic_src_out,
-
-      rtu_dst_port_mask_o => open,
-      rtu_prio_o          => open,
-      rtu_drop_o          => open,
-      rtu_rsp_valid_o     => open,
-      rtu_rsp_ack_i       => '1',
-
-      wb_i  => cbar_master_o(1),
-      wb_o  => cbar_master_i(1),
-      dma_i => nic_dma_in,
-      dma_o => nic_dma_out
-    );
-
-  GEN_DMA : if(g_nic_usedma) generate
-      nic_dma_in.cyc <= dma_cyc;
-      nic_dma_in.stb <= dma_stb;
-      nic_dma_in.we  <= dma_we;
-      nic_dma_in.adr <= dma_adr;
-      nic_dma_in.sel <= dma_sel;
-      nic_dma_in.dat <= dma_dat_o;
-
-      dma_dat_i(31 downto 0) <= nic_dma_out.dat;
-      dma_ack                <= nic_dma_out.ack;
-      dma_stall              <= nic_dma_out.stall;
-  end generate;
-
-  GEN_CLASSIC : if(not(g_nic_usedma)) generate
-      nic_dma_in <= cc_dummy_slave_in;
-      dma_ack    <= '0';
-      dma_stall  <= '0';
-  end generate;
+--  U_NIC : xwrsw_nic
+--    generic map(
+--      g_use_dma             => g_nic_usedma,
+--      g_interface_mode      => PIPELINED,
+--      g_address_granularity => WORD)
+--    port map(
+--      clk_sys_i => clk_sys,
+--      rst_n_i   => local_reset_n,
+--
+--      snk_i => nic_snk_in,
+--      snk_o => nic_snk_out,
+--      src_i => nic_src_in,
+--      src_o => nic_src_out,
+--
+--      rtu_dst_port_mask_o => open,
+--      rtu_prio_o          => open,
+--      rtu_drop_o          => open,
+--      rtu_rsp_valid_o     => open,
+--      rtu_rsp_ack_i       => '1',
+--
+--      wb_i  => cbar_master_o(1),
+--      wb_o  => cbar_master_i(1),
+--      dma_i => nic_dma_in,
+--      dma_o => nic_dma_out
+--    );
+--
+--  GEN_DMA : if(g_nic_usedma) generate
+--      nic_dma_in.cyc <= dma_cyc;
+--      nic_dma_in.stb <= dma_stb;
+--      nic_dma_in.we  <= dma_we;
+--      nic_dma_in.adr <= dma_adr;
+--      nic_dma_in.sel <= dma_sel;
+--      nic_dma_in.dat <= dma_dat_o;
+--
+--      dma_dat_i(31 downto 0) <= nic_dma_out.dat;
+--      dma_ack                <= nic_dma_out.ack;
+--      dma_stall              <= nic_dma_out.stall;
+--  end generate;
+--
+--  GEN_CLASSIC : if(not(g_nic_usedma)) generate
+--      nic_dma_in <= cc_dummy_slave_in;
+--      dma_ack    <= '0';
+--      dma_stall  <= '0';
+--  end generate;
 
   -------------------------------------
   -- VIC 
@@ -1084,136 +1104,142 @@ begin
 
   vic_slave_irq(0) <= cbar_master_i(3).int;  -- wrpc, txtsu
   vic_slave_irq(1) <= cbar_master_i(1).int;  -- wrsw-nic
-  vic_slave_irq(2) <= '0';
+  vic_slave_irq(2) <= cbar_master_i(4).int;
 
   -------------------------------------
   -- WRSW TXTSU
   -------------------------------------
-  U_TXTSU : xwrsw_tx_tsu
-    generic map(
-      g_num_ports           => 1,
-      g_interface_mode      => PIPELINED,
-      g_address_granularity => WORD)
-    port map(
-      clk_sys_i           => clk_sys,
-      rst_n_i             => local_reset_n,
-      timestamps_i(0)     => wrpc_ts_o,
-      timestamps_ack_o(0) => wrpc_ts_ack_i,
-      wb_i                => cbar_master_o(3),
-      wb_o                => cbar_master_i(3)
-    );
+--  U_TXTSU : xwrsw_tx_tsu
+--    generic map(
+--      g_num_ports           => 1,
+--      g_interface_mode      => PIPELINED,
+--      g_address_granularity => WORD)
+--    port map(
+--      clk_sys_i           => clk_sys,
+--      rst_n_i             => local_reset_n,
+--      timestamps_i(0)     => wrpc_ts_o,
+--      timestamps_ack_o(0) => wrpc_ts_ack_i,
+--      wb_i                => cbar_master_o(3),
+--      wb_o                => cbar_master_i(3)
+--    );
 
 
   ---------------------
   -- GTP
   ---------------------
 
-  U_GTP : wr_gtp_phy_spartan6
-    generic map (
-      g_simulation => 0)
-    port map (
-      ch0_ref_clk_i      => clk_125m_pllref,
-      ch0_ref_clk_o      => open,
-      ch0_tx_data_i      => x"00",
-      ch0_tx_k_i         => '0',
-      ch0_tx_disparity_o => open,
-      ch0_tx_enc_err_o   => open,
-      ch0_rx_rbclk_o     => open,
-      ch0_rx_data_o      => open,
-      ch0_rx_k_o         => open,
-      ch0_rx_enc_err_o   => open,
-      ch0_rx_bitslide_o  => open,
-      ch0_rst_i          => '1',
-      ch0_loopen_i       => '0',
-
-      ch1_ref_clk_i      => clk_125m_pllref,
-      ch1_ref_clk_o      => open,
-      ch1_tx_data_i      => phy_tx_data,
-      ch1_tx_k_i         => phy_tx_k,
-      ch1_tx_disparity_o => phy_tx_disparity,
-      ch1_tx_enc_err_o   => phy_tx_enc_err,
-      ch1_rx_data_o      => phy_rx_data,
-      ch1_rx_rbclk_o     => phy_rx_rbclk,
-      ch1_rx_k_o         => phy_rx_k,
-      ch1_rx_enc_err_o   => phy_rx_enc_err,
-      ch1_rx_bitslide_o  => phy_rx_bitslide,
-      ch1_rst_i          => phy_rst,
-      ch1_loopen_i       => phy_loopen,
-      pad_txn0_o         => open,
-      pad_txp0_o         => open,
-      pad_rxn0_i         => '0',
-      pad_rxp0_i         => '0',
-      pad_txn1_o         => sfp_txn_o,
-      pad_txp1_o         => sfp_txp_o,
-      pad_rxn1_i         => sfp_rxn_i,
-      pad_rxp1_i         => sfp_rxp_i);
-
-  
+--  U_GTP : wr_gtp_phy_spartan6
+--    generic map (
+--      g_simulation => 0)
+--    port map (
+--      ch0_ref_clk_i      => clk_125m_pllref,
+--      ch0_ref_clk_o      => open,
+--      ch0_tx_data_i      => x"00",
+--      ch0_tx_k_i         => '0',
+--      ch0_tx_disparity_o => open,
+--      ch0_tx_enc_err_o   => open,
+--      ch0_rx_rbclk_o     => open,
+--      ch0_rx_data_o      => open,
+--      ch0_rx_k_o         => open,
+--      ch0_rx_enc_err_o   => open,
+--      ch0_rx_bitslide_o  => open,
+--      ch0_rst_i          => '1',
+--      ch0_loopen_i       => '0',
+--
+--      ch1_ref_clk_i      => clk_125m_pllref,
+--      ch1_ref_clk_o      => open,
+--      ch1_tx_data_i      => phy_tx_data,
+--      ch1_tx_k_i         => phy_tx_k,
+--      ch1_tx_disparity_o => phy_tx_disparity,
+--      ch1_tx_enc_err_o   => phy_tx_enc_err,
+--      ch1_rx_data_o      => phy_rx_data,
+--      ch1_rx_rbclk_o     => phy_rx_rbclk,
+--      ch1_rx_k_o         => phy_rx_k,
+--      ch1_rx_enc_err_o   => phy_rx_enc_err,
+--      ch1_rx_bitslide_o  => phy_rx_bitslide,
+--      ch1_rst_i          => phy_rst,
+--      ch1_loopen_i       => phy_loopen,
+--      pad_txn0_o         => open,
+--      pad_txp0_o         => open,
+--      pad_rxn0_i         => '0',
+--      pad_rxp0_i         => '0',
+--      pad_txn1_o         => sfp_txn_o,
+--      pad_txp1_o         => sfp_txp_o,
+--      pad_rxn1_i         => sfp_rxn_i,
+--      pad_rxp1_i         => sfp_rxp_i);
 
   
-  U_DAC_ARB : spec_serial_dac_arb
-    generic map (
-      g_invert_sclk    => false,
-      g_num_extra_bits => 8)
 
-    port map (
-      clk_i   => clk_sys,
-      rst_n_i => local_reset_n,
-
-      val1_i  => dac_dpll_data,
-      load1_i => dac_dpll_load_p1,
-
-      val2_i  => dac_hpll_data,
-      load2_i => dac_hpll_load_p1,
-
-      dac_cs_n_o(0) => dac_cs1_n_o,
-      dac_cs_n_o(1) => dac_cs2_n_o,
-      dac_clr_n_o   => dac_clr_n_o,
-      dac_sclk_o    => dac_sclk_o,
-      dac_din_o     => dac_din_o);
-
-
-  U_Extend_PPS : gc_extend_pulse
-    generic map (
-      g_width => 10000000)
-    port map (
-      clk_i      => clk_125m_pllref,
-      rst_n_i    => local_reset_n,
-      pulse_i    => pps,
-      extended_o => dio_led_top_o);
+  
+--  U_DAC_ARB : spec_serial_dac_arb
+--    generic map (
+--      g_invert_sclk    => false,
+--      g_num_extra_bits => 8)
+--
+--    port map (
+--      clk_i   => clk_sys,
+--      rst_n_i => local_reset_n,
+--
+--      val1_i  => dac_dpll_data,
+--      load1_i => dac_dpll_load_p1,
+--
+--      val2_i  => dac_hpll_data,
+--      load2_i => dac_hpll_load_p1,
+--
+--      dac_cs_n_o(0) => dac_cs1_n_o,
+--      dac_cs_n_o(1) => dac_cs2_n_o,
+--      dac_clr_n_o   => dac_clr_n_o,
+--      dac_sclk_o    => dac_sclk_o,
+--      dac_din_o     => dac_din_o);
 
 
-  -- DIO core
-  component dio_core
+--  U_Extend_PPS : gc_extend_pulse
+--    generic map (
+--      g_width => 10000000)
+--    port map (
+--      clk_i      => clk_125m_pllref,
+--      rst_n_i    => local_reset_n,
+--      pulse_i    => pps,
+--      extended_o => dio_led_top_o);
+
+
+--   DIO core
+  U_dio_core : wrsw_dio
     generic map (
       g_interface_mode      => CLASSIC,
       g_address_granularity => WORD)
-    )
-    port (
-      clk_sys_i      : in  std_logic;
-      rst_n_i        : in  std_logic;
 		
-      dio_clk_i    : in std_logic;
-      dio_in_i     : in std_logic_vector(4 downto 0);
-      dio_out_o      : out std_logic_vector(4 downto 0);
-      dio_oe_n_o     : out std_logic_vector(4 downto 0);
-      dio_term_en_o  : out std_logic_vector(4 downto 0);
-      dio_onewire_b  : inout std_logic;
-      dio_sdn_n_o    : out std_logic;
-      dio_sdn_ck_n_o : out std_logic;
-      dio_led_top_o  : out std_logic;
-      dio_led_bot_o  : out std_logic;		
+    port map(
+      clk_sys_i       => clk_sys,
+      clk_ref_i       => clk_125m_pllref,
+      rst_n_i         => local_reset_n,
+		
+      dio_clk_i       => dio_clk,
+      dio_in_i        => dio_in,
+      dio_out_o       => dio_out,
+      dio_oe_n_o      => dio_oe_n_o,
+      dio_term_en_o   => dio_term_en_o,
+      dio_onewire_b   => dio_onewire_b,
+      dio_sdn_n_o     => dio_sdn_n_o,
+      dio_sdn_ck_n_o  => dio_sdn_ck_n_o,
+      dio_led_top_o   => dio_led_top_o,
+      dio_led_bot_o   => dio_led_bot_o,
 
-      tm_time_valid_i : in std_logic;
-      tm_utc_i        : in std_logic_vector(39 downto 0);
-      tm_cycles_i     : in std_logic_vector(27 downto 0);
-		
-      slave_i         : in  t_wishbone_slave_in;
-      slave_o         : out t_wishbone_slave_out
+      fmc_scl_b       => fmc_scl_b,
+      fmc_sda_b       => fmc_sda_b, 
+
+      tm_time_valid_i => tm_time_valid,
+      tm_utc_i        => tm_utc,
+      tm_cycles_i     => tm_cycles,
+
+      TRIG0           => TRIG0,
+      TRIG1           => TRIG1,
+      --TRIG2           => TRIG2,
+      TRIG3           => TRIG3,
+
+      slave_i         => cbar_master_o(4),
+      slave_o         => cbar_master_i(4)
   );
-  end component; --DIO core
-
-
 
   gen_dio_iobufs : for i in 0 to 4 generate
     U_ibuf : IBUFDS
@@ -1241,35 +1267,43 @@ begin
       IB => dio_clk_n_i
       );
 
-  dio_led_bot_o <= '0';
+--  dio_led_bot_o <= '0';
+--  dio_out(0)             <= pps;
+--  dio_oe_n_o(0)          <= '0';
+--  dio_oe_n_o(4 downto 1) <= (others => '0');
+--
+--  dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
+--  owr_i(1)      <= dio_onewire_b;
+--
+--  dio_term_en_o <= (others => '0');
+--
+--  dio_sdn_ck_n_o <= '1';
+--  dio_sdn_n_o    <= '1';
 
-  dio_out(0)             <= pps;
-  dio_oe_n_o(0)          <= '0';
-  dio_oe_n_o(4 downto 1) <= (others => '0');
+--  sfp_tx_disable_o <= '0';
 
-  dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
-  owr_i(1)      <= dio_onewire_b;
+  chipscope_ila_1 : chipscope_ila
+    port map (
+      CONTROL => CONTROL,
+      CLK     => clk_125m_pllref,
+      TRIG0   => TRIG0,
+      TRIG1   => TRIG1,
+      TRIG2   => TRIG2,
+      TRIG3   => TRIG3);
 
-  dio_term_en_o <= (others => '0');
+  chipscope_icon_1 : chipscope_icon
+    port map (
+      CONTROL0 => CONTROL
+      );
 
-  dio_sdn_ck_n_o <= '1';
-  dio_sdn_n_o    <= '1';
+  TRIG2(3 downto 0)  <= vic_irq & vic_slave_irq;
 
-  sfp_tx_disable_o <= '0';
+--  TRIG0(31 downto 0)  <= cbar_slave_i.adr;
+--  TRIG1(31 downto 0)  <= cbar_master_o(4).adr; --cnx_out(0).adr;
+--  TRIG2(31 downto 0)  <= cbar_master_o(4).adr; --cnx_out(1).adr;
+--  TRIG3(31 downto 0)  <= cbar_master_o(4).adr;
+ 
 
-  --chipscope_ila_1 : chipscope_ila
-  --  port map (
-  --    CONTROL => CONTROL,
-  --    CLK     => clk_125m_pllref,
-  --    TRIG0   => TRIG0,
-  --    TRIG1   => TRIG1,
-  --    TRIG2   => TRIG2,
-  --    TRIG3   => TRIG3);
-
-  --chipscope_icon_1 : chipscope_icon
-  --  port map (
-  --    CONTROL0 => CONTROL
-  --    );
 
 end rtl;
 

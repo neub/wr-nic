@@ -1,74 +1,538 @@
 -- -*- Mode: LUA; tab-width: 2 -*-
 
-
-
 peripheral {
-	 name = "Shared TX Timestamping Unit (TXTSU)";
-   prefix="txtsu";
+	 name = "FMC-DIO-5chttla";
+   prefix="dio";
 
-	 hdl_entity="wrsw_txtsu_wb";
+	 hdl_entity="wrsw_dio_wb";
+
+---------------------------------------
+-- FIFOS FOR INPUT EVENT TIME STAMPING
+---------------------------------------
 	 
--- TXTSU shared FIFO
+-- CHANNEL 0 INPUT FIFO
 
 	 fifo_reg {
 			size = 256; -- or more. We'll see :)
 			direction = CORE_TO_BUS;
-			prefix = "tsf";
-			name = "Timestamp FIFO";
-			description = "This FIFO holds the TX packet timestamps gathered from all switch endpoints. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - VAL_R - the timestamp taken at rising clock edge. This is the main timestamp value\
-            				 - VAL_F - few LSBs of timestamp taken at falling clock edge. It's used in conjunction with VAL_R to determine if the timestamp has been taken\
-                           		 properly (there was no metastability/setup/hold violation)\
-										 Entries also contain information required to identify the endpoint and frame for which the timestamp was taken:\
-                     - FID - Frame identifier assigned by the NIC\
-                     - PID - TXTSU port ID to which came the timestamp. Used to distinguish the timestamps for broadcast/multicast frames";
+			prefix = "tsf0";
+			name = "Timestamp FIFO 0";
+			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
+			               - tag_utc - utc time in seconds\
+            				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "Rising edge timestamp";
-				 descritpion = "Timestamp value taken on rising clock edge (full word)";
-				 prefix = "val_r";
+				 name = "UTC time";
+				 descritpion = "UTC time in seconds (LSB)";
+				 prefix = "tag_utc";
+				 type = SLV;
+				 size = 32;
+			};
+
+			field {
+				 name = "UTC time H";
+				 descritpion = "UTC time in seconds (MSB)";
+				 prefix = "tag_utcH";
+				 type = SLV;
+				 size = 8;
+			};
+
+			field {
+				 name = "Sub-second accuracy";
+				 descritpion = "Sub-second accuracy based on systme clock counters";
+				 prefix = "tag_cycles";
 				 type = SLV;
 				 size = 28;
 			};
+		
+	};
 
+-- CHANNEL 0 INTERRUPTS
+	irq {
+		 name = "dio fifo not-empty 0";
+		 description = "Interrupt active when dio input FIFO contains any timestamps.";
+		 prefix = "nempty_0";
+		 trigger = LEVEL_1;
+	};
+
+-- CHANNEL 1 INPUT FIFO
+
+	 fifo_reg {
+			size = 256; -- or more. We'll see :)
+			direction = CORE_TO_BUS;
+			prefix = "tsf1";
+			name = "Timestamp FIFO 1";
+			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
+			               - tag_utc - utc time in seconds\
+            				 - tag_cycles  - counter value for sub-second accuracy";
+
+			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+			flags_dev = {FIFO_FULL, FIFO_EMPTY};
+			
 			field {
-				 name = "Falling edge timestamp";
-				 description = "Timestamp value taken on falling clock edge (few LSBs)";
-				 prefix = "val_f";
+				 name = "UTC time";
+				 descritpion = "UTC time in seconds (LSB)";
+				 prefix = "tag_utc";
 				 type = SLV;
-				 size = 4;
+				 size = 32;
 			};
 
+			field {
+				 name = "UTC time H";
+				 descritpion = "UTC time in seconds (MSB)";
+				 prefix = "tag_utcH";
+				 type = SLV;
+				 size = 8;
+			};
 
 			field {
-				 name ="Physical port ID";
-				 description = "Identifier of the TXTSU port to which came the timestamp. There may be multiple timestamps sharing the same FID value for broadcast/multicast packets.";
-				 prefix = "pid";
+				 name = "Sub-second accuracy";
+				 descritpion = "Sub-second accuracy based on systme clock counters";
+				 prefix = "tag_cycles";
 				 type = SLV;
-				 size = 5;
-				 align= 16;
+				 size = 28;
 			};
 		
-		
+	};
+
+-- CHANNEL 1 INTERRUPTS
+	irq {
+		 name = "dio fifo not-empty 1";
+		 description = "Interrupt active when dio input FIFO contains any timestamps.";
+		 prefix = "nempty_1";
+		 trigger = LEVEL_1;
+	};
+
+-- CHANNEL 2 INPUT FIFO
+
+	 fifo_reg {
+			size = 256; -- or more. We'll see :)
+			direction = CORE_TO_BUS;
+			prefix = "tsf2";
+			name = "Timestamp FIFO 2";
+			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
+			               - tag_utc - utc time in seconds\
+            				 - tag_cycles  - counter value for sub-second accuracy";
+
+			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+			flags_dev = {FIFO_FULL, FIFO_EMPTY};
+			
 			field {
-				 name = "Frame ID";
-				 description = "OOB Frame Identifier. Used to associate the timestamp value with transmitted packet.";
-				 prefix = "fid";
+				 name = "UTC time";
+				 descritpion = "UTC time in seconds (LSB)";
+				 prefix = "tag_utc";
 				 type = SLV;
-				 size = 16;
-				 align = 16;
+				 size = 32;
+			};
+
+			field {
+				 name = "UTC time H";
+				 descritpion = "UTC time in seconds (MSB)";
+				 prefix = "tag_utcH";
+				 type = SLV;
+				 size = 8;
+			};
+
+			field {
+				 name = "Sub-second accuracy";
+				 descritpion = "Sub-second accuracy based on systme clock counters";
+				 prefix = "tag_cycles";
+				 type = SLV;
+				 size = 28;
+			};
+		
+	};
+
+-- CHANNEL 2 INTERRUPTS
+	irq {
+		 name = "dio fifo not-empty 2";
+		 description = "Interrupt active when dio input FIFO contains any timestamps.";
+		 prefix = "nempty_2";
+		 trigger = LEVEL_1;
+	};
+
+-- CHANNEL 3 INPUT FIFO
+
+	 fifo_reg {
+			size = 256; -- or more. We'll see :)
+			direction = CORE_TO_BUS;
+			prefix = "tsf3";
+			name = "Timestamp FIFO 3";
+			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
+			               - tag_utc - utc time in seconds\
+            				 - tag_cycles  - counter value for sub-second accuracy";
+
+			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+			flags_dev = {FIFO_FULL, FIFO_EMPTY};
+			
+			field {
+				 name = "UTC time";
+				 descritpion = "UTC time in seconds (LSB)";
+				 prefix = "tag_utc";
+				 type = SLV;
+				 size = 32;
+			};
+
+			field {
+				 name = "UTC time H";
+				 descritpion = "UTC time in seconds (MSB)";
+				 prefix = "tag_utcH";
+				 type = SLV;
+				 size = 8;
+			};
+
+			field {
+				 name = "Sub-second accuracy";
+				 descritpion = "Sub-second accuracy based on systme clock counters";
+				 prefix = "tag_cycles";
+				 type = SLV;
+				 size = 28;
+			};
+		
+	};
+
+-- CHANNEL 3 INTERRUPTS
+	irq {
+		 name = "dio fifo not-empty 3";
+		 description = "Interrupt active when dio input FIFO contains any timestamps.";
+		 prefix = "nempty_3";
+		 trigger = LEVEL_1;
+	};
+
+-- CHANNEL 4 INPUT FIFO
+
+	 fifo_reg {
+			size = 256; -- or more. We'll see :)
+			direction = CORE_TO_BUS;
+			prefix = "tsf4";
+			name = "Timestamp FIFO 4";
+			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
+			               - tag_utc - utc time in seconds\
+            				 - tag_cycles  - counter value for sub-second accuracy";
+
+			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
+			flags_dev = {FIFO_FULL, FIFO_EMPTY};
+			
+			field {
+				 name = "UTC time";
+				 descritpion = "UTC time in seconds (LSB)";
+				 prefix = "tag_utc";
+				 type = SLV;
+				 size = 32;
+			};
+
+			field {
+				 name = "UTC time H";
+				 descritpion = "UTC time in seconds (MSB)";
+				 prefix = "tag_utcH";
+				 type = SLV;
+				 size = 8;
+			};
+
+			field {
+				 name = "Sub-second accuracy";
+				 descritpion = "Sub-second accuracy based on systme clock counters";
+				 prefix = "tag_cycles";
+				 type = SLV;
+				 size = 28;
+			};
+		
+	};
+
+-- CHANNEL 4 INTERRUPTS
+	irq {
+		 name = "dio fifo not-empty 4";
+		 description = "Interrupt active when dio input FIFO contains any timestamps.";
+		 prefix = "nempty_4";
+		 trigger = LEVEL_1;
+	};
+
+-------------------------------------------------
+-- REGISTERS FOR OUTPUT EVENT TIME-BASED TRIGGER
+-------------------------------------------------
+
+-- DIO CHANNEL 0: UTC value . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 0 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (LSB).";
+		prefix = "trig0";
+
+		field {
+			name = "utc field";
+			description = "TBD";
+			prefix = "utc";
+			type = SLV;
+			size = 32;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
 		};
 	};
 
--- TXTSU interrupts
-	irq {
-		 name = "TXTSU fifo not-empty";
-		 description = "Interrupt active when TXTSU shared FIFO contains any timestamps.";
-		 prefix = "nempty";
-		 trigger = LEVEL_1;
+	reg {
+		name = "fmc-dio 0 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (MSB).";
+		prefix = "trigH0";
+
+		field {
+			name = "utc field";
+			description = "Number of seconds";
+			prefix = "utc";
+			type = SLV;
+			size = 8; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
 	};
+-- DIO CHANNEL 0: Cycles value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 0 cycles to  trigger a pulse generation";
+		description = "sub-second accuracy values (clock cycles)  to trigger dio output channels.";
+		prefix = "cyc0";
+
+		field {
+			name = "cycles field";
+			description = "Number of cycles in one second (depends on current clock frequency)";
+			prefix = "cyc";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- DIO CHANNEL 1: UTC value . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 1 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (LSB).";
+		prefix = "trig1";
+
+		field {
+			name = "utc field";
+			description = "TBD";
+			prefix = "utc";
+			type = SLV;
+			size = 32;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+	reg {
+		name = "fmc-dio 1 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (MSB).";
+		prefix = "trigH1";
+
+		field {
+			name = "utc field";
+			description = "Number of seconds";
+			prefix = "utc";
+			type = SLV;
+			size = 8; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 1: Cycles value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 1 cycles to  trigger a pulse generation";
+		description = "sub-second accuracy values (clock cycles)  to trigger dio output channels.";
+		prefix = "cyc1";
+
+		field {
+			name = "cycles field";
+			description = "Number of cycles in one second (depends on current clock frequency)";
+			prefix = "cyc";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- DIO CHANNEL 2: UTC value . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 2 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (LSB).";
+		prefix = "trig2";
+
+		field {
+			name = "utc field";
+			description = "TBD";
+			prefix = "utc";
+			type = SLV;
+			size = 32;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+	reg {
+		name = "fmc-dio 2 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (MSB).";
+		prefix = "trigH2";
+
+		field {
+			name = "utc field";
+			description = "Number of seconds";
+			prefix = "utc";
+			type = SLV;
+			size = 8; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 2: Cycles value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 2 cycles to  trigger a pulse generation";
+		description = "sub-second accuracy values (clock cycles)  to trigger dio output channels.";
+		prefix = "cyc2";
+
+		field {
+			name = "cycles field";
+			description = "Number of cycles in one second (depends on current clock frequency)";
+			prefix = "cyc";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- DIO CHANNEL 3: UTC value . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 3 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (LSB).";
+		prefix = "trig3";
+
+		field {
+			name = "utc field";
+			description = "TBD";
+			prefix = "utc";
+			type = SLV;
+			size = 32;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+	reg {
+		name = "fmc-dio 3 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (MSB).";
+		prefix = "trigH3";
+
+		field {
+			name = "utc field";
+			description = "Number of seconds";
+			prefix = "utc";
+			type = SLV;
+			size = 8; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 3: Cycles value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 3 cycles to  trigger a pulse generation";
+		description = "sub-second accuracy values (clock cycles)  to trigger dio output channels.";
+		prefix = "cyc3";
+
+		field {
+			name = "cycles field";
+			description = "Number of cycles in one second (depends on current clock frequency)";
+			prefix = "cyc";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- DIO CHANNEL 4: UTC value . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 4 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (LSB).";
+		prefix = "trig4";
+
+		field {
+			name = "utc field";
+			description = "TBD";
+			prefix = "utc";
+			type = SLV;
+			size = 32;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+	reg {
+		name = "fmc-dio 4 UTC-based trigger for pulse generation";
+		description = "trigger utc value for dio output (MSB).";
+		prefix = "trigH4";
+
+		field {
+			name = "utc field";
+			description = "Number of seconds";
+			prefix = "utc";
+			type = SLV;
+			size = 8; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 4: Cycles value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio 4 cycles to  trigger a pulse generation";
+		description = "sub-second accuracy values (clock cycles)  to trigger dio output channels.";
+		prefix = "cyc4";
+
+		field {
+			name = "cycles field";
+			description = "Number of cycles in one second (depends on current clock frequency)";
+			prefix = "cyc";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+
+-- UTC trigger enable value. Readable-writable the bus, readble from the device.
+	reg {
+		name = "FMC-DIO UTC-based trigger Enable-register for pulse generation";
+		description = "enable register for using using utc trigger values for dio output.";
+		prefix = "trig_ena";
+
+		field {
+			name = "trig_enable field";
+			description = "TBD";
+			prefix = "ena";
+			type = SLV;
+			size = 5; 
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- UTC trigger ready value. Readable-writable the bus, writable from the device.
+	reg {
+		name = "FMC-DIO UTC-based trigger ready informaton for pulse generation";
+		description = "ready state, waiting trigger commands for dio output.";
+		prefix = "trig_ena";
+
+		field {
+			name = "trig_rdy field";
+			description = "TBD";
+			prefix = "rdy";
+			type = SLV;
+			size = 5; 
+			access_bus = READ_ONLY;
+			access_dev = WRITE_ONLY;
+		};
+	};
+
 
 };
