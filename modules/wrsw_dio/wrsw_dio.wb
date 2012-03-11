@@ -1,5 +1,7 @@
 -- -*- Mode: LUA; tab-width: 2 -*-
 
+
+
 peripheral {
 	 name = "Shared TX Timestamping Unit (TXTSU)";
    prefix="txtsu";

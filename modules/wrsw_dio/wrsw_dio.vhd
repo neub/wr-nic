@@ -40,14 +40,12 @@ entity wrsw_dio is
   );
   port (
     clk_sys_i      : in  std_logic;
+    clk_ref_i      : in  std_logic;
     rst_n_i        : in  std_logic;
 		
-    dio_clk_p_i    : in std_logic;
-    dio_clk_n_i    : in std_logic;
-    dio_n_i        : in std_logic_vector(4 downto 0);
-    dio_p_i        : in std_logic_vector(4 downto 0);
-    dio_n_o        : out std_logic_vector(4 downto 0);
-    dio_p_o        : out std_logic_vector(4 downto 0);
+    dio_clk_i      : in std_logic;
+    dio_in_i       : in std_logic_vector(4 downto 0);
+    dio_out_o      : out std_logic_vector(4 downto 0);
     dio_oe_n_o     : out std_logic_vector(4 downto 0);
     dio_term_en_o  : out std_logic_vector(4 downto 0);
     dio_onewire_b  : inout std_logic;
@@ -138,33 +136,6 @@ architecture rtl of wrsw_dio is
   
 begin  -- rtl
 
-  gen_dio_iobufs : for i in 0 to 4 generate
-    U_ibuf : IBUFDS
-      generic map (
-        DIFF_TERM => true)
-      port map (
-        O  => dio_in(i),
-        I  => dio_p_i(i),
-        IB => dio_n_i(i)
-        );
-
-    U_obuf : OBUFDS
-      port map (
-        I  => dio_out(i),
-        O  => dio_p_o(i),
-        OB => dio_n_o(i)
-        );
-  end generate gen_dio_iobufs;
-
-  U_input_buffer : IBUFDS
-    generic map (
-      DIFF_TERM => true)
-    port map (
-      O  => dio_clk,
-      I  => dio_clk_p_i,
-      IB => dio_clk_n_i
-      );
-  
   U_Onewire : xwb_onewire_master
     generic map (
       g_interface_mode => CLASSIC,
