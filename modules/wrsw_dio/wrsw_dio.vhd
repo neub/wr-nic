@@ -21,7 +21,8 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author          Description
--- 2012-03-03  0.1      R.Rodriguez     Created
+-- 2012-03-03  0.1      Rafa.r          Created
+-- 2012-03-08  0.2      Javier.d        Added wrsw_dio_wb
 -------------------------------------------------------------------------------
 
 
@@ -74,15 +75,14 @@ entity wrsw_dio is
 
 architecture rtl of wrsw_dio is
 
-	-- COMPONENT ONLY FOR DEBUGGING 
-	component dummy_time is
-		port(
-				clk_sys : in std_logic;
-				rst_n: in std_logic; 
-
-				tm_utc        : out std_logic_vector(39 downto 0);
-				tm_cycles     : out std_logic_vector(27 downto 0));
-		end component;	
+  -- Component only for debugging (in order to generate UTC time) 
+  component dummy_time is
+    port(
+      clk_sys       : in std_logic;
+      rst_n         : in std_logic; 
+      tm_utc        : out std_logic_vector(39 downto 0);
+      tm_cycles     : out std_logic_vector(27 downto 0));
+  end component;	
 
   component pulse_gen is
     generic (
@@ -294,31 +294,31 @@ end component;
   type t_utc_array is array (4 downto 0) of std_logic_vector (39 downto 0);
   type t_cycles_array is array (4 downto 0) of std_logic_vector (27 downto 0);
   
-  signal trig_utc : t_utc_array;
-  signal trig_cycles : t_cycles_array;
+  signal trig_utc       : t_utc_array;
+  signal trig_cycles    : t_cycles_array;
   signal trig_valid_p1 	: std_logic_vector (4 downto 0);
   
-  signal trig_ready 		: std_logic_vector (4 downto 0);
+  signal trig_ready     : std_logic_vector (4 downto 0);
 
-  signal tag_utc 			: t_utc_array;
-  signal tag_cycles 		: t_cycles_array;
-  signal tag_valid_p1 	: std_logic_vector (4 downto 0);
+  signal tag_utc        : t_utc_array;
+  signal tag_cycles     : t_cycles_array;
+  signal tag_valid_p1   : std_logic_vector (4 downto 0);
 
 
   -- FIFO signals
-  signal dio_tsf_wr_req  	: std_logic_vector (4 downto 0);
-  signal dio_tsf_wr_full	: std_logic_vector (4 downto 0);
-  signal dio_tsf_wr_empty 	: std_logic_vector (4 downto 0);
-  signal dio_tsf_tag_utc 	: t_utc_array;
-  signal dio_tsf_tag_cycles: t_cycles_array;
+  signal dio_tsf_wr_req      : std_logic_vector (4 downto 0);
+  signal dio_tsf_wr_full     : std_logic_vector (4 downto 0);
+  signal dio_tsf_wr_empty    : std_logic_vector (4 downto 0);
+  signal dio_tsf_tag_utc     : t_utc_array;
+  signal dio_tsf_tag_cycles  : t_cycles_array;
   
   -- Fifos no-empty interrupts
-  signal irq_nempty  	 	: std_logic_vector (4 downto 0);
+  signal irq_nempty          : std_logic_vector (4 downto 0);
 
 
-	-- DEBUG SIGNALS FOR USING UTC time values from dummy_time instead WRPC
-   signal tm_utc 		: std_logic_vector (39 downto 0);
-	signal tm_cycles	: std_logic_vector (27 downto 0);
+  -- DEBUG SIGNALS FOR USING UTC time values from dummy_time instead WRPC
+  signal tm_utc              : std_logic_vector (39 downto 0);
+  signal tm_cycles           : std_logic_vector (27 downto 0);
 	
 	
   -------------------
@@ -334,68 +334,70 @@ end component;
     (0 => x"ffffffc0",
      1 => x"ffffffc0",
      2 => x"ffffffc0",
-	  3 => x"ffffffc0");
+     3 => x"ffffffc0");
 
 	  
-  signal cbar_master_in  : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
-  signal cbar_master_out : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
+  signal cbar_master_in   : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
+  signal cbar_master_out  : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
 
   -- DIO OUT SIGNAL
-  signal dio_out   	 	: std_logic_vector (4 downto 0);
+  signal dio_out          : std_logic_vector (4 downto 0);
 
+-------------------------------------------------------------------------------
+-- rtl
+-------------------------------------------------------------------------------
+begin  
 
-begin  -- rtl
-
-	-- Dummy counter for simulationg WRPC utc time
-	U_dummy: dummy_time
-		port map(
-				clk_sys => clk_ref_i,
-				rst_n   => rst_n_i, 
-				tm_utc 	=> tm_utc, 
-				tm_cycles => tm_cycles
-	);	
+  -- Dummy counter for simulationg WRPC utc time
+  U_dummy: dummy_time
+  port map(
+    clk_sys       => clk_ref_i,
+    rst_n         => rst_n_i, 
+    tm_utc 	  => tm_utc, 
+    tm_cycles     => tm_cycles
+  );	
 	
 
-
+  ------------------------------------------------------------------------------
+  -- GEN AND STAMPER
+  ------------------------------------------------------------------------------    
   gen_pulse_modules : for i in 0 to 4 generate
     U_pulse_gen : pulse_gen
-    port map(
-      clk_ref_i => clk_ref_i,
-      clk_sys_i => clk_sys_i,
-      rst_n_i   => rst_n_i,
+      port map(
+        clk_ref_i        => clk_ref_i,
+        clk_sys_i        => clk_sys_i,
+        rst_n_i          => rst_n_i,
 
-      pulse_o   => dio_out(i),
+        pulse_o          => dio_out(i),
 
-      tm_time_valid_i => '1',--tm_time_valid_i,
-      tm_utc_i        => tm_utc,--tm_utc_i, 
-      tm_cycles_i     => tm_cycles, --tm_cycles_i, 
+        tm_time_valid_i  => '1',--tm_time_valid_i,
+        tm_utc_i         => tm_utc,--tm_utc_i, 
+        tm_cycles_i      => tm_cycles, --tm_cycles_i, 
 		
-		trig_ready_o    => trig_ready(i),
+        trig_ready_o     => trig_ready(i),
 
-      trig_utc_i       => trig_utc(i), 
-      trig_cycles_i    => trig_cycles(i), 
-      trig_valid_p1_i  => trig_valid_p1(i)
-    );
+        trig_utc_i       => trig_utc(i), 
+        trig_cycles_i    => trig_cycles(i), 
+        trig_valid_p1_i  => trig_valid_p1(i));
 	 
-	 dio_out_o(i) <= dio_out(i);
-	 
+    dio_out_o(i) <= dio_out(i);
 
     U_pulse_stamper : pulse_stamper
-    port map(
-      clk_ref_i => clk_ref_i,
-      clk_sys_i => clk_sys_i,
-      rst_n_i   => rst_n_i,
+      port map(
+        clk_ref_i       => clk_ref_i,
+        clk_sys_i       => clk_sys_i,
+        rst_n_i         => rst_n_i,
 
-      pulse_a_i => dio_in_i(i),
+        pulse_a_i       => dio_in_i(i),
+ 
+        tm_time_valid_i => '1',--tm_time_valid_i,
+        tm_utc_i        => tm_utc, --tm_utc_i, 
+        tm_cycles_i     => tm_cycles, --tm_cycles_i, 
 
-      tm_time_valid_i => '1',--tm_time_valid_i,
-      tm_utc_i        => tm_utc, --tm_utc_i, 
-      tm_cycles_i     => tm_cycles, --tm_cycles_i, 
+        tag_utc_o       => tag_utc(i), 
+        tag_cycles_o    => tag_cycles(i), 
+        tag_valid_p1_o  => tag_valid_p1(i));
 
-      tag_utc_o       => tag_utc(i), 
-      tag_cycles_o    => tag_cycles(i), 
-      tag_valid_p1_o  => tag_valid_p1(i)
-    );
   end generate gen_pulse_modules;
 
 
@@ -407,14 +409,14 @@ begin  -- rtl
       g_interface_mode => CLASSIC,
       g_num_ports      => 1)
     port map (
-      clk_sys_i      => clk_sys_i,
-      rst_n_i        => rst_n_i,
-      slave_i        => cbar_master_out(0),
-      slave_o        => cbar_master_in(0),
-      desc_o         => open,
-      owr_pwren_o(0) => onewire_pwren,
-      owr_en_o(0)    => onewire_en,
-      owr_i(0)       => dio_onewire_b);
+      clk_sys_i        => clk_sys_i,
+      rst_n_i          => rst_n_i,
+      slave_i          => cbar_master_out(0),
+      slave_o          => cbar_master_in(0),
+      desc_o           => open,
+      owr_pwren_o(0)   => onewire_pwren,
+      owr_en_o(0)      => onewire_en,
+      owr_i(0)         => dio_onewire_b);
 
   dio_onewire_b <= '0' when onewire_en = '1' else 'Z';
 
@@ -490,10 +492,10 @@ begin  -- rtl
 
   gen_pio_assignment: for i in 0 to 4 generate
     gpio_in(4*i)     <= dio_in_i(i);
-	 -- DEBUG: BE CAREFULL, dio_out disconected from GPIO because it is used in
-	 -- pulse_gen module!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    -- DEBUG: BE CAREFULL, dio_out disconected from GPIO because it is used in
+    -- pulse_gen module!
     --dio_out_o(i)     <= gpio_out(4*i);
-	 -- END DEBUG
+    -- END DEBUG
     dio_oe_n_o(i)    <= gpio_out(4*i+1);
     dio_term_en_o(i) <= gpio_out(4*i+2);
   end generate gen_pio_assignment;
@@ -505,16 +507,14 @@ begin  -- rtl
   dio_sdn_ck_n_o <= gpio_out(30);
   dio_sdn_n_o    <= gpio_out(31);
   
-  --??????????????????????????
   --gpio_in(30)    <= prsnt_m2c_l;
   ------------------------------------------------------------------------------
   -- WB UTC-BASED PULSE GENERATION & INPUT STAMPING
   ------------------------------------------------------------------------------  
   U_utc_wbslave : wrsw_dio_wb 
     port map(
-      rst_n_i   => rst_n_i,
-      -- TAKEN FROM 'wishbone_pkg.vhd'. 
-      wb_clk_i    =>	clk_sys_i,
+      rst_n_i     => rst_n_i,
+      wb_clk_i    => clk_sys_i,
       wb_addr_i   => cbar_master_out(3).adr(5 downto 0),
       wb_data_i   => cbar_master_out(3).dat,
       wb_data_o   => cbar_master_in(3).dat,
@@ -533,101 +533,101 @@ begin  -- rtl
       dio_tsf0_tag_cycles_i => dio_tsf_tag_cycles(0),
       irq_nempty_0_i        => irq_nempty(0),
 
-      dio_tsf1_wr_req_i 		=> dio_tsf_wr_req(1),
-      dio_tsf1_wr_full_o     => dio_tsf_wr_full(1),
-    dio_tsf1_wr_empty_o    => dio_tsf_wr_empty(1),
-    dio_tsf1_tag_utc_i    	=> dio_tsf_tag_utc(1)(31 downto 0),
-	 dio_tsf1_tag_utch_i    	=> dio_tsf_tag_utc(1)(39 downto 32),
-    dio_tsf1_tag_cycles_i 	=> dio_tsf_tag_cycles(1),
-    irq_nempty_1_i      	=> irq_nempty(1),
+      dio_tsf1_wr_req_i     => dio_tsf_wr_req(1),
+      dio_tsf1_wr_full_o    => dio_tsf_wr_full(1),
+      dio_tsf1_wr_empty_o   => dio_tsf_wr_empty(1),
+      dio_tsf1_tag_utc_i    => dio_tsf_tag_utc(1)(31 downto 0),
+      dio_tsf1_tag_utch_i   => dio_tsf_tag_utc(1)(39 downto 32),
+      dio_tsf1_tag_cycles_i => dio_tsf_tag_cycles(1),
+      irq_nempty_1_i        => irq_nempty(1),
 
+      dio_tsf2_wr_req_i     => dio_tsf_wr_req(2),
+      dio_tsf2_wr_full_o    => dio_tsf_wr_full(2),
+      dio_tsf2_wr_empty_o   => dio_tsf_wr_empty(2),
+      dio_tsf2_tag_utc_i    => dio_tsf_tag_utc(2)(31 downto 0),
+      dio_tsf2_tag_utch_i   => dio_tsf_tag_utc(2)(39 downto 32),
+      dio_tsf2_tag_cycles_i => dio_tsf_tag_cycles(2),
+      irq_nempty_2_i        => irq_nempty(2),
 
-    dio_tsf2_wr_req_i 		=> dio_tsf_wr_req(2),
-    dio_tsf2_wr_full_o     => dio_tsf_wr_full(2),
-    dio_tsf2_wr_empty_o    => dio_tsf_wr_empty(2),
-    dio_tsf2_tag_utc_i    	=> dio_tsf_tag_utc(2)(31 downto 0),
-	 dio_tsf2_tag_utch_i    	=> dio_tsf_tag_utc(2)(39 downto 32),
-    dio_tsf2_tag_cycles_i 	=> dio_tsf_tag_cycles(2),
-    irq_nempty_2_i     		=> irq_nempty(2),
+      dio_tsf3_wr_req_i     => dio_tsf_wr_req(3),
+      dio_tsf3_wr_full_o    => dio_tsf_wr_full(3),
+      dio_tsf3_wr_empty_o   => dio_tsf_wr_empty(3),
+      dio_tsf3_tag_utc_i    => dio_tsf_tag_utc(3)(31 downto 0),
+      dio_tsf3_tag_utch_i   => dio_tsf_tag_utc(3)(39 downto 32),
+      dio_tsf3_tag_cycles_i => dio_tsf_tag_cycles(3),
+      irq_nempty_3_i        => irq_nempty(3),
 
-    dio_tsf3_wr_req_i 		=> dio_tsf_wr_req(3),
-    dio_tsf3_wr_full_o     => dio_tsf_wr_full(3),
-	 dio_tsf3_wr_empty_o    => dio_tsf_wr_empty(3),
-    dio_tsf3_tag_utc_i    	=> dio_tsf_tag_utc(3)(31 downto 0),
-	 dio_tsf3_tag_utch_i    	=> dio_tsf_tag_utc(3)(39 downto 32),
-    dio_tsf3_tag_cycles_i 	=> dio_tsf_tag_cycles(3),
-    irq_nempty_3_i    		=> irq_nempty(3),
+      dio_tsf4_wr_req_i     => dio_tsf_wr_req(4),
+      dio_tsf4_wr_full_o    => dio_tsf_wr_full(4),
+      dio_tsf4_wr_empty_o   => dio_tsf_wr_empty(4),
+      dio_tsf4_tag_utc_i    => dio_tsf_tag_utc(4)(31 downto 0),
+      dio_tsf4_tag_utch_i   => dio_tsf_tag_utc(4)(39 downto 32),
+      dio_tsf4_tag_cycles_i => dio_tsf_tag_cycles(4),
+      irq_nempty_4_i        => irq_nempty(4),
 
-    dio_tsf4_wr_req_i 		=> dio_tsf_wr_req(4),
-    dio_tsf4_wr_full_o     => dio_tsf_wr_full(4),
-	 dio_tsf4_wr_empty_o    => dio_tsf_wr_empty(4),
-    dio_tsf4_tag_utc_i    	=> dio_tsf_tag_utc(4)(31 downto 0),
-	 dio_tsf4_tag_utch_i    	=> dio_tsf_tag_utc(4)(39 downto 32),
-    dio_tsf4_tag_cycles_i 	=> dio_tsf_tag_cycles(4),
-    irq_nempty_4_i         => irq_nempty(4),
+      dio_trig0_utc_o 	    => trig_utc(0)(31 downto 0), 
+      dio_trigh0_utc_o	    => trig_utc(0)(39 downto 32),
+      dio_cyc0_cyc_o        => trig_cycles(0),
 
-    dio_trig0_utc_o 	=> trig_utc(0)(31 downto 0), 
-    dio_trigh0_utc_o	=> trig_utc(0)(39 downto 32),
-    dio_cyc0_cyc_o 		=> trig_cycles(0),
+      dio_trig1_utc_o       => trig_utc(1)(31 downto 0), 
+      dio_trigh1_utc_o      => trig_utc(1)(39 downto 32),
+      dio_cyc1_cyc_o        => trig_cycles(1),
 
-    dio_trig1_utc_o 	=> trig_utc(1)(31 downto 0), 
-    dio_trigh1_utc_o	=> trig_utc(1)(39 downto 32),
-    dio_cyc1_cyc_o 		=> trig_cycles(1),
+      dio_trig2_utc_o       => trig_utc(2)(31 downto 0), 
+      dio_trigh2_utc_o      => trig_utc(2)(39 downto 32),
+      dio_cyc2_cyc_o        => trig_cycles(2),
 
-    dio_trig2_utc_o 	=> trig_utc(2)(31 downto 0), 
-    dio_trigh2_utc_o	=> trig_utc(2)(39 downto 32),
-    dio_cyc2_cyc_o 		=> trig_cycles(2),
+      dio_trig3_utc_o       => trig_utc(3)(31 downto 0), 
+      dio_trigh3_utc_o      => trig_utc(3)(39 downto 32),
+      dio_cyc3_cyc_o        => trig_cycles(3),
 
-    dio_trig3_utc_o 	=> trig_utc(3)(31 downto 0), 
-    dio_trigh3_utc_o	=> trig_utc(3)(39 downto 32),
-    dio_cyc3_cyc_o 		=> trig_cycles(3),
+      dio_trig4_utc_o       => trig_utc(4)(31 downto 0), 
+      dio_trigh4_utc_o      => trig_utc(4)(39 downto 32),
+      dio_cyc4_cyc_o        => trig_cycles(4),
 
-    dio_trig4_utc_o 	=> trig_utc(4)(31 downto 0), 
-    dio_trigh4_utc_o	=> trig_utc(4)(39 downto 32),
-    dio_cyc4_cyc_o 		=> trig_cycles(4),
-
-    dio_trig_ena_ena_o	=> trig_valid_p1,
-    dio_trig_ena_rdy_i   => trig_ready                    
+      dio_trig_ena_ena_o    => trig_valid_p1,
+      dio_trig_ena_rdy_i    => trig_ready                    
    );
 
 
 -----------------------------------------------------------------------------------
+------ signals for debugging
 -----------------------------------------------------------------------------------
------------------------------------------------------------------------------------
-    TRIG0             <= tag_utc(0)(31 downto 0);
-    TRIG1(27 downto 0)<= tag_cycles(0)(27 downto 0);
-    TRIG2             <= tm_utc(31 downto 0);
-    TRIG3             <= tm_cycles(26 downto 0) & dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
-    --TRIG3(4 downto 0) <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
+     TRIG0               <= tag_utc(0)(31 downto 0);
+     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
+     TRIG2               <= tm_utc(31 downto 0);
+     TRIG3               <= tm_cycles(21 downto 0) & dio_tsf_wr_empty(4 downto 0) & dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
+    --TRIG3(4 downto 0)  <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
 
 
--- UTC timestamped FIFO-no-empty interrupts
+  -- UTC timestamped FIFO-no-empty interrupts
   irq_fifos : for i in 0 to 4 generate
-		irq_nempty(i) <= dio_tsf_wr_empty(i);
+    irq_nempty(i)     <= not dio_tsf_wr_empty(i);
 
-		process(clk_sys_i, rst_n_i) 
-		  begin
-			 if rising_edge(clk_sys_i) then
-				if rst_n_i = '0' then
-					dio_tsf_wr_req(i)       <= '0';
-					dio_tsf_tag_utc(i)      <= (others => '0');
-					dio_tsf_tag_cycles(i)	<= (others => '0');        
-				else
-					if ((tag_valid_p1(i) = '1') AND (dio_tsf_wr_full(i)='0')) then
-						dio_tsf_wr_req(i)			<='1';
-						dio_tsf_tag_utc(i)		<=tag_utc(i);
-						dio_tsf_tag_cycles(i)	<=tag_cycles(i);
-					else
-						dio_tsf_wr_req(i)			<='0';				
-					end if;
-				end if; 
-			end if; 
-		end process; 
-
-	end generate irq_fifos;
-	
+    process(clk_sys_i, rst_n_i) 
+      begin
+        if rising_edge(clk_sys_i) then
+          if rst_n_i = '0' then
+            dio_tsf_wr_req(i)       <= '0';
+            dio_tsf_tag_utc(i)      <= (others => '0');
+            dio_tsf_tag_cycles(i)	<= (others => '0');        
+          else
+            if ((tag_valid_p1(i) = '1') AND (dio_tsf_wr_full(i)='0')) then
+              dio_tsf_wr_req(i)     <='1';
+              dio_tsf_tag_utc(i)    <=tag_utc(i);
+              dio_tsf_tag_cycles(i) <=tag_cycles(i);
+            else
+              dio_tsf_wr_req(i)     <='0';				
+            end if;
+          end if; 
+        end if; 
+      end process; 
+    end generate irq_fifos;
 	
 end rtl;
+
+
+

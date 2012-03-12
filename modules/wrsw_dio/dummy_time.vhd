@@ -24,7 +24,6 @@
 -------------------------------------------------------------------------------
 
 
-
 library ieee;
 use ieee.std_logic_1164.all;
 --use IEEE.NUMERIC_STD.ALL;
@@ -42,6 +41,7 @@ end dummy_time;
 architecture Behavioral of dummy_time is
 
 	signal OneSecond: std_logic;
+	signal init_time: std_logic;	
 	signal tm_cycles_Aux: std_logic_vector(27 downto 0);
 	signal tm_utc_Aux: std_logic_vector(39 downto 0);
 	constant MaxCountcycles1: std_logic_vector(27 downto 0) :="0111011100110101100100111111"; --125.000.000-1
@@ -58,6 +58,7 @@ begin
 	if(rst_n = '0') then
 		tm_cycles_Aux <= (others=>'0');
 		oneSecond <= '0';
+		init_time <= '0';
 	elsif(rising_Edge(Clk_sys)) then
 		if (Tm_cycles_Aux /= MaxCountcycles2) then
 			tm_cycles_Aux <= tm_cycles_Aux + 1;
@@ -70,6 +71,7 @@ begin
 		else
 			OneSecond <= '0';
 		end if;
+		init_time <= '1';
 	end if;
 end process P_CountTM_cycles;
 
@@ -89,8 +91,8 @@ begin
 	end if;
 end process P_CountTM_UTC;
 
-tm_cycles <= tm_cycles_Aux;
-tm_utc <= tm_utc_Aux;
+tm_cycles <= tm_cycles_Aux when init_time = '1' else (others=>'1');
+tm_utc <= tm_utc_Aux when init_time = '1' else (others=>'1');
 
 end Behavioral;
 
