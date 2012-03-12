@@ -39,6 +39,7 @@ library work;
 
 use work.wishbone_pkg.all;
 use work.wrsw_txtsu_pkg.all;
+use work.wrcore_pkg.all;
 
 entity xwrsw_tx_tsu is
   

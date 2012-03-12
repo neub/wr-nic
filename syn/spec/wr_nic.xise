@@ -1252,6 +1252,14 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="322"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="322"/>
     </file>
+    <file xil_pn:name="../../modules/wrsw_txtsu/wrsw_txtsu_wb.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="321"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="321"/>
+    </file>
+    <file xil_pn:name="../../modules/wrsw_txtsu/xwrsw_txtsu.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="322"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="322"/>
+    </file>
   </files>
 
   <bindings/>
