@@ -35,7 +35,7 @@ def main(default_directory="."):
    for lemon in range(5):
       dio.set_term(lemon, 0)
       dio.set_dir(lemon, 1)
-      dio.set_in_threshold(lemon,10)
+      dio.set_in_threshold(lemon,30)
    print "Input threshold set to an intermediate level ({}).".format(dio.get_in_threshold(0))
 
    print

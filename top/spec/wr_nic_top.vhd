@@ -3,8 +3,8 @@
 -- Project    : WhiteRabbit
 -------------------------------------------------------------------------------
 -- File       : wr_nic_top.vhd
--- Author     : Grzegorz Daniluk
--- Company    : Elproma
+-- Author     : Grzegorz Daniluk, Rafael Rodriguez
+-- Company    : Elproma, Seven Solutions
 -- Created    : 2012-02-08
 -- Last update: 2012-02-20
 -- Platform   : FPGA-generics
@@ -20,7 +20,7 @@
 -- # GN4124 core
 -- # DIO core (tbd)
 -------------------------------------------------------------------------------
--- Copyright (c) 2012 Grzegorz Daniluk
+-- Copyright (c) 2012 Grzegorz Daniluk, Rafael Rodriguez
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author          Description
@@ -35,7 +35,7 @@
 -- Memory map:
 --  0x00000000: WRPC
 --  0x00010000: WRSW NIC
---  0x00011000: VIC
+--  0x00011000: VIC   --changed to test. see below
 --  0x00012000: TxTSU
 --  0x00020000: DIO
 
@@ -527,8 +527,9 @@ architecture rtl of wr_nic_top is
       TRIG2           : out std_logic_vector(31 downto 0);
       TRIG3           : out std_logic_vector(31 downto 0);
 		
-      slave_i         : in  t_wishbone_slave_in;
-      slave_o         : out t_wishbone_slave_out
+      slave_i            : in  t_wishbone_slave_in;
+      slave_o            : out t_wishbone_slave_out;
+		wb_irq_data_fifo_o : out std_logic
   );
   end component; --DIO core
 
@@ -657,7 +658,8 @@ architecture rtl of wr_nic_top is
   signal tm_utc        : std_logic_vector(39 downto 0);
   signal tm_cycles     : std_logic_vector(27 downto 0);
 
-
+  -- DIO core
+  signal wb_irq_data_fifo_dio : std_logic;
   -------------------
   -- NIC
   -------------------
@@ -674,15 +676,15 @@ architecture rtl of wr_nic_top is
   constant c_cfg_base_addr : t_wishbone_address_array(4 downto 0) :=
     (0 => x"00000000",                  -- WRPC
      1 => x"00010000",                  -- NIC
-     2 => x"00011000",                  -- VIC (IRQ gen)
+     2 => x"00030000",                  -- VIC (IRQ gen)
      3 => x"00012000",                  -- TxTSU
 	  4 => x"00020000");                 -- DIO
 
   constant c_cfg_base_mask : t_wishbone_address_array(4 downto 0) :=
-    (0 => x"000f0000",
-     1 => x"000ff000",
-     2 => x"000ff000",
-     3 => x"000ff000",
+    (0 => x"ffff0000",
+     1 => x"fffff000",
+     2 => x"fffff000",
+     3 => x"fffff000",
      4 => x"ffffff00");
 
   signal cbar_slave_i  : t_wishbone_slave_in;
@@ -845,7 +847,7 @@ begin
       g_CSR_WB_SLAVES_NB  => c_CSR_WB_SLAVES_NB,
       g_DMA_WB_SLAVES_NB  => c_DMA_WB_SLAVES_NB,
       g_DMA_WB_ADDR_WIDTH => c_DMA_WB_ADDR_WIDTH,
-      g_CSR_WB_MODE       => "pipelined"
+      g_CSR_WB_MODE       => "classic"
       )
     port map
     (
@@ -957,7 +959,7 @@ begin
       g_ep_rxbuf_size_log2  => 12,
       g_dpram_initf         => "",
       g_dpram_size          => 16384,
-      g_interface_mode      => PIPELINED,
+      g_interface_mode      => CLASSIC,
       g_address_granularity => WORD)
     port map (
       clk_sys_i  => clk_sys,
@@ -1034,7 +1036,7 @@ begin
   U_NIC : xwrsw_nic
     generic map(
       g_use_dma             => g_nic_usedma,
-      g_interface_mode      => PIPELINED,
+      g_interface_mode      => CLASSIC,
       g_address_granularity => WORD)
     port map(
       clk_sys_i => clk_sys,
@@ -1081,7 +1083,7 @@ begin
   -------------------------------------
   U_VIC : xwb_vic
     generic map(
-      g_interface_mode      => PIPELINED,
+      g_interface_mode      => CLASSIC,
       g_address_granularity => WORD,
       g_num_interrupts      => 3)
     port map(
@@ -1095,7 +1097,7 @@ begin
 
   vic_slave_irq(0) <= cbar_master_i(3).int;  -- wrpc, txtsu
   vic_slave_irq(1) <= cbar_master_i(1).int;  -- wrsw-nic
-  vic_slave_irq(2) <= cbar_master_i(4).int;
+  vic_slave_irq(2) <= cbar_master_i(4).int;  -- DIO core
 
   -------------------------------------
   -- WRSW TXTSU
@@ -1103,7 +1105,7 @@ begin
   U_TXTSU : xwrsw_tx_tsu
     generic map(
       g_num_ports           => 1,
-      g_interface_mode      => PIPELINED,
+      g_interface_mode      => CLASSIC,
       g_address_granularity => WORD)
     port map(
       clk_sys_i           => clk_sys,
@@ -1224,13 +1226,14 @@ begin
       tm_utc_i        => tm_utc,
       tm_cycles_i     => tm_cycles,
 
-      TRIG0           => TRIG0,
-      TRIG1           => TRIG1,
+      --TRIG0           => TRIG0,
+      --TRIG1           => TRIG1,
       --TRIG2           => TRIG2,
       TRIG3           => TRIG3,
 
-      slave_i         => cbar_master_o(4),
-      slave_o         => cbar_master_i(4)
+      slave_i            => cbar_master_o(4),
+      slave_o            => cbar_master_i(4),
+		wb_irq_data_fifo_o => wb_irq_data_fifo_dio
   );
 
   gen_dio_iobufs : for i in 0 to 4 generate
@@ -1288,13 +1291,16 @@ begin
       CONTROL0 => CONTROL
       );
 
-  TRIG2(3 downto 0)  <= vic_irq & vic_slave_irq;
+  TRIG2(5 downto 0)  <= GPIO(0) & wb_irq_data_fifo_dio & vic_irq & vic_slave_irq;
 
---  TRIG0(31 downto 0)  <= cbar_slave_i.adr;
---  TRIG1(31 downto 0)  <= cbar_master_o(4).adr; --cnx_out(0).adr;
---  TRIG2(31 downto 0)  <= cbar_master_o(4).adr; --cnx_out(1).adr;
---  TRIG3(31 downto 0)  <= cbar_master_o(4).adr;
- 
+  TRIG0              <= cbar_master_o(2).adr(19 downto 0) & cbar_master_o(2).dat(7 downto 0) & 
+                        cbar_master_o(2).cyc & cbar_master_o(2).stb & 
+								cbar_master_o(2).we & cbar_master_i(2).ack;
+
+
+  TRIG1 <= cbar_slave_i.adr(19 downto 0) & cbar_slave_o.dat(7 downto 0) & 
+           cbar_slave_i.cyc & cbar_slave_i.stb & cbar_slave_i.we & cbar_slave_o.ack;
+
 
 
 end rtl;

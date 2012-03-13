@@ -67,8 +67,9 @@ entity wrsw_dio is
     TRIG2            : out std_logic_vector(31 downto 0);
     TRIG3            : out std_logic_vector(31 downto 0);
 		
-    slave_i          : in  t_wishbone_slave_in;
-    slave_o          : out t_wishbone_slave_out
+    slave_i            : in  t_wishbone_slave_in;
+    slave_o            : out t_wishbone_slave_out;
+    wb_irq_data_fifo_o : out std_logic
   );
   end wrsw_dio; 
 
@@ -406,7 +407,7 @@ begin
   ------------------------------------------------------------------------------    
   U_Onewire : xwb_onewire_master
     generic map (
-      g_interface_mode => CLASSIC,
+      g_interface_mode => g_interface_mode,
       g_num_ports      => 1)
     port map (
       clk_sys_i        => clk_sys_i,
@@ -425,7 +426,7 @@ begin
   ------------------------------------------------------------------------------    
   U_I2C : xwb_i2c_master
     generic map (
-      g_interface_mode => CLASSIC)
+      g_interface_mode => g_interface_mode)
     
     port map (
       clk_sys_i    => clk_sys_i,
@@ -453,7 +454,7 @@ begin
   ------------------------------------------------------------------------------  
   U_GPIO : xwb_gpio_port
     generic map (
-      g_interface_mode         => CLASSIC,
+      g_interface_mode         => g_interface_mode,
       g_num_pins               => 32,
       g_with_builtin_tristates => false)
     port map (
@@ -589,12 +590,15 @@ begin
       dio_trig_ena_rdy_i    => trig_ready                    
    );
 
+   --interrupt from fifos
+   wb_irq_data_fifo_o  <= cbar_master_in(3).int;
 
 -----------------------------------------------------------------------------------
 ------ signals for debugging
 -----------------------------------------------------------------------------------
      TRIG0               <= tag_utc(0)(31 downto 0);
-     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
+--     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
+     TRIG1(0)  <= cbar_master_in(3).int;
      TRIG2               <= tm_utc(31 downto 0);
      TRIG3               <= tm_cycles(21 downto 0) & dio_tsf_wr_empty(4 downto 0) & dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
     --TRIG3(4 downto 0)  <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);

@@ -8,6 +8,7 @@ transcript
 *.vstf
 *.bak
 *.vcd
+*.pyc
 work
 syn
 !syn/spec/Manifest.py
