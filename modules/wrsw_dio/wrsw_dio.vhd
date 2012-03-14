@@ -26,6 +26,8 @@
 -------------------------------------------------------------------------------
 
 
+-- WARNING: only pipelined mode is supported (Intercon is pipelined only) - T.W.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -151,39 +153,22 @@ architecture rtl of wrsw_dio is
     );
   end component;
 
-  component xwb_crossbar
-    generic(
-      g_num_masters : integer;
-      g_num_slaves  : integer;
-      g_registered  : boolean
-      );
-    port(
-      clk_sys_i     : in  std_logic;
-      rst_n_i       : in  std_logic;
-      slave_i       : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
-      slave_o       : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
-      master_i      : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
-      master_o      : out t_wishbone_master_out_array(g_num_slaves-1 downto 0);
-      -- Address of the slaves connected
-      cfg_address_i : in  t_wishbone_address_array(g_num_slaves-1 downto 0);
-      cfg_mask_i    : in  t_wishbone_address_array(g_num_slaves-1 downto 0)
-      );
-  end component;
 
 
 component wrsw_dio_wb is
   port (
     rst_n_i                                  : in     std_logic;
-    wb_clk_i                                 : in     std_logic;
-    wb_addr_i                                : in     std_logic_vector(5 downto 0);
-    wb_data_i                                : in     std_logic_vector(31 downto 0);
-    wb_data_o                                : out    std_logic_vector(31 downto 0);
+    clk_sys_i                                 : in     std_logic;
+    wb_adr_i                                : in     std_logic_vector(5 downto 0);
+    wb_dat_i                                : in     std_logic_vector(31 downto 0);
+    wb_dat_o                                : out    std_logic_vector(31 downto 0);
     wb_cyc_i                                 : in     std_logic;
     wb_sel_i                                 : in     std_logic_vector(3 downto 0);
     wb_stb_i                                 : in     std_logic;
     wb_we_i                                  : in     std_logic;
     wb_ack_o                                 : out    std_logic;
-    wb_irq_o                                 : out    std_logic;
+    wb_stall_o : out std_logic;
+    wb_int_o                                 : out    std_logic;
 -- FIFO write request
     dio_tsf0_wr_req_i                        : in     std_logic;
 -- FIFO full flag
@@ -326,10 +311,10 @@ end component;
   -- WB Crossbar
   -------------------
   constant c_cfg_base_addr : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"00020000",  -- ONEWIRE                
-     1 => x"00020040",  -- I2C                
-     2 => x"00020080",  -- GPIO                 
-     3 => x"000200C0"); -- PULSE GEN & STAMPER                 
+    (0 => x"00000000",  -- ONEWIRE                
+     1 => x"00000040",  -- I2C                
+     2 => x"00000080",  -- GPIO                 
+     3 => x"000000C0"); -- PULSE GEN & STAMPER                 
 
   constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
     (0 => x"ffffffc0",
@@ -407,7 +392,8 @@ begin
   ------------------------------------------------------------------------------    
   U_Onewire : xwb_onewire_master
     generic map (
-      g_interface_mode => g_interface_mode,
+      g_interface_mode => PIPELINED,
+      g_address_granularity => BYTE,
       g_num_ports      => 1)
     port map (
       clk_sys_i        => clk_sys_i,
@@ -426,7 +412,9 @@ begin
   ------------------------------------------------------------------------------    
   U_I2C : xwb_i2c_master
     generic map (
-      g_interface_mode => g_interface_mode)
+      g_interface_mode => PIPELINED,
+      g_address_granularity => BYTE
+      )
     
     port map (
       clk_sys_i    => clk_sys_i,
@@ -454,7 +442,8 @@ begin
   ------------------------------------------------------------------------------  
   U_GPIO : xwb_gpio_port
     generic map (
-      g_interface_mode         => g_interface_mode,
+      g_interface_mode         => PIPELINED,
+      g_address_granularity => BYTE,
       g_num_pins               => 32,
       g_with_builtin_tristates => false)
     port map (
@@ -515,16 +504,17 @@ begin
   U_utc_wbslave : wrsw_dio_wb 
     port map(
       rst_n_i     => rst_n_i,
-      wb_clk_i    => clk_sys_i,
-      wb_addr_i   => cbar_master_out(3).adr(5 downto 0),
-      wb_data_i   => cbar_master_out(3).dat,
-      wb_data_o   => cbar_master_in(3).dat,
+      clk_sys_i    => clk_sys_i,
+      wb_adr_i   => cbar_master_out(3).adr(7 downto 2),
+      wb_dat_i   => cbar_master_out(3).dat,
+      wb_dat_o   => cbar_master_in(3).dat,
       wb_cyc_i    => cbar_master_out(3).cyc, 
       wb_sel_i    => cbar_master_out(3).sel, 
       wb_stb_i    => cbar_master_out(3).stb, 
       wb_we_i     => cbar_master_out(3).we,  
       wb_ack_o    => cbar_master_in(3).ack,
-      wb_irq_o    => cbar_master_in(3).int,
+      wb_stall_o =>  cbar_master_in(3).stall,
+      wb_int_o    => slave_o.int,
 
       dio_tsf0_wr_req_i     => dio_tsf_wr_req(0),
       dio_tsf0_wr_full_o    => dio_tsf_wr_full(0),
