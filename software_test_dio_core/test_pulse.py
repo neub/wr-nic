@@ -23,20 +23,42 @@ def main(default_directory="."):
    print "(-------------STARTING TEST-----------------)"
    spec = rr.Gennum()
    gennum = gn4124.CGN4124(spec, GN4124_CSR)
-   dio = CFmcDio(spec, 0x80000)
+   dio = CFmcDio(spec, 0x60000)
+
    print "(3 devices expected)"
    print
    print ("FMC temperature: %3.3f°C" % dio.get_temp())
    print "(expected room or computer temperature)"
    print
 
-   print "(------------CONFIGURING LEMOS--------------)"
+   print "(------------CONFIGURING DIO CHANNELS--------------)"
    print "Value of LEMOs with all drivers enabled and terminations disabled",
    for lemon in range(5):
       dio.set_term(lemon, 0)
       dio.set_dir(lemon, 1)
       dio.set_in_threshold(lemon,30)
    print "Input threshold set to an intermediate level ({}).".format(dio.get_in_threshold(0))
+
+   print "(------------CONFIGURING INTERRUPTS--------------)"
+   print "(DIO Interrupts)"
+   # DIO Interrupts
+   dio.set_reg(0x64, 0x1f)   # Interrupts when the fifos have datas (UTC time from the pulse stamper)
+   mask_irq = dio.get_reg(0x68)
+   print "mask_irq =>", mask_irq
+   status_irq = dio.get_reg(0x6c) 
+   print "STATUS IRQ =>", status_irq
+
+
+   # DIO Interrupts
+   print "(VIC Interrupts)"
+   VIC = VIC_irq(spec, 0x40000)
+   VIC.set_reg(0x0, 0x3)   # control register
+   control_irq_vic = VIC.get_reg(0x0)
+   print "control_irq_vic =>", control_irq_vic
+   VIC.set_reg(0x8, 0x3)   # enable register
+   mask_irq_vic = VIC.get_reg(0x10)
+   print "mask_irq_vic =>", mask_irq_vic
+
 
    print
    print "(------------CONFIGURING TRIG UTC TIME FOR EACH LEMO--------------)"
@@ -138,15 +160,10 @@ def main(default_directory="."):
    print "cycles DIO 4 =>", cycles
    print
 
+   status_irq_vic = dio.get_reg(0x4) 
+   print "STATUS VIC IRQ =>", status_irq_vic
 
 
-   #dio.set_reg(0x64, 0x1f)
-#   mask_irq = dio.get_reg(0x68)
-#   print "mask_irq =>", mask_irq
-#   status_irq = dio.get_reg(0x6c) 
-#   print "STATUS IRQ =>", status_irq
-
-   #kbhit.getch()   
 #   print "Waiting irq ..."
 #   gennum.wait_irq()
 

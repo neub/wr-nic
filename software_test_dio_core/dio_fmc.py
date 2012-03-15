@@ -11,6 +11,19 @@ from eeprom_24aa64 import *
 from onewire import *
 from ds18b20 import *
 
+class VIC_irq:
+
+    def __init__(self, bus, base):
+	self.bus = bus;
+	self.base = base;
+
+    def set_reg(self, adr, value):        
+        self.bus.iwrite(0, self.base + adr, 4, value)
+
+    def get_reg(self, adr):        
+        return self.bus.iread(0, self.base + adr, 4)
+
+
 class CDAC5578:
 
 	CMD_POWER_ON = 0x40
@@ -71,7 +84,7 @@ class CFmcDio:
         self.bus = bus;
         self.gpio = CGPIO(bus, base + self.BASE_GPIO)
         if(not self.fmc_present()):
-            raise DeviceNotFound("FMC", 0x80000)
+            raise DeviceNotFound("FMC", 0x60000)
         self.i2c = COpenCoresI2C(bus, base + self.BASE_I2C, self.I2C_PRESCALER)
         self.onewire = COpenCoresOneWire(self.bus, base + self.BASE_ONEWIRE, 624/2, 124/2)
         self.eeprom = C24AA64(self.i2c, self.I2C_ADDR_EEPROM);
@@ -119,13 +132,13 @@ class CFmcDio:
             return self.ds1820.read_temp(serial_number)
 
     def set_reg(self, adr, value):        
-        self.bus.iwrite(0, 0x80000 + self.BASE_REGS + adr, 4, value)
+        self.bus.iwrite(0, 0x60000 + self.BASE_REGS + adr, 4, value)
 
     def get_reg(self, adr):        
-        return self.bus.iread(0, 0x80000 + self.BASE_REGS + adr, 4)
+        return self.bus.iread(0, 0x60000 + self.BASE_REGS + adr, 4)
 
     def get_reg_long(self, adr):        
-        return self.bus.iread(0, 0x80000 + self.BASE_REGS + adr, 8)
+        return self.bus.iread(0, 0x60000 + self.BASE_REGS + adr, 8)
 
     def wait_irq_spec(self):
         return self.bus.irqwait()
