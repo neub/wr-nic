@@ -34,7 +34,7 @@
 -- Memory map:
 --  0x00000000: WRPC
 --  0x00020000: WRSW NIC
---  0x00040000: VIC   --changed to test. see below
+--  0x00040000: VIC  
 --  0x00050000: TxTSU
 --  0x00060000: DIO
 
