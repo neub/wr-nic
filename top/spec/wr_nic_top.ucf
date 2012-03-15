@@ -610,9 +610,9 @@ NET "uart_txd_o" IOSTANDARD=LVCMOS25;
 #---------------------------------------------------------------------------------------------
 # GN4124
 NET "l_rst_n" TIG;
-NET "cmp_gn4124_core/rst_*" TIG;
+NET "U_Gennum_Core/rst_*" TIG;
 #Created by Constraints Editor (xc6slx45t-fgg484-3) - 2011/01/20
-NET "cmp_gn4124_core/cmp_clk_in/P_clk" TNM_NET = cmp_gn4124_core/cmp_clk_in/P_clk;
+NET "U_Gennum_Core/cmp_clk_in/P_clk" TNM_NET = cmp_gn4124_core/cmp_clk_in/P_clk;
 #Created by Constraints Editor (xc6slx45t-fgg484-3) - 2011/02/04
 NET "clk_20m_vcxo_i" TNM_NET = clk_20m_vcxo_i;
 TIMESPEC TS_clk_20m_vcxo_i = PERIOD "clk_20m_vcxo_i" 50 ns HIGH 50%;

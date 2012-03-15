@@ -31,13 +31,12 @@
 -- TODO:
 -- testing
 
-
 -- Memory map:
 --  0x00000000: WRPC
---  0x00010000: WRSW NIC
---  0x00011000: VIC   --changed to test. see below
---  0x00012000: TxTSU
---  0x00020000: DIO
+--  0x00020000: WRSW NIC
+--  0x00040000: VIC   --changed to test. see below
+--  0x00050000: TxTSU
+--  0x00060000: DIO
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -864,8 +863,8 @@ begin
     end if;
   end process;
   
-  cbar_slave_i.adr(1 downto 0) <= (others => '0');
-  cbar_slave_i.adr(31 downto 19) <= (others => '0');
+--  cbar_slave_i.adr(1 downto 0) <= (others => '0');
+--  cbar_slave_i.adr(31 downto 19) <= (others => '0');
   fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
   fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
   wrc_scl_i  <= fpga_scl_b;
@@ -1208,30 +1207,30 @@ begin
 
   sfp_tx_disable_o <= '0';
 
-  chipscope_ila_1 : chipscope_ila
-    port map (
-      CONTROL => CONTROL,
-      CLK     => clk_125m_pllref,
-      TRIG0   => TRIG0,
-      TRIG1   => TRIG1,
-      TRIG2   => TRIG2,
-      TRIG3   => TRIG3);
+--  chipscope_ila_1 : chipscope_ila
+--    port map (
+--      CONTROL => CONTROL,
+--      CLK     => clk_125m_pllref,
+--      TRIG0   => TRIG0,
+--      TRIG1   => TRIG1,
+--      TRIG2   => TRIG2,
+--      TRIG3   => TRIG3);
+--
+--  chipscope_icon_1 : chipscope_icon
+--    port map (
+--      CONTROL0 => CONTROL
+--      );
 
-  chipscope_icon_1 : chipscope_icon
-    port map (
-      CONTROL0 => CONTROL
-      );
-
-  TRIG2(5 downto 0)  <= GPIO(0) & wb_irq_data_fifo_dio & vic_irq & vic_slave_irq;
-
-  TRIG0              <= cbar_master_o(2).adr(19 downto 0) & cbar_master_o(2).dat(7 downto 0) & 
-                        cbar_master_o(2).cyc & cbar_master_o(2).stb & 
-								cbar_master_o(2).we & cbar_master_i(2).ack;
-
-
-  TRIG1 <= cbar_slave_i.adr(19 downto 0) & cbar_slave_o.dat(7 downto 0) & 
-           cbar_slave_i.cyc & cbar_slave_i.stb & cbar_slave_i.we & cbar_slave_o.ack;
-
+--  TRIG2(5 downto 0)  <= GPIO(0) & wb_irq_data_fifo_dio & vic_irq & vic_slave_irq;
+--
+--  TRIG0              <= cbar_master_o(4).adr(19 downto 0) & cbar_master_o(4).dat(7 downto 0) & 
+--                        cbar_master_o(4).cyc & cbar_master_o(4).stb & 
+--								cbar_master_o(4).we & cbar_master_i(4).ack;
+--
+--
+--  TRIG1 <= cbar_slave_i.adr(19 downto 0) & cbar_slave_o.dat(7 downto 0) & 
+--           cbar_slave_i.cyc & cbar_slave_i.stb & cbar_slave_i.we & cbar_slave_o.ack;
+--
 
 
 end rtl;

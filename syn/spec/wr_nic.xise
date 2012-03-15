@@ -78,6 +78,7 @@
     <property xil_pn:name="Enable Cyclic Redundancy Checking (CRC) spartan6" xil_pn:value="true" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Debugging of Serial Mode BitStream" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable External Master Clock spartan6" xil_pn:value="false" xil_pn:valueState="default"/>
+    <property xil_pn:name="Enable Hardware Co-Simulation" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Internal Done Pipe" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Message Filtering" xil_pn:value="false" xil_pn:valueState="default"/>
     <property xil_pn:name="Enable Multi-Pin Wake-Up Suspend Mode spartan6" xil_pn:value="false" xil_pn:valueState="default"/>
@@ -742,30 +743,6 @@
     <file xil_pn:name="../../modules/wrsw_nic/wrsw_nic.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="104"/>
     </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/gn4124_core_private_pkg.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="105"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/dma_controller_wb_slave.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="106"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/gn4124_core_pkg.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="107"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/l2p_arbiter.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="108"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/l2p_dma_master.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="109"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/p2l_decode32.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="110"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/p2l_dma_master.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="111"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/wbmaster32.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="112"/>
-    </file>
     <file xil_pn:name="../../ip_cores/wr-cores/platform/xilinx/wr_gtp_phy/gtp_bitslide.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="113"/>
     </file>
@@ -984,30 +961,6 @@
     </file>
     <file xil_pn:name="../../ip_cores/wr-cores/modules/wrc_core/xwr_syscon_wb.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="185"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/gn4124_core.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="186"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/dma_controller.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="187"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/l2p_ser.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="188"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/p2l_des.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="189"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/serdes_1_to_n_clk_pll_s2_diff.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="190"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/serdes_1_to_n_data_s2_se.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="191"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/serdes_n_to_1_s2_diff.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="192"/>
-    </file>
-    <file xil_pn:name="../../ip_cores/gn4124-core/branches/hdlmake-compliant/rtl/spartan6/serdes_n_to_1_s2_se.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="Implementation" xil_pn:seqID="193"/>
     </file>
     <file xil_pn:name="../../ip_cores/wr-cores/platform/xilinx/wr_gtp_phy/wr_gtx_phy_virtex6.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="Implementation" xil_pn:seqID="194"/>
@@ -1259,6 +1212,76 @@
     <file xil_pn:name="../../modules/wrsw_txtsu/xwrsw_txtsu.vhd" xil_pn:type="FILE_VHDL">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="322"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="322"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/gn4124_core_pkg.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="285"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="285"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/gn4124_core.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="286"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="286"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/l2p_ser.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="287"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="287"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/p2l_des.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="288"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="288"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/pulse_sync_rtl.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="289"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="289"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/serdes_1_to_n_clk_pll_s2_diff.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="290"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="290"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/serdes_1_to_n_data_s2_se.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="291"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="291"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/serdes_n_to_1_s2_diff.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="292"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="292"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/spartan6/serdes_n_to_1_s2_se.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="293"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="293"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/dma_controller_wb_slave.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="294"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="294"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/dma_controller.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="295"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="295"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/l2p_arbiter.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="296"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="296"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/l2p_dma_master.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="297"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="297"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/p2l_decode32.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="298"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="298"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/p2l_dma_master.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="299"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="299"/>
+    </file>
+    <file xil_pn:name="../../ip_cores/gn4124-core/trunk/hdl/gn4124core/rtl/wbmaster32.vhd" xil_pn:type="FILE_VHDL">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="300"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="300"/>
+    </file>
+    <file xil_pn:name="../../platform/xilinx/chipscope/chipscope_icon.ngc" xil_pn:type="FILE_NGC">
+      <association xil_pn:name="Implementation" xil_pn:seqID="310"/>
+    </file>
+    <file xil_pn:name="../../platform/xilinx/chipscope/chipscope_ila.ngc" xil_pn:type="FILE_NGC">
+      <association xil_pn:name="Implementation" xil_pn:seqID="311"/>
     </file>
   </files>
 
