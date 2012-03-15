@@ -311,16 +311,16 @@ end component;
   -- WB Crossbar
   -------------------
   constant c_cfg_base_addr : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"00000000",  -- ONEWIRE                
-     1 => x"00000040",  -- I2C                
-     2 => x"00000080",  -- GPIO                 
-     3 => x"000000C0"); -- PULSE GEN & STAMPER                 
+    (0 => x"00060000",  -- ONEWIRE                
+     1 => x"00060100",  -- I2C                
+     2 => x"00060200",  -- GPIO                 
+     3 => x"00060300"); -- PULSE GEN & STAMPER                 
 
   constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"ffffffc0",
-     1 => x"ffffffc0",
-     2 => x"ffffffc0",
-     3 => x"ffffffc0");
+    (0 => x"ffffff00",
+     1 => x"ffffff00",
+     2 => x"ffffff00",
+     3 => x"ffffff00");
 
 	  
   signal cbar_master_in   : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
@@ -514,7 +514,7 @@ begin
       wb_we_i     => cbar_master_out(3).we,  
       wb_ack_o    => cbar_master_in(3).ack,
       wb_stall_o =>  cbar_master_in(3).stall,
-      wb_int_o    => slave_o.int,
+      wb_int_o    => wb_irq_data_fifo_o, --slave_o.int,
 
       dio_tsf0_wr_req_i     => dio_tsf_wr_req(0),
       dio_tsf0_wr_full_o    => dio_tsf_wr_full(0),
@@ -581,7 +581,7 @@ begin
    );
 
    --interrupt from fifos
-   wb_irq_data_fifo_o  <= cbar_master_in(3).int;
+   --wb_irq_data_fifo_o  <= cbar_master_in(3).int;
 
 -----------------------------------------------------------------------------------
 ------ signals for debugging
