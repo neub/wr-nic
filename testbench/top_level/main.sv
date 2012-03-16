@@ -32,9 +32,15 @@ module main;
       CBusAccessor acc ;
       acc = I_Gennum.get_accessor();
       @(posedge I_Gennum.ready);
+
+      $display("Startup");
+      
       
       acc.write(BASE_WRPC + 'h100, 'hdeadbeef);
       acc.write(BASE_WRPC + 'h104, 'hcafebabe);
+
+      $display("AccWriteDone");
+      
 
       acc.read(BASE_WRPC + 'h100, rval);
       $display("MemReadback1 %x", rval);
@@ -43,7 +49,6 @@ module main;
 
       acc.write(BASE_VIC + 'h4, 'h1); // enable IRQ 0
       acc.write(BASE_VIC + 'h0, 'h3); // positive polarity, enable VIC
-
       acc.write(BASE_VIC + 'h18, 'h1); // software IRQ trigger
 
       
