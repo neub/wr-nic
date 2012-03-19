@@ -535,4 +535,48 @@ peripheral {
 	};
 
 
+-- Pulse generator.
+	reg {
+		name = "Pulse generate immediately";
+		description = "It is used to generate a pulse immediately";
+		prefix = "puls_inmed";
+
+		field {
+			name = "pulse_gen_now_0";
+			description = "It generates a pulse";
+			prefix = "pul_inm_0";
+			type = MONOSTABLE;
+      clock = "clk_asyn_i";
+		};
+		field {
+			name = "pulse_gen_now_1";
+			description = "It generates a pulse";
+			prefix = "pul_inm_1";
+			type = MONOSTABLE;
+      clock = "clk_asyn_i";
+		};
+		field {
+			name = "pulse_gen_now_2";
+			description = "It generates a pulse";
+			prefix = "pul_inm_2";
+			type = MONOSTABLE;
+      clock = "clk_asyn_i";
+		};
+		field {
+			name = "pulse_gen_now_3";
+			description = "It generates a pulse";
+			prefix = "pul_inm_3";
+			type = MONOSTABLE;
+      clock = "clk_asyn_i";
+		};
+		field {
+			name = "pulse_gen_now_4";
+			description = "It generates a pulse";
+			prefix = "pul_inm_4";
+			type = MONOSTABLE;
+      clock = "clk_asyn_i";
+			};
+
+	};
+
 };

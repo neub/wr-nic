@@ -810,7 +810,9 @@ begin
       cfg_mask_i    => c_cfg_base_mask
       );
 
-
+  ------------------------------------------------------------------------------
+  -- Gennun Core
+  ------------------------------------------------------------------------------
   U_Gennum_Core: gn4124_core
     port map (
       rst_n_a_i       => L_RST_N,
@@ -863,12 +865,10 @@ begin
     end if;
   end process;
   
---  cbar_slave_i.adr(1 downto 0) <= (others => '0');
---  cbar_slave_i.adr(31 downto 19) <= (others => '0');
-  fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
-  fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
-  wrc_scl_i  <= fpga_scl_b;
-  wrc_sda_i  <= fpga_sda_b;
+  fpga_scl_b     <= '0' when wrc_scl_o = '0' else 'Z';
+  fpga_sda_b     <= '0' when wrc_sda_o = '0' else 'Z';
+  wrc_scl_i      <= fpga_scl_b;
+  wrc_sda_i      <= fpga_sda_b;
 
   sfp_mod_def1_b <= '0' when sfp_scl_o = '0' else 'Z';
   sfp_mod_def2_b <= '0' when sfp_sda_o = '0' else 'Z';
@@ -956,7 +956,7 @@ begin
       tm_cycles_o          => tm_cycles,
       pps_p_o              => pps,
 
-      dio_o       => open, --dio_out(4 downto 1),
+      dio_o       => open, 
       rst_aux_n_o => open
     );
 
@@ -1027,7 +1027,7 @@ begin
 
   vic_slave_irq(0) <= cbar_master_i(3).int;  -- wrpc, txtsu
   vic_slave_irq(1) <= cbar_master_i(1).int;  -- wrsw-nic
-  vic_slave_irq(2) <= cbar_master_i(4).int;  -- DIO core
+  vic_slave_irq(2) <= wb_irq_data_fifo_dio;  -- DIO core
 
   -------------------------------------
   -- WRSW TXTSU
@@ -1220,7 +1220,7 @@ begin
 --    port map (
 --      CONTROL0 => CONTROL
 --      );
-
+--
 --  TRIG2(5 downto 0)  <= GPIO(0) & wb_irq_data_fifo_dio & vic_irq & vic_slave_irq;
 --
 --  TRIG0              <= cbar_master_o(4).adr(19 downto 0) & cbar_master_o(4).dat(7 downto 0) & 
@@ -1230,7 +1230,7 @@ begin
 --
 --  TRIG1 <= cbar_slave_i.adr(19 downto 0) & cbar_slave_o.dat(7 downto 0) & 
 --           cbar_slave_i.cyc & cbar_slave_i.stb & cbar_slave_i.we & cbar_slave_o.ack;
---
+
 
 
 end rtl;
