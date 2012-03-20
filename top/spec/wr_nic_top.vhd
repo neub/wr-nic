@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk, Rafael Rodriguez
 -- Company    : Elproma, Seven Solutions
 -- Created    : 2012-02-08
--- Last update: 2012-03-14
+-- Last update: 2012-03-20
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -33,10 +33,10 @@
 
 -- Memory map:
 --  0x00000000: WRPC
---  0x00020000: WRSW NIC
---  0x00040000: VIC  
---  0x00050000: TxTSU
---  0x00060000: DIO
+--  0x00040000: WRSW NIC
+--  0x00060000: VIC  
+--  0x00061000: TxTSU
+--  0x00062000: DIO
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -646,17 +646,17 @@ architecture rtl of wr_nic_top is
   -------------------
   constant c_cfg_base_addr : t_wishbone_address_array(4 downto 0) :=
     (0 => x"00000000",                  -- WRPC
-     1 => x"00020000",                  -- NIC
-     2 => x"00040000",                  -- VIC (IRQ gen)
-     3 => x"00050000",                  -- TxTSU
-     4 => x"00060000");                 -- DIO
+     1 => x"00040000",                  -- NIC
+     2 => x"00060000",                  -- VIC (IRQ gen)
+     3 => x"00061000",                  -- TxTSU
+     4 => x"00062000");                 -- DIO
 
   constant c_cfg_base_mask : t_wishbone_address_array(4 downto 0) :=
-    (0 => x"00070000",
-     1 => x"00070000",
-     2 => x"00070000",
-     3 => x"00070000",
-     4 => x"00070000");
+    (0 => x"00040000",
+     1 => x"00060000",
+     2 => x"0007f000",
+     3 => x"0007f000",
+     4 => x"0007f000");
 
   signal cbar_slave_i  : t_wishbone_slave_in;
   signal cbar_slave_o  : t_wishbone_slave_out;
@@ -1159,7 +1159,7 @@ begin
       --TRIG0           => TRIG0,
       --TRIG1           => TRIG1,
       --TRIG2           => TRIG2,
-      TRIG3           => TRIG3,
+--      TRIG3           => TRIG3,
 
       slave_i            => cbar_master_o(4),
       slave_o            => cbar_master_i(4),
@@ -1207,30 +1207,35 @@ begin
 
   sfp_tx_disable_o <= '0';
 
---  chipscope_ila_1 : chipscope_ila
---    port map (
---      CONTROL => CONTROL,
---      CLK     => clk_125m_pllref,
---      TRIG0   => TRIG0,
---      TRIG1   => TRIG1,
---      TRIG2   => TRIG2,
---      TRIG3   => TRIG3);
---
---  chipscope_icon_1 : chipscope_icon
---    port map (
---      CONTROL0 => CONTROL
---      );
---
---  TRIG2(5 downto 0)  <= GPIO(0) & wb_irq_data_fifo_dio & vic_irq & vic_slave_irq;
---
---  TRIG0              <= cbar_master_o(4).adr(19 downto 0) & cbar_master_o(4).dat(7 downto 0) & 
---                        cbar_master_o(4).cyc & cbar_master_o(4).stb & 
---								cbar_master_o(4).we & cbar_master_i(4).ack;
---
---
---  TRIG1 <= cbar_slave_i.adr(19 downto 0) & cbar_slave_o.dat(7 downto 0) & 
---           cbar_slave_i.cyc & cbar_slave_i.stb & cbar_slave_i.we & cbar_slave_o.ack;
+  chipscope_ila_1 : chipscope_ila
+    port map (
+      CONTROL => CONTROL,
+      CLK     => clk_sys,
+      TRIG0   => TRIG0,
+      TRIG1   => TRIG1,
+      TRIG2   => TRIG2,
+      TRIG3   => TRIG3);
 
+  chipscope_icon_1 : chipscope_icon
+    port map (
+      CONTROL0 => CONTROL
+      );
+
+  TRIG0 <=cbar_slave_i.adr;
+  TRIG1 <=cbar_slave_i.dat;
+  TRIG2(0) <=cbar_slave_i.cyc;
+  TRIG2(1) <=cbar_slave_i.stb;
+  TRIG2(2) <=cbar_slave_i.we;
+  TRIG2(6 downto 3) <=cbar_slave_i.sel;
+  TRIG2(7) <=cbar_slave_o.ack;
+  TRIG2(8) <=cbar_slave_o.stall;
+  TRIG2(9) <=cbar_master_o(0).cyc;
+  TRIG2(10) <=cbar_master_o(1).cyc;
+  TRIG2(11) <=cbar_master_o(2).cyc;
+  TRIG2(12) <=cbar_master_o(3).cyc;
+  TRIG2(13) <=cbar_master_o(4).cyc;
+  TRIG3 <= cbar_master_i(0).dat;
+  
 
 
 end rtl;
