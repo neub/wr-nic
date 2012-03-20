@@ -6,7 +6,7 @@
 -- Author     : Rafael Rodriguez
 -- Company    : Seven Solutions
 -- Created    : 2012-03-03
--- Last update: 2012-03-07
+-- Last update: 2012-03-20
 -- Platform   : FPGA-generic
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -331,16 +331,16 @@ architecture rtl of wrsw_dio is
 	
   -- WB Crossbar
   constant c_cfg_base_addr : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"00060000",  -- ONEWIRE                
-     1 => x"00060100",  -- I2C                
-     2 => x"00060200",  -- GPIO                 
-     3 => x"00060300"); -- PULSE GEN & STAMPER                 
+    (0 => x"00000000",  -- ONEWIRE                
+     1 => x"00000100",  -- I2C                
+     2 => x"00000200",  -- GPIO                 
+     3 => x"00000300"); -- PULSE GEN & STAMPER                 
 
   constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"ffffff00",
-     1 => x"ffffff00",
-     2 => x"ffffff00",
-     3 => x"ffffff00");
+    (0 => x"00000f00",
+     1 => x"00000f00",
+     2 => x"00000f00",
+     3 => x"00000f00");
 
   signal cbar_master_in   : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
   signal cbar_master_out  : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
