@@ -34,7 +34,14 @@ module main;
       @(posedge I_Gennum.ready);
 
       $display("Startup");
-      
+
+      acc.write('ha0400, 'h1deadbee);
+      acc.write('ha0400, 'h0deadbee);      
+
+      acc.write('hc0000, 'h0deadbee);      
+      acc.write('he0000, 'h0deadbee);      
+      acc.write('he1000, 'h0deadbee);      
+      acc.write('he2000, 'h0deadbee);      
       
       acc.write(BASE_WRPC + 'h100, 'hdeadbeef);
       acc.write(BASE_WRPC + 'h104, 'hcafebabe);
@@ -47,9 +54,11 @@ module main;
       acc.read(BASE_WRPC + 'h104, rval);
       $display("MemReadback2 %x", rval);
 
+/* -----\/----- EXCLUDED -----\/-----
       acc.write(BASE_VIC + 'h4, 'h1); // enable IRQ 0
       acc.write(BASE_VIC + 'h0, 'h3); // positive polarity, enable VIC
       acc.write(BASE_VIC + 'h18, 'h1); // software IRQ trigger
+ -----/\----- EXCLUDED -----/\----- */
 
       
       
