@@ -59,7 +59,7 @@ use work.wishbone_pkg.all;
 entity wr_nic_top is
   generic
     (
-      g_nic_usedma : boolean := true);
+      g_nic_usedma : boolean := false);
   port
     (
       -- Global ports
@@ -722,10 +722,10 @@ begin
       DIVCLK_DIVIDE      => 1,
       CLKFBOUT_MULT      => 50,
       CLKFBOUT_PHASE     => 0.000,
-      CLKOUT0_DIVIDE     => 8,          -- 62.5 MHz
+      CLKOUT0_DIVIDE     => 16,          -- 62.5 MHz
       CLKOUT0_PHASE      => 0.000,
       CLKOUT0_DUTY_CYCLE => 0.500,
-      CLKOUT1_DIVIDE     => 8,          -- 125 MHz
+      CLKOUT1_DIVIDE     => 16,          -- 62.5 MHz
       CLKOUT1_PHASE      => 0.000,
       CLKOUT1_DUTY_CYCLE => 0.500,
       CLKOUT2_DIVIDE     => 8,
@@ -1232,34 +1232,34 @@ begin
 
   sfp_tx_disable_o <= '0';
 
-  chipscope_ila_1 : chipscope_ila
-    port map (
-      CONTROL => CONTROL,
-      CLK     => clk_sys,
-      TRIG0   => TRIG0,
-      TRIG1   => TRIG1,
-      TRIG2   => TRIG2,
-      TRIG3   => TRIG3);
+  --chipscope_ila_1 : chipscope_ila
+  --  port map (
+  --    CONTROL => CONTROL,
+  --    CLK     => clk_sys,
+  --    TRIG0   => TRIG0,
+  --    TRIG1   => TRIG1,
+  --    TRIG2   => TRIG2,
+  --    TRIG3   => TRIG3);
 
-  chipscope_icon_1 : chipscope_icon
-    port map (
-      CONTROL0 => CONTROL
-      );
+  --chipscope_icon_1 : chipscope_icon
+  --  port map (
+  --    CONTROL0 => CONTROL
+  --    );
 
-  TRIG0             <= cbar_slave_i.adr;
-  TRIG1             <= cbar_slave_i.dat;
-  TRIG2(0)          <= cbar_slave_i.cyc;
-  TRIG2(1)          <= cbar_slave_i.stb;
-  TRIG2(2)          <= cbar_slave_i.we;
-  TRIG2(6 downto 3) <= cbar_slave_i.sel;
-  TRIG2(7)          <= cbar_slave_o.ack;
-  TRIG2(8)          <= cbar_slave_o.stall;
-  TRIG2(9)          <= cbar_master_o(0).cyc;
-  TRIG2(10)         <= cbar_master_o(1).cyc;
-  TRIG2(11)         <= cbar_master_o(2).cyc;
-  TRIG2(12)         <= cbar_master_o(3).cyc;
-  TRIG2(13)         <= cbar_master_o(4).cyc;
-  TRIG3             <= cbar_master_i(0).dat;
+  --TRIG0             <= cbar_slave_i.adr;
+  --TRIG1             <= cbar_slave_i.dat;
+  --TRIG2(0)          <= cbar_slave_i.cyc;
+  --TRIG2(1)          <= cbar_slave_i.stb;
+  --TRIG2(2)          <= cbar_slave_i.we;
+  --TRIG2(6 downto 3) <= cbar_slave_i.sel;
+  --TRIG2(7)          <= cbar_slave_o.ack;
+  --TRIG2(8)          <= cbar_slave_o.stall;
+  --TRIG2(9)          <= cbar_master_o(0).cyc;
+  --TRIG2(10)         <= cbar_master_o(1).cyc;
+  --TRIG2(11)         <= cbar_master_o(2).cyc;
+  --TRIG2(12)         <= cbar_master_o(3).cyc;
+  --TRIG2(13)         <= cbar_master_o(4).cyc;
+  --TRIG3             <= cbar_master_i(0).dat;
   
 
 
