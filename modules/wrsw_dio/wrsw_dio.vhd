@@ -491,7 +491,10 @@ begin
     generic map(
       g_num_masters => 1,
       g_num_slaves  => 4,
-      g_registered  => true
+      g_registered  => true,
+      -- Address of the slaves connected
+      g_address     => c_cfg_base_addr,
+      g_mask        => c_cfg_base_mask
       )
     port map(
       clk_sys_i     => clk_sys_i,
@@ -501,10 +504,7 @@ begin
       slave_o(0)    => slave_o,
       -- Slave conenctions
       master_i      => cbar_master_in,
-      master_o      => cbar_master_out,
-      -- Address of the slaves connected
-      cfg_address_i => c_cfg_base_addr,
-      cfg_mask_i    => c_cfg_base_mask
+      master_o      => cbar_master_out
       );
 
   gen_pio_assignment: for i in 0 to 4 generate

@@ -425,19 +425,16 @@ architecture rtl of wr_nic_top is
     generic(
       g_num_masters : integer;
       g_num_slaves  : integer;
-      g_registered  : boolean
-      );
+      g_registered  : boolean;
+      g_address     : t_wishbone_address_array;
+      g_mask        : t_wishbone_address_array);
     port(
       clk_sys_i     : in  std_logic;
       rst_n_i       : in  std_logic;
       slave_i       : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
       slave_o       : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
       master_i      : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
-      master_o      : out t_wishbone_master_out_array(g_num_slaves-1 downto 0);
-      -- Address of the slaves connected
-      cfg_address_i : in  t_wishbone_address_array(g_num_slaves-1 downto 0);
-      cfg_mask_i    : in  t_wishbone_address_array(g_num_slaves-1 downto 0)
-      );
+      master_o      : out t_wishbone_master_out_array(g_num_slaves-1 downto 0));
   end component;
 
   -- IRQ Gen
@@ -801,7 +798,9 @@ begin
     generic map(
       g_num_masters => 1,
       g_num_slaves  => 5,
-      g_registered  => true
+      g_registered  => true,
+      g_address     => c_cfg_base_addr,
+      g_mask        => c_cfg_base_mask
       )
     port map(
       clk_sys_i     => clk_sys,
@@ -811,10 +810,7 @@ begin
       slave_o(0)    => cbar_slave_o,
       -- Slave conenctions
       master_i      => cbar_master_i,
-      master_o      => cbar_master_o,
-      -- Address of the slaves connected
-      cfg_address_i => c_cfg_base_addr,
-      cfg_mask_i    => c_cfg_base_mask
+      master_o      => cbar_master_o
       );
 
   ------------------------------------------------------------------------------
