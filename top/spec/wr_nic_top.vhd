@@ -6,7 +6,7 @@
 -- Author     : Grzegorz Daniluk, Rafael Rodriguez
 -- Company    : Elproma, Seven Solutions
 -- Created    : 2012-02-08
--- Last update: 2012-03-20
+-- Last update: 2012-06-07
 -- Platform   : FPGA-generics
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -68,6 +68,9 @@ entity wr_nic_top is
       clk_125m_pllref_p_i : in std_logic;  -- 125 MHz PLL reference
       clk_125m_pllref_n_i : in std_logic;
 
+      fpga_pll_ref_clk_101_p_i : in std_logic;  -- Dedicated clock for Xilinx GTP transceiver
+      fpga_pll_ref_clk_101_n_i : in std_logic;
+
       -- From GN4124 Local bus
       L_CLKp : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
       L_CLKn : in std_logic;  -- Local bus clock (frequency set in GN4124 config registers)
@@ -75,15 +78,15 @@ entity wr_nic_top is
       L_RST_N : in std_logic;           -- Reset from GN4124 (RSTOUT18_N)
 
       -- General Purpose Interface
-      GPIO : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
-                                                  -- GPIO[1] -> GN4124 GPIO9
+      GPIO       : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
+                                        -- GPIO[1] -> GN4124 GPIO9
       -- PCIe to Local [Inbound Data] - RX
-      P2L_RDY    : out std_logic;       -- Rx Buffer Full Flag
-      P2L_CLKn   : in  std_logic;       -- Receiver Source Synchronous Clock-
-      P2L_CLKp   : in  std_logic;       -- Receiver Source Synchronous Clock+
-      P2L_DATA   : in  std_logic_vector(15 downto 0);  -- Parallel receive data
-      P2L_DFRAME : in  std_logic;       -- Receive Frame
-      P2L_VALID  : in  std_logic;       -- Receive Data Valid
+      P2L_RDY    : out   std_logic;     -- Rx Buffer Full Flag
+      P2L_CLKn   : in    std_logic;     -- Receiver Source Synchronous Clock-
+      P2L_CLKp   : in    std_logic;     -- Receiver Source Synchronous Clock+
+      P2L_DATA   : in    std_logic_vector(15 downto 0);  -- Parallel receive data
+      P2L_DFRAME : in    std_logic;     -- Receive Frame
+      P2L_VALID  : in    std_logic;     -- Receive Data Valid
 
       -- Inbound Buffer Request/Status
       P_WR_REQ : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
@@ -165,8 +168,8 @@ entity wr_nic_top is
       dio_led_top_o : out std_logic;
       dio_led_bot_o : out std_logic;
 
-      fmc_scl_b  : inout std_logic;
-      fmc_sda_b  : inout std_logic;
+      fmc_scl_b : inout std_logic;
+      fmc_sda_b : inout std_logic;
 
 
       -----------------------------------------
@@ -214,10 +217,10 @@ architecture rtl of wr_nic_top is
       dma_reg_clk_i   : in  std_logic;
       dma_reg_adr_i   : in  std_logic_vector(31 downto 0) := x"00000000";
       dma_reg_dat_i   : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_reg_sel_i   : in  std_logic_vector(3 downto 0) := x"0";
-      dma_reg_stb_i   : in  std_logic := '0';
-      dma_reg_we_i    : in  std_logic := '0';
-      dma_reg_cyc_i   : in  std_logic := '0';
+      dma_reg_sel_i   : in  std_logic_vector(3 downto 0)  := x"0";
+      dma_reg_stb_i   : in  std_logic                     := '0';
+      dma_reg_we_i    : in  std_logic                     := '0';
+      dma_reg_cyc_i   : in  std_logic                     := '0';
       dma_reg_dat_o   : out std_logic_vector(31 downto 0);
       dma_reg_ack_o   : out std_logic;
       dma_reg_stall_o : out std_logic;
@@ -239,32 +242,32 @@ architecture rtl of wr_nic_top is
       dma_we_o        : out std_logic;
       dma_cyc_o       : out std_logic;
       dma_dat_i       : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_ack_i       : in  std_logic := '0';
-      dma_stall_i     : in  std_logic := '0');
+      dma_ack_i       : in  std_logic                     := '0';
+      dma_stall_i     : in  std_logic                     := '0');
   end component;
 
   -- WR PTP Core
   component xwr_core is
     generic(
-      g_simulation          : integer                        := 0;
-      g_phys_uart           : boolean                        := true;
-      g_virtual_uart        : boolean                        := false;
-      g_with_external_clock_input : boolean                  := false;
-      g_aux_clks                  : integer                  := 1;
-      g_ep_rxbuf_size       : integer                        := 1024;
-      g_dpram_initf         : string                         := "";
-      g_dpram_initv         : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
-      g_dpram_size          : integer                        := 20480;  --in 32-bit words
-      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
-      g_address_granularity : t_wishbone_address_granularity := WORD
+      g_simulation                : integer                        := 0;
+      g_phys_uart                 : boolean                        := true;
+      g_virtual_uart              : boolean                        := false;
+      g_with_external_clock_input : boolean                        := false;
+      g_aux_clks                  : integer                        := 1;
+      g_ep_rxbuf_size             : integer                        := 1024;
+      g_dpram_initf               : string                         := "";
+      g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
+      g_dpram_size                : integer                        := 20480;  --in 32-bit words
+      g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
+      g_address_granularity       : t_wishbone_address_granularity := WORD
       );
     port(
       clk_sys_i  : in std_logic;
       clk_dmtd_i : in std_logic;
       clk_ref_i  : in std_logic;
       clk_aux_i  : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
-      clk_ext_i  : in std_logic := '0';
-      pps_ext_i  : in std_logic := '0';
+      clk_ext_i  : in std_logic                               := '0';
+      pps_ext_i  : in std_logic                               := '0';
       rst_n_i    : in std_logic;
 
       dac_hpll_load_p1_o : out std_logic;
@@ -338,8 +341,8 @@ architecture rtl of wr_nic_top is
       g_ch0_use_refclk_out : boolean := false;
       g_ch1_use_refclk_out : boolean := false);
     port (
+      gtp_clk_i          : in  std_logic;
       ch0_ref_clk_i      : in  std_logic;
-      ch0_ref_clk_o      : out std_logic;
       ch0_tx_data_i      : in  std_logic_vector(7 downto 0);
       ch0_tx_k_i         : in  std_logic;
       ch0_tx_disparity_o : out std_logic;
@@ -352,7 +355,6 @@ architecture rtl of wr_nic_top is
       ch0_rst_i          : in  std_logic;
       ch0_loopen_i       : in  std_logic;
       ch1_ref_clk_i      : in  std_logic;
-      ch1_ref_clk_o      : out std_logic;
       ch1_tx_data_i      : in  std_logic_vector(7 downto 0) := "00000000";
       ch1_tx_k_i         : in  std_logic                    := '0';
       ch1_tx_disparity_o : out std_logic;
@@ -429,12 +431,12 @@ architecture rtl of wr_nic_top is
       g_address     : t_wishbone_address_array;
       g_mask        : t_wishbone_address_array);
     port(
-      clk_sys_i     : in  std_logic;
-      rst_n_i       : in  std_logic;
-      slave_i       : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
-      slave_o       : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
-      master_i      : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
-      master_o      : out t_wishbone_master_out_array(g_num_slaves-1 downto 0));
+      clk_sys_i : in  std_logic;
+      rst_n_i   : in  std_logic;
+      slave_i   : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
+      slave_o   : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
+      master_i  : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
+      master_o  : out t_wishbone_master_out_array(g_num_slaves-1 downto 0));
   end component;
 
   -- IRQ Gen
@@ -476,38 +478,38 @@ architecture rtl of wr_nic_top is
       g_address_granularity : t_wishbone_address_granularity := WORD
       );
     port (
-      clk_sys_i      : in  std_logic;
-      clk_ref_i      : in  std_logic;		
-      rst_n_i        : in  std_logic;
-		
-      dio_clk_i      : in std_logic;
-      dio_in_i       : in std_logic_vector(4 downto 0);
-      dio_out_o      : out std_logic_vector(4 downto 0);
-      dio_oe_n_o     : out std_logic_vector(4 downto 0);
-      dio_term_en_o  : out std_logic_vector(4 downto 0);
-      dio_onewire_b  : inout std_logic;
-      dio_sdn_n_o    : out std_logic;
-      dio_sdn_ck_n_o : out std_logic;
-      dio_led_top_o  : out std_logic;
-      dio_led_bot_o  : out std_logic;		
+      clk_sys_i : in std_logic;
+      clk_ref_i : in std_logic;
+      rst_n_i   : in std_logic;
 
-      fmc_scl_b       : inout std_logic;
-      fmc_sda_b       : inout std_logic;
+      dio_clk_i      : in    std_logic;
+      dio_in_i       : in    std_logic_vector(4 downto 0);
+      dio_out_o      : out   std_logic_vector(4 downto 0);
+      dio_oe_n_o     : out   std_logic_vector(4 downto 0);
+      dio_term_en_o  : out   std_logic_vector(4 downto 0);
+      dio_onewire_b  : inout std_logic;
+      dio_sdn_n_o    : out   std_logic;
+      dio_sdn_ck_n_o : out   std_logic;
+      dio_led_top_o  : out   std_logic;
+      dio_led_bot_o  : out   std_logic;
+
+      fmc_scl_b : inout std_logic;
+      fmc_sda_b : inout std_logic;
 
       tm_time_valid_i : in std_logic;
       tm_utc_i        : in std_logic_vector(39 downto 0);
       tm_cycles_i     : in std_logic_vector(27 downto 0);
 
-      TRIG0           : out std_logic_vector(31 downto 0);
-      TRIG1           : out std_logic_vector(31 downto 0);
-      TRIG2           : out std_logic_vector(31 downto 0);
-      TRIG3           : out std_logic_vector(31 downto 0);
-		
-      slave_i            : in  t_wishbone_slave_in;
-      slave_o            : out t_wishbone_slave_out;
-		wb_irq_data_fifo_o : out std_logic
+      TRIG0 : out std_logic_vector(31 downto 0);
+      TRIG1 : out std_logic_vector(31 downto 0);
+      TRIG2 : out std_logic_vector(31 downto 0);
+      TRIG3 : out std_logic_vector(31 downto 0);
+
+      slave_i                      : in  t_wishbone_slave_in;
+      slave_o                      : out t_wishbone_slave_out;
+                wb_irq_data_fifo_o : out std_logic
   );
-  end component; --DIO core
+  end component;  --DIO core
 
   component chipscope_ila
     port (
@@ -545,6 +547,9 @@ architecture rtl of wr_nic_top is
 
   -- LCLK from GN4124 used as system clock
   signal l_clk : std_logic;
+
+  -- Dedicated clock for GTP transceiver
+  signal gtp_dedicated_clk : std_logic;
 
   -- P2L colck PLL status
   signal p2l_pll_locked : std_logic;
@@ -638,12 +643,12 @@ architecture rtl of wr_nic_top is
   -------------------
   -- NIC
   -------------------
-  signal nic_src_out : t_wrf_source_out;
-  signal nic_src_in  : t_wrf_source_in;
-  signal nic_snk_out : t_wrf_sink_out;
-  signal nic_snk_in  : t_wrf_sink_in;
-  signal nic_dma_in  : t_wishbone_slave_in;
-  signal nic_dma_out : t_wishbone_slave_out;
+  signal nic_src_out          : t_wrf_source_out;
+  signal nic_src_in           : t_wrf_source_in;
+  signal nic_snk_out          : t_wrf_sink_out;
+  signal nic_snk_in           : t_wrf_sink_in;
+  signal nic_dma_in           : t_wishbone_slave_in;
+  signal nic_dma_out          : t_wishbone_slave_out;
 
   -------------------
   -- WB Crossbar
@@ -785,6 +790,19 @@ begin
       );
 
 
+  ------------------------------------------------------------------------------
+  -- Dedicated clock for GTP
+  ------------------------------------------------------------------------------
+  cmp_gtp_dedicated_clk_buf : IBUFGDS
+    generic map(
+      DIFF_TERM    => true,
+      IBUF_LOW_PWR => true,
+      IOSTANDARD   => "DEFAULT")
+    port map (
+      O  => gtp_dedicated_clk,
+      I  => fpga_pll_ref_clk_101_p_i,
+      IB => fpga_pll_ref_clk_101_n_i
+    );
 
   ------------------------------------------------------------------------------
   -- Active high reset
@@ -803,75 +821,75 @@ begin
       g_mask        => c_cfg_base_mask
       )
     port map(
-      clk_sys_i     => clk_sys,
-      rst_n_i       => local_reset_n,
+      clk_sys_i  => clk_sys,
+      rst_n_i    => local_reset_n,
       -- Master connections
-      slave_i(0)    => cbar_slave_i,
-      slave_o(0)    => cbar_slave_o,
+      slave_i(0) => cbar_slave_i,
+      slave_o(0) => cbar_slave_o,
       -- Slave conenctions
-      master_i      => cbar_master_i,
-      master_o      => cbar_master_o
+      master_i   => cbar_master_i,
+      master_o   => cbar_master_o
       );
 
   ------------------------------------------------------------------------------
   -- Gennun Core
   ------------------------------------------------------------------------------
-  U_Gennum_Core: gn4124_core
+  U_Gennum_Core : gn4124_core
     port map (
-      rst_n_a_i       => L_RST_N,
+      rst_n_a_i    => L_RST_N,
 --      status_o        => status_o,
-      p2l_clk_p_i     => P2L_CLKp,
-      p2l_clk_n_i     => P2L_CLKn,
-      p2l_data_i      => P2L_DATA,
-      p2l_dframe_i    => P2L_DFRAME,
-      p2l_valid_i     => P2L_VALID,
-      p2l_rdy_o       => P2L_RDY,
-      p_wr_req_i      => P_WR_REQ,
-      p_wr_rdy_o      => P_WR_RDY,
-      rx_error_o      => RX_ERROR,
-      vc_rdy_i        => VC_RDY,
-      l2p_clk_p_o     => L2P_CLKp,
-      l2p_clk_n_o     => L2P_CLKn,
-      l2p_data_o      => L2P_DATA,
-      l2p_dframe_o    => L2P_DFRAME,
-      l2p_valid_o     => L2P_VALID,
-      l2p_edb_o       => L2P_EDB,
-      l2p_rdy_i       => L2P_RDY,
-      l_wr_rdy_i      => L_WR_RDY,
-      p_rd_d_rdy_i    => P_RD_D_RDY,
-      tx_error_i      => TX_ERROR,
+      p2l_clk_p_i  => P2L_CLKp,
+      p2l_clk_n_i  => P2L_CLKn,
+      p2l_data_i   => P2L_DATA,
+      p2l_dframe_i => P2L_DFRAME,
+      p2l_valid_i  => P2L_VALID,
+      p2l_rdy_o    => P2L_RDY,
+      p_wr_req_i   => P_WR_REQ,
+      p_wr_rdy_o   => P_WR_RDY,
+      rx_error_o   => RX_ERROR,
+      vc_rdy_i     => VC_RDY,
+      l2p_clk_p_o  => L2P_CLKp,
+      l2p_clk_n_o  => L2P_CLKn,
+      l2p_data_o   => L2P_DATA,
+      l2p_dframe_o => L2P_DFRAME,
+      l2p_valid_o  => L2P_VALID,
+      l2p_edb_o    => L2P_EDB,
+      l2p_rdy_i    => L2P_RDY,
+      l_wr_rdy_i   => L_WR_RDY,
+      p_rd_d_rdy_i => P_RD_D_RDY,
+      tx_error_i   => TX_ERROR,
 --      dma_irq_o       => dma_irq_o,
-      irq_p_i         => vic_irq,
-      irq_p_o         => GPIO(0),
+      irq_p_i      => vic_irq,
+      irq_p_o      => GPIO(0),
 
-      dma_reg_clk_i   => clk_sys,
-      csr_clk_i       => clk_sys,
+      dma_reg_clk_i => clk_sys,
+      csr_clk_i     => clk_sys,
 
-      csr_adr_o       => cbar_slave_adr_words,
-      csr_dat_o       => cbar_slave_i.dat,
-      csr_sel_o       => cbar_slave_i.sel,
-      csr_stb_o       => cbar_slave_i.stb,
-      csr_we_o        => cbar_slave_i.we,
-      csr_cyc_o       => cbar_slave_i.cyc,
-      csr_dat_i       => cbar_slave_o.dat,
-      csr_ack_i       => cbar_slave_o.ack,
-      csr_stall_i     => cbar_slave_o.stall,
+      csr_adr_o   => cbar_slave_adr_words,
+      csr_dat_o   => cbar_slave_i.dat,
+      csr_sel_o   => cbar_slave_i.sel,
+      csr_stb_o   => cbar_slave_i.stb,
+      csr_we_o    => cbar_slave_i.we,
+      csr_cyc_o   => cbar_slave_i.cyc,
+      csr_dat_i   => cbar_slave_o.dat,
+      csr_ack_i   => cbar_slave_o.ack,
+      csr_stall_i => cbar_slave_o.stall,
 
-      dma_clk_i       => clk_sys);
+      dma_clk_i => clk_sys);
 
   cbar_slave_i.adr <= cbar_slave_adr_words(29 downto 0) & "00";
-  
+
   process(clk_sys, rst)
   begin
     if rising_edge(clk_sys) then
       led_divider <= led_divider + 1;
     end if;
   end process;
-  
-  fpga_scl_b     <= '0' when wrc_scl_o = '0' else 'Z';
-  fpga_sda_b     <= '0' when wrc_sda_o = '0' else 'Z';
-  wrc_scl_i      <= fpga_scl_b;
-  wrc_sda_i      <= fpga_sda_b;
+
+  fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
+  fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
+  wrc_scl_i  <= fpga_scl_b;
+  wrc_sda_i  <= fpga_sda_b;
 
   sfp_mod_def1_b <= '0' when sfp_scl_o = '0' else 'Z';
   sfp_mod_def2_b <= '0' when sfp_sda_o = '0' else 'Z';
@@ -886,21 +904,21 @@ begin
   -------------------------------------
   U_WR_CORE : xwr_core
     generic map (
-      g_simulation          => 0,
-      g_phys_uart           => true,
-      g_virtual_uart        => false,
+      g_simulation                => 0,
+      g_phys_uart                 => true,
+      g_virtual_uart              => false,
       g_with_external_clock_input => true,
-      g_aux_clks            => 1,
-      g_ep_rxbuf_size       => 1024,
-      g_dpram_initf         => "",
-      g_dpram_size          => 20480,
-      g_interface_mode      => PIPELINED,
-      g_address_granularity => BYTE)
+      g_aux_clks                  => 1,
+      g_ep_rxbuf_size             => 1024,
+      g_dpram_initf               => "",
+      g_dpram_size                => 20480,
+      g_interface_mode            => PIPELINED,
+      g_address_granularity       => BYTE)
     port map (
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
-      clk_aux_i  => (others=>'0'),
+      clk_aux_i  => (others => '0'),
       clk_ext_i  => dio_clk,
       pps_ext_i  => dio_in(3),
       rst_n_i    => local_reset_n,
@@ -963,7 +981,7 @@ begin
       tm_cycles_o          => tm_cycles,
       pps_p_o              => pps,
 
-      dio_o       => open, 
+      dio_o       => open,
       rst_aux_n_o => open
     );
 
@@ -1062,8 +1080,9 @@ begin
     generic map (
       g_simulation => 0)
     port map (
+      gtp_clk_i => gtp_dedicated_clk,
+
       ch0_ref_clk_i      => clk_125m_pllref,
-      ch0_ref_clk_o      => open,
       ch0_tx_data_i      => x"00",
       ch0_tx_k_i         => '0',
       ch0_tx_disparity_o => open,
@@ -1077,7 +1096,6 @@ begin
       ch0_loopen_i       => '0',
 
       ch1_ref_clk_i      => clk_125m_pllref,
-      ch1_ref_clk_o      => open,
       ch1_tx_data_i      => phy_tx_data,
       ch1_tx_k_i         => phy_tx_k,
       ch1_tx_disparity_o => phy_tx_disparity,
@@ -1139,25 +1157,25 @@ begin
     generic map (
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE)
-		
-    port map(
-      clk_sys_i       => clk_sys,
-      clk_ref_i       => clk_125m_pllref,
-      rst_n_i         => local_reset_n,
-		
-      dio_clk_i       => dio_clk,
-      dio_in_i        => dio_in,
-      dio_out_o       => dio_out,
-      dio_oe_n_o      => dio_oe_n_o,
-      dio_term_en_o   => dio_term_en_o,
-      dio_onewire_b   => dio_onewire_b,
-      dio_sdn_n_o     => dio_sdn_n_o,
-      dio_sdn_ck_n_o  => dio_sdn_ck_n_o,
-      dio_led_top_o   => open, --dio_led_top_o,
-      dio_led_bot_o   => dio_led_bot_o,
 
-      fmc_scl_b       => fmc_scl_b,
-      fmc_sda_b       => fmc_sda_b, 
+    port map(
+      clk_sys_i => clk_sys,
+      clk_ref_i => clk_125m_pllref,
+      rst_n_i   => local_reset_n,
+
+      dio_clk_i      => dio_clk,
+      dio_in_i       => dio_in,
+      dio_out_o      => dio_out,
+      dio_oe_n_o     => dio_oe_n_o,
+      dio_term_en_o  => dio_term_en_o,
+      dio_onewire_b  => dio_onewire_b,
+      dio_sdn_n_o    => dio_sdn_n_o,
+      dio_sdn_ck_n_o => dio_sdn_ck_n_o,
+      dio_led_top_o  => open,           --dio_led_top_o,
+      dio_led_bot_o  => dio_led_bot_o,
+
+      fmc_scl_b => fmc_scl_b,
+      fmc_sda_b => fmc_sda_b,
 
       tm_time_valid_i => tm_time_valid,
       tm_utc_i        => tm_utc,
@@ -1168,9 +1186,9 @@ begin
       --TRIG2           => TRIG2,
 --      TRIG3           => TRIG3,
 
-      slave_i            => cbar_master_o(4),
-      slave_o            => cbar_master_i(4),
-		wb_irq_data_fifo_o => wb_irq_data_fifo_dio
+      slave_i                      => cbar_master_o(4),
+      slave_o                      => cbar_master_i(4),
+                wb_irq_data_fifo_o => wb_irq_data_fifo_dio
   );
 
   gen_dio_iobufs : for i in 0 to 4 generate
@@ -1228,20 +1246,20 @@ begin
       CONTROL0 => CONTROL
       );
 
-  TRIG0 <=cbar_slave_i.adr;
-  TRIG1 <=cbar_slave_i.dat;
-  TRIG2(0) <=cbar_slave_i.cyc;
-  TRIG2(1) <=cbar_slave_i.stb;
-  TRIG2(2) <=cbar_slave_i.we;
-  TRIG2(6 downto 3) <=cbar_slave_i.sel;
-  TRIG2(7) <=cbar_slave_o.ack;
-  TRIG2(8) <=cbar_slave_o.stall;
-  TRIG2(9) <=cbar_master_o(0).cyc;
-  TRIG2(10) <=cbar_master_o(1).cyc;
-  TRIG2(11) <=cbar_master_o(2).cyc;
-  TRIG2(12) <=cbar_master_o(3).cyc;
-  TRIG2(13) <=cbar_master_o(4).cyc;
-  TRIG3 <= cbar_master_i(0).dat;
+  TRIG0             <= cbar_slave_i.adr;
+  TRIG1             <= cbar_slave_i.dat;
+  TRIG2(0)          <= cbar_slave_i.cyc;
+  TRIG2(1)          <= cbar_slave_i.stb;
+  TRIG2(2)          <= cbar_slave_i.we;
+  TRIG2(6 downto 3) <= cbar_slave_i.sel;
+  TRIG2(7)          <= cbar_slave_o.ack;
+  TRIG2(8)          <= cbar_slave_o.stall;
+  TRIG2(9)          <= cbar_master_o(0).cyc;
+  TRIG2(10)         <= cbar_master_o(1).cyc;
+  TRIG2(11)         <= cbar_master_o(2).cyc;
+  TRIG2(12)         <= cbar_master_o(3).cyc;
+  TRIG2(13)         <= cbar_master_o(4).cyc;
+  TRIG3             <= cbar_master_i(0).dat;
   
 
 

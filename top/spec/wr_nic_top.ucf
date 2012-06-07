@@ -8,6 +8,12 @@ NET "clk_125m_pllref_n_i" IOSTANDARD = "LVDS_25";
 NET "clk_125m_pllref_p_i" LOC = G9;
 NET "clk_125m_pllref_p_i" IOSTANDARD = "LVDS_25";
 
+NET "fpga_pll_ref_clk_101_n_i" LOC = D11;
+NET "fpga_pll_ref_clk_101_n_i" IOSTANDARD = "LVDS_25";
+
+NET "fpga_pll_ref_clk_101_p_i" LOC = C11;
+NET "fpga_pll_ref_clk_101_p_i" IOSTANDARD = "LVDS_25";
+
 NET "dac_cs1_n_o" LOC = A3;
 NET "dac_cs1_n_o" IOSTANDARD = "LVCMOS25";
 
