@@ -249,17 +249,22 @@ architecture rtl of wr_nic_top is
       g_simulation          : integer                        := 0;
       g_phys_uart           : boolean                        := true;
       g_virtual_uart        : boolean                        := false;
-      g_ep_rxbuf_size  : integer                        := 1024;
+      g_with_external_clock_input : boolean                  := false;
+      g_aux_clks                  : integer                  := 1;
+      g_ep_rxbuf_size       : integer                        := 1024;
       g_dpram_initf         : string                         := "";
-      g_dpram_size          : integer                        := 16384;  --in 32-bit words
-      g_interface_mode      : t_wishbone_interface_mode      := PIPELINED;
-      g_address_granularity : t_wishbone_address_granularity := BYTE
+      g_dpram_initv         : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
+      g_dpram_size          : integer                        := 20480;  --in 32-bit words
+      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
+      g_address_granularity : t_wishbone_address_granularity := WORD
       );
     port(
       clk_sys_i  : in std_logic;
       clk_dmtd_i : in std_logic;
       clk_ref_i  : in std_logic;
-      clk_aux_i  : in std_logic;
+      clk_aux_i  : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
+      clk_ext_i  : in std_logic := '0';
+      pps_ext_i  : in std_logic := '0';
       rst_n_i    : in std_logic;
 
       dac_hpll_load_p1_o : out std_logic;
@@ -311,6 +316,7 @@ architecture rtl of wr_nic_top is
       timestamps_o     : out t_txtsu_timestamp;
       timestamps_ack_i : in  std_logic := '1';
 
+      tm_link_up_o         : out std_logic;
       tm_dac_value_o       : out std_logic_vector(23 downto 0);
       tm_dac_wr_o          : out std_logic;
       tm_clk_aux_lock_en_i : in  std_logic;
@@ -321,7 +327,8 @@ architecture rtl of wr_nic_top is
       pps_p_o              : out std_logic;
 
       dio_o       : out std_logic_vector(3 downto 0);
-      rst_aux_n_o : out std_logic
+      rst_aux_n_o : out std_logic;
+      link_ok_o   : out std_logic
     );
   end component;
 
@@ -886,16 +893,20 @@ begin
       g_simulation          => 0,
       g_phys_uart           => true,
       g_virtual_uart        => false,
-      g_ep_rxbuf_size  => 1024,
+      g_with_external_clock_input => true,
+      g_aux_clks            => 1,
+      g_ep_rxbuf_size       => 1024,
       g_dpram_initf         => "",
-      g_dpram_size          => 16384,
+      g_dpram_size          => 20480,
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE)
     port map (
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
-      clk_aux_i  => '0',
+      clk_aux_i  => (others=>'0'),
+      clk_ext_i  => dio_clk,
+      pps_ext_i  => dio_in(3),
       rst_n_i    => local_reset_n,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
