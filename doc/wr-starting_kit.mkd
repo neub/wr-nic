@@ -1,0 +1,82 @@
+% NOTES: WR Starting Kits
+% Benoit RAT
+% 20 May. 2012
+
+
+Components
+===========
+
+The starting kit is composed of various elements that you should find in the box:
+	
+* 2x SPECs boards compatible with *PCIe x16*
+* 2x FMC DIOs 5CH TTL A
+
+* 2x SFPs LC[^1] 
+	* AXGE-1254-0531 (blue)
+	* AXGE-3454-0531 (violet)
+* 1x LC-LC cable 5m 
+* 1x LEMO cable
+
+[^1]: Included in standard version of starting kit.
+	
+Setup
+===========
+
+User
+------------
+
+In order to use the starting kit you need:
+
+* The HDL bitstream of SPEC+DIO
+* The Slave firmware 
+* The Master firmware
+* The PCIe driver (Kernel module)
+
+
+
+Development
+-------------
+
+### Tools
+
+You must have installed the following tools:
+
+* Xilinx ISE
+* Git
+* Build-essantials
+* Kernel source
+* Lm32 cross compiler
+* Hdl make 
+
+For all these steps you can follow our guide [ohwr_development.pdf](ohwr_development.pdf)
+
+
+### Setup
+
+You can start by reading <http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_core> but by resuming you can do:
+
+First you need to synthetize HDL cores (Require hdlmake)
+
+
+
+Install the 
+
+	git clone git@ohwr.org:fmc-projects/spec/spec-sw.git
+	
+	
+	
+
+to compile the LM32 firmware for either slave or master. It turns out that both wrc.bin/ram sets of files are identical, no matter if I call
+'make WRMODE=master' or 'make WRMODE=slave'
+	
+	
+
+
+
+
+References
+============
+
+* SFPs information <http://www.ohwr.org/projects/white-rabbit/wiki/SFP>
+* SPEC demos manual <http://www.ohwr.org/projects/spec-sw/documents>
+

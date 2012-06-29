@@ -1,0 +1,95 @@
+% Visual & Electrical Inspection
+% Benoit RAT, Gabriel Ramirez
+% 18 Jun. 2012
+
+Visual Inspection:
+===================
+
+The first inspection to perform is to check that the PCB fulfil the IPC-610 Class-2 regulation. 
+This verification is complementary to the one realized by the PCB's assembler.
+If the person in charge of realizing the inspection, is not qualified in IPC regulations, 
+we strongly recommended the use of the official IPC manual.
+
+The following is a resume of the different points recommended to check: 
+
+1. General Clean Status
+	* Flux Residues
+	* Particulate Matter
+	* White Residues
+	* Surface Appearance
+	
+#. Soldering Anomalies:
+	* Free solder balls
+	* Excess Solder
+	* Fractured Solder
+#. Component Mounting
+	* Orientation
+	* THT Connectors
+#. Supported Holes
+	* THT pins length (<2.5mm)
+#. Rectangular or Square Passive Components
+	* Side Overhang
+	* End Overhang
+	* Fillet Height
+	* End Overlap
+	* Billboarding
+	* Tombstoning
+	* Mounting Upside Down
+#. Rectangular or Square SMD Chips
+	* Side Overhang
+	* End Joint Width
+	* Side Joint Length
+	* Hell Fillet Height
+#. PCB 
+	* Gold Surface Contact Area
+	* Laminate Conditions
+#. QSS Samtec connector pins
+
+
+Functional Tests:
+====================
+
+Short-circuit on main power supplies:
+--------------------------------------
+
+Before to plug the board to an external source, it is recommended to check the presence of short-circuit in the internal power 
+supplies, especially the ones connected to the BGA chips.
+The test consist of a simple short-circuit check on the following decoupling capacitors:
+
+1. +2V5 (C259)
+#. +1V8 (C289)
+#. +1V0 (C428)
+#. +1V5 (C290)
+#. +1V2_GTX (C247)
+#. +1V0_GTX (C311)
+#. +3V3 (C283)
+
+Too quickly find these capacitors, a schema of the board has been included with the respective numbering.
+
+![Voltage to check on various capacitors](SCB-electrical_test.png)
+
+Supply Current at 12V: 
+------------------------------------
+
+Once the short-circuit check has been executed, the board can be connected to the external power supply. 
+The first thing to compare is the supply current which is normally of good indicator of initial problems.
+The supply current measured should be around `0.4A ±20%` including the miniBackplane consumption. 
+
+Power Supply Voltages: 
+------------------------------------
+
+Finally, it is necessary to check the internal power supply and to make sure that they are in their functional limits (±10%). 
+The voltages that must be checked can be measured on the capacitors numbered in the previous figure and correspond to:
+
+1. +2V5 (C259) 			=> 	`2.5V±10%`
+#. +1V8 (C289) 			=> 	`1.8V±10%`
+#. +1V0  (C428) 		=> 	`1.0V±10%`
+#. +1V5  (C290)			=> 	`1.5V±10%` 
+#. +1V2_GTX (C247)		=>	`1.2V±10%` 
+#. +1V0_GTX  C311)		=> 	`1.0V±10%` 
+#. +3V3  (C283)			=> 	`3.3V±10%`
+#. +3V3_PLL (C266)		=> 	`3.3V±10%` 
+#. +2V5_PLL  (C263)		=> 	`2.5V±10%` 
+#. QDRII_VTT  (C414)	=> 	`0.9V±10%` 
+
+

@@ -1,0 +1,136 @@
+# Testing procedure for the switch (Draft)
+
+0. Visual inspection, electrical inspection, powerup. 
+	* Check if R5 is on, R3 is off (DMS=1)
+* The PPTS
+* The PTS (Production test suite like SPEC)
+	* at the moment it is called alpha because we have only some script (no python).
+* Benchmark test
+* Compliance test
+
+## The APTS (Alpha-Production Test Suite)
+
+
+### Expected testing flow
+
+
+1. does ARM respond
+* internal RAM
+* DDR memory (EBI0)
+* Ethernet port
+* Dataflash memory 
+* NAND memory (EBI1)
+* USB port
+* CPU-FPGA flashing: 
+	* TK0, TD0
+	* FPGA_INIT_B+FPGA_INIT_A
+* CPU-FPGA channel (EBI1)
+* FPGA peripheral (PTS test)
+
+The testing procedure for ARM was done with the following material:
+
+* Switch MCH Mini-backplane (rev 3.0pre)
+* 3x mini-USB cable
+* 1x USB-to-TTL converter (To connect easily to DBGU)
+* 1x JTAG emulator (Jlink SAM-ICE from segger)
+
+You also need to the package:
+ 
+* alpha-pts.tar.gz
+
+
+### Considerations
+
+* The different step for the test should not be perform in bootstrap but in a linear way.
+* A first step is need to check: CPU & DDR
+* The second step must executed respecting the following properties:
+	* Load all the following files at once: at91bootstrap.bin, barebox.bin, kernel, filesystem 
+	* Two way of loading files in case one failed: JTAG and USB 
+	* No use of TFTP for loading (in case ethernet is failing we want to check the other components)
+
+### Actual testing flow (to be improved)
+
+1. Basic: testing the component that are need to load linux
+
+	1. loading from CPU
+	*  Testing SRAM (if g45memtest is loading?)
+	*  Testing DDR (run g45memtest)  	 
+
+* Advanced: testing all other components once the linux is loaded
+
+	1. Ethernet (Loading files from TFTP*)
+	* FPGA (flashing)
+	* CPU-FPGA bus
+	* USB bus
+	* DF memory test
+	* NAND memory test
+	* Flashing test (Reading back after reboot*)
+	* PTS (like SPEC) ...
+
+\* To improve
+
+#### Basic testing
+
+First you should setup your tftp server and extract alpha-pts.tar.gz in the /tftpboot folder.
+
+Connecting with JTAG and doing the following you should have: 
+
+	speed 2 
+	r
+	wreg "R15 (PC)" 300000
+	loadbin /tftpboot/g45memtest 0x300000
+
+
+
+#### Advanced testing
+
+See http://www.segger.com/cms/jlink.html
+
+	./start
+
+Init the JTAG, and write register to go at RAM direction:
+
+	speed 2 
+	r
+	wreg "R15 (PC)" 300000
+
+Set the bootstrap: loadbin at91bootstrap.bin 0x300000
+
+	loadbin /tftpboot/at91bootstrap.bin 0x300000
+	SetBP 0x300088 H
+	g
+
+Set the second boot:
+
+	speed a 
+	loadbin /tftpboot/barebox.bin 0x73f00000
+	ClrBP 1
+	g
+
+Once you reach barebox terminal you may run: 
+
+Load the linux distrib:
+
+	tftp boot-fs-ben
+	sh boot-fs-ben
+
+Load the testing files:
+
+	tftp -g -r testing.sh 192.168.7.1
+	chmod +x ./testing.sh
+	./testing.sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  

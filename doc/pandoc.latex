@@ -1,0 +1,276 @@
+\documentclass[a4paper,oneside,$if(fontsize)$$fontsize$,$endif$$if(lang)$$lang$,$endif$]{$documentclass$}
+\usepackage{amssymb,amsmath}
+\usepackage[left=2.2cm,right=2.2cm,top=3cm,bottom=3cm]{geometry}
+
+\usepackage{ifxetex,ifluatex}
+\ifxetex
+  \usepackage{fontspec,xltxtra,xunicode}
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+\else
+  \ifluatex
+    \usepackage{fontspec}
+    \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \else
+    \usepackage[utf8]{inputenc}
+  \fi
+\fi
+
+$if(natbib)$
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+$endif$
+$if(biblatex)$
+\usepackage{biblatex}
+$if(biblio-files)$
+\bibliography{$biblio-files$}
+$endif$
+$endif$
+
+$if(listings)$
+\usepackage{listings}
+$endif$
+$if(lhs)$
+\lstnewenvironment{code}{\lstset{language=Haskell,basicstyle=\small\ttfamily}}{}
+$endif$
+
+
+
+$if(bg-color)$
+%%%%%%%%%% Background color %%%%%%%%%%%%%%%%%%%%
+
+% redefine environment 'verbatim" which is used to hold the code of any language.
+\usepackage{framed}
+\let\oldverbatim=\verbatim
+\renewenvironment{verbatim}
+{
+\begin{snugshade}
+\begin{oldverbatim}
+}
+{ 
+\end{oldverbatim}
+\end{snugshade}
+}
+
+% Redefined \textttt to add it background color
+\usepackage{soul, color, url}
+\sethlcolor{shadecolor}
+\let\OldTexttt\texttt
+\renewcommand{\texttt}[1]{\OldTexttt{\hl{#1}}}
+
+% Add highlighting environment (when background color)
+$if(highlighting-macros)$
+	$highlighting-macros$
+	\renewenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+$endif$
+
+%% Define the background (shade) color
+\usepackage{color}
+\definecolor{shadecolor}{RGB}{$bg-color$} 
+
+$else$
+	$if(highlighting-macros)$
+		% Add highlighting environment (without background color)
+		$highlighting-macros$
+	$endif$
+$endif$
+
+
+
+
+
+
+
+$if(verbatim-in-note)$
+%\usepackage{fancyvrb}
+$endif$
+
+\usepackage{float}
+
+\usepackage{ctable}
+
+$if(fancy-enums)$
+% Redefine labelwidth for lists; otherwise, the enumerate package will cause
+% markers to extend beyond the left margin.
+\makeatletter\AtBeginDocument{%
+  \renewcommand{\@listi}
+    {\setlength{\labelwidth}{4em}}
+}\makeatother
+\usepackage{enumerate}
+$endif$
+
+$if(tables)$
+\usepackage{ctable}
+\usepackage{float} % provides the H option for float placement
+$endif$
+
+$if(url)$
+\usepackage{url}
+$endif$
+
+\usepackage{graphicx}
+% We will generate all images so they have a width \maxwidth. This means
+% that they will get their normal width if they fit onto the page, but
+% are scaled down if they would overflow the margins.
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth
+\else\Gin@nat@width\fi}
+\makeatother
+\let\Oldincludegraphics\includegraphics
+\renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=\maxwidth]{#1}}
+
+$if(strikeout)$
+\usepackage[normalem]{ulem}
+% avoid problems with \sout in headers with hyperref:
+\pdfstringdefDisableCommands{\renewcommand{\sout}{}}
+$endif$
+
+$if(subscript)$
+\newcommand{\textsubscr}[1]{\ensuremath{_{\scriptsize\textrm{#1}}}}
+$endif$
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+
+$if(numbersections)$
+$else$
+\setcounter{secnumdepth}{0}
+$endif$
+$if(verbatim-in-note)$
+\VerbatimFootnotes % allows verbatim text in footnotes
+$endif$
+
+$if(lang)$
+\ifxetex
+  \usepackage{polyglossia}
+  \newcommand{\euro}{€}
+  \setmainlanguage{$lang$}
+\else
+  \usepackage{babel}
+  \usepackage{eurosym}
+\fi
+$endif$
+
+\usepackage{calc}
+\usepackage{fancyhdr}
+\fancyhf{}
+
+\fancyhead[R]{\nouppercase{\leftmark}}
+%%\fancyfoot[L]{ www.sevensols.com/whiterabbitsolution}% empty left
+\fancyfoot[L]{\raisebox{-25pt}{\includegraphics{logo.png}}}
+\fancyfoot[R]{\raisebox{-15pt}{\thepage}}
+
+\pagestyle{fancy}                      % Sets fancy header and footer
+
+
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex,
+              colorlinks=true,
+              urlcolor=blue,
+              anchorcolor=blue,
+              linkcolor=blue]{hyperref}
+\else
+  \usepackage[unicode=true,
+              colorlinks=true,
+              linkcolor=blue]{hyperref}
+\fi
+\hypersetup{breaklinks=true, pdfborder={0 0 0}}
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+$if(title)$
+\title{$title$}
+$endif$
+$if(author)$
+\author{$for(author)$$author$$sep$ \and $endfor$}
+$endif$
+$if(date)$
+\date{$date$}
+$endif$
+
+% chapters
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+  {\normalfont\LARGE\bfseries}{\LARGE\thechapter.}{1ex}{}
+\titlespacing*{\chapter}{0pt}{-19pt}{0pt}
+
+\usepackage{pbox}
+
+% Less vertical space between list items
+\setlength{\itemsep}{0cm}
+% Less vertical space before a list
+\setlength{\topsep}{0cm}
+
+\setcounter{secnumdepth}{4}
+
+
+\makeatletter
+\def\thickhrulefill{\leavevmode \leaders \hrule height 1pt\hfill \kern \z@}
+\renewcommand{\maketitle}{\begin{titlepage}%
+    \let\footnotesize\small
+    \let\footnoterule\relax
+    \parindent \z@
+    \reset@font
+    \null\vfil
+    \begin{flushleft}
+      \Huge \textbf{\@title}
+    \end{flushleft}
+    \par
+    \hrule height 4pt
+    \par
+    \begin{flushright}
+      \large \@date \par
+    \end{flushright}
+    \vskip 550\p@
+    \vfil\null
+    \begin{flushleft}
+      \Large \textbf{\@author}
+    \end{flushleft}
+    \hrule height 2pt
+  \end{titlepage}%
+  \setcounter{footnote}{0}%
+}
+\makeatother
+
+\begin{document}
+
+$if(title)$
+\maketitle
+$endif$
+
+$for(include-before)$
+$include-before$
+$endfor$
+
+$if(toc)$
+\tableofcontents
+\clearpage
+$endif$
+
+$body$
+
+$if(natbib)$
+$if(biblio-files)$
+$if(biblio-title)$
+$if(book-class)$
+\renewcommand\bibname{$biblio-title$}
+$else$
+\renewcommand\refname{$biblio-title$}
+$endif$
+$endif$
+\bibliography{$biblio-files$}
+$endif$
+$endif$
+$if(biblatex)$
+\printbibliography$if(biblio-title)$[title=$biblio-title$]$endif$
+$endif$
+
+$for(include-after)$
+$include-after$
+$endfor$
+
+\end{document}
