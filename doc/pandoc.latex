@@ -155,10 +155,10 @@ $endif$
 \usepackage{fancyhdr}
 \fancyhf{}
 
-\fancyhead[R]{\nouppercase{\leftmark}}
+%\fancyhead[R]{\nouppercase{\leftmark}}
 %%\fancyfoot[L]{ www.sevensols.com/whiterabbitsolution}% empty left
-\fancyfoot[L]{\raisebox{-25pt}{\includegraphics{logo.png}}}
-\fancyfoot[R]{\raisebox{-15pt}{\thepage}}
+%\fancyfoot[L]{\raisebox{-25pt}{\includegraphics{logo.png}}}
+%\fancyfoot[R]{\raisebox{-15pt}{\thepage}}
 
 \pagestyle{fancy}                      % Sets fancy header and footer
 
