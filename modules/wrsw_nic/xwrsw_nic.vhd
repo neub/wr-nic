@@ -15,7 +15,6 @@ use work.nic_wbgen2_pkg.all;
 entity xwrsw_nic is
   generic
     (
-      g_use_dma             : boolean := false;
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity : t_wishbone_address_granularity := WORD
       );
@@ -48,9 +47,7 @@ entity xwrsw_nic is
 -------------------------------------------------------------------------------
 
     wb_i : in  t_wishbone_slave_in;
-    wb_o : out t_wishbone_slave_out;
-    dma_i: in  t_wishbone_slave_in := cc_dummy_slave_in;
-    dma_o: out t_wishbone_slave_out
+    wb_o : out t_wishbone_slave_out
     );
 
 end xwrsw_nic;
@@ -110,24 +107,21 @@ architecture rtl of xwrsw_nic is
 
   component nic_buffer
     generic (
-      g_memsize_log2 : integer;
-      g_USE_DMA      : boolean);
+      g_memsize_log2 : integer);
     port (
-      clk_sys_i  : in  std_logic;
-      rst_n_i    : in  std_logic;
-      addr_i     : in  std_logic_vector(g_memsize_log2-1 downto 0);
-      data_i     : in  std_logic_vector(31 downto 0);
-      wr_i       : in  std_logic;
-      data_o     : out std_logic_vector(31 downto 0);
-      wb_data_i  : in  std_logic_vector(31 downto 0);
-      wb_data_o  : out std_logic_vector(31 downto 0);
-      wb_addr_i  : in  std_logic_vector(g_memsize_log2-1 downto 0);
-      wb_sel_i   : in  std_logic_vector(3 downto 0) := x"f";
-      wb_cyc_i   : in  std_logic;
-      wb_stb_i   : in  std_logic;
-      wb_we_i    : in  std_logic;
-      wb_ack_o   : out std_logic;
-      wb_stall_o : out std_logic);
+      clk_sys_i : in  std_logic;
+      rst_n_i   : in  std_logic;
+      addr_i    : in  std_logic_vector(g_memsize_log2-1 downto 0);
+      data_i    : in  std_logic_vector(31 downto 0);
+      wr_i      : in  std_logic;
+      data_o    : out std_logic_vector(31 downto 0);
+      wb_data_i : in  std_logic_vector(31 downto 0);
+      wb_data_o : out std_logic_vector(31 downto 0);
+      wb_addr_i : in  std_logic_vector(g_memsize_log2-1 downto 0);
+      wb_cyc_i  : in  std_logic;
+      wb_stb_i  : in  std_logic;
+      wb_we_i   : in  std_logic;
+      wb_ack_o  : out std_logic);
   end component;
 
   component nic_wishbone_slave
@@ -258,22 +252,15 @@ architecture rtl of xwrsw_nic is
   signal dummy_tx_desc : t_tx_descriptor;
 
   signal wb_cyc_slave : std_logic;
+  signal wb_cyc_buf   : std_logic;
   signal wb_ack_slave : std_logic;
+  signal wb_ack_buf   : std_logic;
 
   signal wb_rdata_slave : std_logic_vector(31 downto 0);
+  signal wb_rdata_buf   : std_logic_vector(31 downto 0);
 
   signal wb_in  : t_wishbone_master_out;
   signal wb_out : t_wishbone_master_in;
-
-  signal buf_dat_i  : std_logic_vector(31 downto 0);
-  signal buf_dat_o  : std_logic_vector(31 downto 0);
-  signal buf_adr_i  : std_logic_vector(c_nic_buf_size_log2-3 downto 0);
-  signal buf_sel_i  : std_logic_vector(3 downto 0);
-  signal buf_cyc_i  : std_logic;
-  signal buf_stb_i  : std_logic;
-  signal buf_we_i   : std_logic;
-  signal buf_ack_o  : std_logic;
-  signal buf_stall_o: std_logic;
   
 begin  -- rtl
 
@@ -343,8 +330,7 @@ begin  -- rtl
 
   U_BUFFER : nic_buffer
     generic map (
-      g_memsize_log2 => c_nic_buf_size_log2 - 2,
-      g_USE_DMA      => g_use_dma)
+      g_memsize_log2 => c_nic_buf_size_log2 - 2)
     port map (
       clk_sys_i => clk_sys_i,
       rst_n_i   => nic_reset_n,
@@ -352,47 +338,21 @@ begin  -- rtl
       data_i    => nic_mem_wr_data,
       wr_i      => nic_mem_wr,
       data_o    => nic_mem_rd_data,
-      wb_data_i => buf_dat_i,
-      wb_data_o => buf_dat_o,
-      wb_addr_i => buf_adr_i,
-      wb_sel_i  => buf_sel_i,
-      wb_cyc_i  => buf_cyc_i,
-      wb_stb_i  => buf_stb_i,
-      wb_we_i   => buf_we_i,
-      wb_ack_o  => buf_ack_o,
-      wb_stall_o=> buf_stall_o);
-
-  GEN_DMA: if( g_use_dma ) generate
-    buf_cyc_i    <= dma_i.cyc;
-    buf_stb_i    <= dma_i.stb;
-    buf_we_i     <= dma_i.we;
-    buf_adr_i    <= dma_i.adr(c_nic_buf_size_log2-3 downto 0);
-    buf_sel_i    <= dma_i.sel;
-    buf_dat_i    <= dma_i.dat;
-    dma_o.dat    <= buf_dat_o;
-    dma_o.ack    <= buf_ack_o;
-    dma_o.stall  <= buf_stall_o;
-    dma_o.err    <= '0';
-    dma_o.rty    <= '0';
-    dma_o.int    <= '0';
-
-    wb_out.ack   <= wb_ack_slave;
-    wb_out.dat   <= wb_rdata_slave;
-  end generate;
-
-  GEN_CLASSIC: if( not(g_use_dma) ) generate
-    buf_cyc_i    <= wb_in.cyc when wb_in.adr(13) = '1' else '0';
-    buf_stb_i    <= wb_in.stb;
-    buf_we_i     <= wb_in.we;
-    buf_adr_i    <= wb_in.adr(c_nic_buf_size_log2 - 3 downto 0);
-    buf_sel_i    <= wb_in.sel;
-    buf_dat_i    <= wb_in.dat;
-    wb_out.ack   <= buf_ack_o or wb_ack_slave;
-    wb_out.dat   <= wb_rdata_slave when (wb_in.adr(13) = '0')
-                    else buf_dat_o;
-  end generate;
+      wb_data_i => wb_in.dat,
+      wb_data_o => wb_rdata_buf,
+      wb_addr_i => wb_in.adr(c_nic_buf_size_log2 - 3 downto 0),
+      wb_cyc_i  => wb_cyc_buf,
+      wb_stb_i  => wb_in.stb,
+      wb_we_i   => wb_in.we,
+      wb_ack_o  => wb_ack_buf);
 
   wb_cyc_slave <= wb_in.cyc when wb_in.adr(13) = '0' else '0';
+  wb_cyc_buf   <= wb_in.cyc when wb_in.adr(13) = '1' else '0';
+
+  wb_out.ack <= wb_ack_buf or wb_ack_slave;
+
+  wb_out.dat <= wb_rdata_slave when (wb_in.adr(13) = '0')
+                else wb_rdata_buf;
   
   p_buffer_arb : process(clk_sys_i, nic_reset_n)
   begin

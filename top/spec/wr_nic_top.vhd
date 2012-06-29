@@ -42,19 +42,18 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
-use work.gn4124_core_pkg.all;
-use work.gencores_pkg.all;
-use work.wrcore_pkg.all;
-use work.wr_fabric_pkg.all;
-use work.wrsw_txtsu_pkg.all;
-use work.genram_pkg.all;
 
 library UNISIM;
 use UNISIM.vcomponents.all;
 
 library work;
 use work.wishbone_pkg.all;
-
+use work.gn4124_core_pkg.all;
+use work.gencores_pkg.all;
+use work.wrcore_pkg.all;
+use work.wr_fabric_pkg.all;
+use work.wrsw_txtsu_pkg.all;
+use work.genram_pkg.all;
 
 entity wr_nic_top is
   generic
@@ -397,7 +396,7 @@ architecture rtl of wr_nic_top is
   component xwrsw_nic
     generic
       (
-        g_use_dma             : boolean                        := false;
+    --    g_use_dma             : boolean                        := false;
         g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
         g_address_granularity : t_wishbone_address_granularity := WORD
         );
@@ -417,9 +416,9 @@ architecture rtl of wr_nic_top is
       rtu_rsp_ack_i       : in  std_logic;
 
       wb_i  : in  t_wishbone_slave_in;
-      wb_o  : out t_wishbone_slave_out;
-      dma_i : in  t_wishbone_slave_in;
-      dma_o : out t_wishbone_slave_out
+      wb_o  : out t_wishbone_slave_out
+   --   dma_i : in  t_wishbone_slave_in;
+    --  dma_o : out t_wishbone_slave_out
       );
   end component;
 
@@ -497,7 +496,7 @@ architecture rtl of wr_nic_top is
       fmc_sda_b : inout std_logic;
 
       tm_time_valid_i : in std_logic;
-      tm_utc_i        : in std_logic_vector(39 downto 0);
+      tm_seconds_i        : in std_logic_vector(39 downto 0);
       tm_cycles_i     : in std_logic_vector(27 downto 0);
 
       TRIG0 : out std_logic_vector(31 downto 0);
@@ -506,8 +505,8 @@ architecture rtl of wr_nic_top is
       TRIG3 : out std_logic_vector(31 downto 0);
 
       slave_i                      : in  t_wishbone_slave_in;
-      slave_o                      : out t_wishbone_slave_out;
-                wb_irq_data_fifo_o : out std_logic
+      slave_o                      : out t_wishbone_slave_out
+               -- wb_irq_data_fifo_o : out std_logic
   );
   end component;  --DIO core
 
@@ -635,11 +634,11 @@ architecture rtl of wr_nic_top is
 
   -- Timecode output
   signal tm_time_valid : std_logic;
-  signal tm_utc        : std_logic_vector(39 downto 0);
+  signal tm_tai        : std_logic_vector(39 downto 0);
   signal tm_cycles     : std_logic_vector(27 downto 0);
 
   -- DIO core
-  signal wb_irq_data_fifo_dio : std_logic;
+  --signal wb_irq_data_fifo_dio : std_logic;
   -------------------
   -- NIC
   -------------------
@@ -977,7 +976,7 @@ begin
       tm_clk_aux_lock_en_i => '0',
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => tm_time_valid,
-      tm_utc_o             => tm_utc,
+      tm_utc_o             => tm_tai,
       tm_cycles_o          => tm_cycles,
       pps_p_o              => pps,
 
@@ -990,7 +989,7 @@ begin
   -------------------------------------
   U_NIC : xwrsw_nic
     generic map(
-      g_use_dma             => g_nic_usedma,
+      --g_use_dma             => g_nic_usedma,
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE)
     port map(
@@ -1009,9 +1008,9 @@ begin
       rtu_rsp_ack_i       => '1',
 
       wb_i  => cbar_master_o(1),
-      wb_o  => cbar_master_i(1),
-      dma_i => nic_dma_in,
-      dma_o => nic_dma_out
+      wb_o  => cbar_master_i(1)
+      --dma_i => nic_dma_in,
+      --dma_o => nic_dma_out
     );
 
   GEN_DMA : if(g_nic_usedma) generate
@@ -1052,7 +1051,8 @@ begin
 
   vic_slave_irq(0) <= cbar_master_i(3).int;  -- wrpc, txtsu
   vic_slave_irq(1) <= cbar_master_i(1).int;  -- wrsw-nic
-  vic_slave_irq(2) <= wb_irq_data_fifo_dio;  -- DIO core
+  vic_slave_irq(2) <= cbar_master_i(4).int;  -- DIO core
+															--wb_irq_data_fifo_dio; 
 
   -------------------------------------
   -- WRSW TXTSU
@@ -1178,7 +1178,7 @@ begin
       fmc_sda_b => fmc_sda_b,
 
       tm_time_valid_i => tm_time_valid,
-      tm_utc_i        => tm_utc,
+      tm_seconds_i        => tm_tai,
       tm_cycles_i     => tm_cycles,
 
       --TRIG0           => TRIG0,
@@ -1187,8 +1187,8 @@ begin
 --      TRIG3           => TRIG3,
 
       slave_i                      => cbar_master_o(4),
-      slave_o                      => cbar_master_i(4),
-                wb_irq_data_fifo_o => wb_irq_data_fifo_dio
+      slave_o                      => cbar_master_i(4)
+            --    wb_irq_data_fifo_o => wb_irq_data_fifo_dio
   );
 
   gen_dio_iobufs : for i in 0 to 4 generate

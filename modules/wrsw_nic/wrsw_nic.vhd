@@ -9,7 +9,6 @@ use work.wr_fabric_pkg.all;
 entity wrsw_nic is
   generic
     (
-      g_use_dma             : boolean := false;
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity : t_wishbone_address_granularity := WORD
       );
@@ -66,17 +65,7 @@ entity wrsw_nic is
     wb_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
     wb_ack_o   : out std_logic;
     wb_stall_o : out std_logic;
-    wb_irq_o   : out std_logic;
-
-    dma_cyc_i   : in  std_logic;
-    dma_stb_i   : in  std_logic;
-    dma_we_i    : in  std_logic;
-    dma_sel_i   : in  std_logic_vector(c_wishbone_data_width/8-1 downto 0);
-    dma_adr_i   : in  std_logic_vector(c_wishbone_address_width-1 downto 0);
-    dma_dat_i   : in  std_logic_vector(c_wishbone_data_width-1 downto 0);
-    dma_dat_o   : out std_logic_vector(c_wishbone_data_width-1 downto 0);
-    dma_ack_o   : out std_logic;
-    dma_stall_o : out std_logic
+    wb_irq_o   : out std_logic
 
     );
 
@@ -86,7 +75,6 @@ architecture rtl of wrsw_nic is
 
   component xwrsw_nic
     generic (
-      g_use_dma             : boolean;
       g_interface_mode      : t_wishbone_interface_mode;
       g_address_granularity : t_wishbone_address_granularity);
     port (
@@ -102,9 +90,7 @@ architecture rtl of wrsw_nic is
       rtu_rsp_valid_o     : out std_logic;
       rtu_rsp_ack_i       : in  std_logic;
       wb_i                : in  t_wishbone_slave_in;
-      wb_o                : out t_wishbone_slave_out;
-      dma_i               : in  t_wishbone_slave_in;
-      dma_o               : out t_wishbone_slave_out);
+      wb_o                : out t_wishbone_slave_out);
   end component;
 
   signal snk_out : t_wrf_sink_out;
@@ -115,15 +101,12 @@ architecture rtl of wrsw_nic is
 
   signal wb_out : t_wishbone_slave_out;
   signal wb_in  : t_wishbone_slave_in;
-
-  signal dma_in : t_wishbone_slave_in;
-  signal dma_out: t_wishbone_slave_out;
+  
 
 begin
 
   U_Wrapped_NIC : xwrsw_nic
     generic map (
-      g_use_dma             => g_use_dma,
       g_interface_mode      => g_interface_mode,
       g_address_granularity => g_address_granularity)
     port map (
@@ -139,9 +122,7 @@ begin
       rtu_rsp_valid_o     => rtu_rsp_valid_o,
       rtu_rsp_ack_i       => rtu_rsp_ack_i,
       wb_i                => wb_in,
-      wb_o                => wb_out,
-      dma_i               => dma_in,
-      dma_o               => dma_out);
+      wb_o                => wb_out);
 
   -- WBP Master (TX)
   src_dat_o    <= src_out.dat;
@@ -175,15 +156,5 @@ begin
   wb_ack_o   <= wb_out.ack;
   wb_stall_o <= wb_out.stall;
   wb_irq_o   <= wb_out.int;
-
-  dma_in.cyc  <= dma_cyc_i;
-  dma_in.stb  <= dma_stb_i;
-  dma_in.we   <= dma_we_i;
-  dma_in.sel  <= dma_sel_i;
-  dma_in.adr  <= dma_adr_i;
-  dma_in.dat  <= dma_dat_i;
-  dma_dat_o   <= dma_out.dat;
-  dma_ack_o   <= dma_out.ack;
-  dma_stall_o <= dma_out.stall;
   
 end rtl;

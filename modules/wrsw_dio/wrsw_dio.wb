@@ -18,24 +18,24 @@ peripheral {
 			prefix = "tsf0";
 			name = "Timestamp FIFO 0";
 			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - tag_utc - utc time in seconds\
+			               - tag_seconds - seconds time\
             				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "UTC time";
-				 descritpion = "UTC time in seconds (LSB)";
-				 prefix = "tag_utc";
+				 name = "seconds time";
+				 descritpion = "seconds time (LSB)";
+				 prefix = "tag_seconds";
 				 type = SLV;
 				 size = 32;
 			};
 
 			field {
-				 name = "UTC time H";
-				 descritpion = "UTC time in seconds (MSB)";
-				 prefix = "tag_utcH";
+				 name = "seconds time H";
+				 descritpion = "time in seconds (MSB)";
+				 prefix = "tag_secondsH";
 				 type = SLV;
 				 size = 8;
 			};
@@ -66,24 +66,24 @@ peripheral {
 			prefix = "tsf1";
 			name = "Timestamp FIFO 1";
 			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - tag_utc - utc time in seconds\
+			               - tag_seconds - time in seconds\
             				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "UTC time";
-				 descritpion = "UTC time in seconds (LSB)";
-				 prefix = "tag_utc";
+				 name = "seconds time";
+				 descritpion = "time in seconds (LSB)";
+				 prefix = "tag_seconds";
 				 type = SLV;
 				 size = 32;
 			};
 
 			field {
-				 name = "UTC time H";
-				 descritpion = "UTC time in seconds (MSB)";
-				 prefix = "tag_utcH";
+				 name = "seconds time H";
+				 descritpion = "time in seconds (MSB)";
+				 prefix = "tag_secondsH";
 				 type = SLV;
 				 size = 8;
 			};
@@ -114,24 +114,24 @@ peripheral {
 			prefix = "tsf2";
 			name = "Timestamp FIFO 2";
 			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - tag_utc - utc time in seconds\
+			               - tag_seconds - time in seconds\
             				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "UTC time";
-				 descritpion = "UTC time in seconds (LSB)";
-				 prefix = "tag_utc";
+				 name = "seconds time";
+				 descritpion = "time in seconds (LSB)";
+				 prefix = "tag_seconds";
 				 type = SLV;
 				 size = 32;
 			};
 
 			field {
-				 name = "UTC time H";
-				 descritpion = "UTC time in seconds (MSB)";
-				 prefix = "tag_utcH";
+				 name = "seconds time H";
+				 descritpion = "time in seconds (MSB)";
+				 prefix = "tag_secondsH";
 				 type = SLV;
 				 size = 8;
 			};
@@ -162,24 +162,24 @@ peripheral {
 			prefix = "tsf3";
 			name = "Timestamp FIFO 3";
 			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - tag_utc - utc time in seconds\
+			               - tag_seconds - time in seconds\
             				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "UTC time";
-				 descritpion = "UTC time in seconds (LSB)";
-				 prefix = "tag_utc";
+				 name = "seconds time";
+				 descritpion = "time in seconds (LSB)";
+				 prefix = "tag_seconds";
 				 type = SLV;
 				 size = 32;
 			};
 
 			field {
-				 name = "UTC time H";
-				 descritpion = "UTC time in seconds (MSB)";
-				 prefix = "tag_utcH";
+				 name = "seconds time H";
+				 descritpion = "time in seconds (MSB)";
+				 prefix = "tag_secondsH";
 				 type = SLV;
 				 size = 8;
 			};
@@ -210,24 +210,24 @@ peripheral {
 			prefix = "tsf4";
 			name = "Timestamp FIFO 4";
 			description = "This FIFO holds the DIO input timestamps for each input channel. Each entry contains a single timestamp value consisting of 2 numbers:\
-			               - tag_utc - utc time in seconds\
+			               - tag_seconds - time in seconds\
             				 - tag_cycles  - counter value for sub-second accuracy";
 
 			flags_bus = {FIFO_FULL, FIFO_EMPTY, FIFO_COUNT};
 			flags_dev = {FIFO_FULL, FIFO_EMPTY};
 			
 			field {
-				 name = "UTC time";
-				 descritpion = "UTC time in seconds (LSB)";
-				 prefix = "tag_utc";
+				 name = "seconds time";
+				 descritpion = "time in seconds (LSB)";
+				 prefix = "tag_seconds";
 				 type = SLV;
 				 size = 32;
 			};
 
 			field {
-				 name = "UTC time H";
-				 descritpion = "UTC time in seconds (MSB)";
-				 prefix = "tag_utcH";
+				 name = "seconds time H";
+				 descritpion = "time in seconds (MSB)";
+				 prefix = "tag_secondsH";
 				 type = SLV;
 				 size = 8;
 			};
@@ -254,16 +254,16 @@ peripheral {
 -- REGISTERS FOR OUTPUT EVENT TIME-BASED TRIGGER
 -------------------------------------------------
 
--- DIO CHANNEL 0: UTC value . Readable-writable the bus, readble from the device.
+-- DIO CHANNEL 0: seconds value . Readable-writable the bus, readble from the device.
 	reg {
-		name = "fmc-dio 0 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (LSB).";
+		name = "fmc-dio 0 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (LSB).";
 		prefix = "trig0";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "TBD";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 32;
 			access_bus = READ_WRITE;
@@ -272,14 +272,14 @@ peripheral {
 	};
 
 	reg {
-		name = "fmc-dio 0 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (MSB).";
+		name = "fmc-dio 0 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (MSB).";
 		prefix = "trigH0";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "Number of seconds";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 8; 
 			access_bus = READ_WRITE;
@@ -303,16 +303,16 @@ peripheral {
 		};
 	};
 
--- DIO CHANNEL 1: UTC value . Readable-writable the bus, readble from the device.
+-- DIO CHANNEL 1: seconds value . Readable-writable the bus, readble from the device.
 	reg {
-		name = "fmc-dio 1 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (LSB).";
+		name = "fmc-dio 1 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (LSB).";
 		prefix = "trig1";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "TBD";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 32;
 			access_bus = READ_WRITE;
@@ -321,14 +321,14 @@ peripheral {
 	};
 
 	reg {
-		name = "fmc-dio 1 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (MSB).";
+		name = "fmc-dio 1 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (MSB).";
 		prefix = "trigH1";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "Number of seconds";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 8; 
 			access_bus = READ_WRITE;
@@ -352,16 +352,16 @@ peripheral {
 		};
 	};
 
--- DIO CHANNEL 2: UTC value . Readable-writable the bus, readble from the device.
+-- DIO CHANNEL 2: seconds value . Readable-writable the bus, readble from the device.
 	reg {
-		name = "fmc-dio 2 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (LSB).";
+		name = "fmc-dio 2 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (LSB).";
 		prefix = "trig2";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "TBD";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 32;
 			access_bus = READ_WRITE;
@@ -370,14 +370,14 @@ peripheral {
 	};
 
 	reg {
-		name = "fmc-dio 2 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (MSB).";
+		name = "fmc-dio 2 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (MSB).";
 		prefix = "trigH2";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "Number of seconds";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 8; 
 			access_bus = READ_WRITE;
@@ -401,16 +401,16 @@ peripheral {
 		};
 	};
 
--- DIO CHANNEL 3: UTC value . Readable-writable the bus, readble from the device.
+-- DIO CHANNEL 3: seconds value . Readable-writable the bus, readble from the device.
 	reg {
-		name = "fmc-dio 3 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (LSB).";
+		name = "fmc-dio 3 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (LSB).";
 		prefix = "trig3";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "TBD";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 32;
 			access_bus = READ_WRITE;
@@ -419,14 +419,14 @@ peripheral {
 	};
 
 	reg {
-		name = "fmc-dio 3 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (MSB).";
+		name = "fmc-dio 3 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (MSB).";
 		prefix = "trigH3";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "Number of seconds";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 8; 
 			access_bus = READ_WRITE;
@@ -450,16 +450,16 @@ peripheral {
 		};
 	};
 
--- DIO CHANNEL 4: UTC value . Readable-writable the bus, readble from the device.
+-- DIO CHANNEL 4: seconds value . Readable-writable the bus, readble from the device.
 	reg {
-		name = "fmc-dio 4 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (LSB).";
+		name = "fmc-dio 4 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (LSB).";
 		prefix = "trig4";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "TBD";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 32;
 			access_bus = READ_WRITE;
@@ -468,14 +468,14 @@ peripheral {
 	};
 
 	reg {
-		name = "fmc-dio 4 UTC-based trigger for pulse generation";
-		description = "trigger utc value for dio output (MSB).";
+		name = "fmc-dio 4 seconds-based trigger for pulse generation";
+		description = "trigger seconds value for dio output (MSB).";
 		prefix = "trigH4";
 
 		field {
-			name = "utc field";
+			name = "seconds field";
 			description = "Number of seconds";
-			prefix = "utc";
+			prefix = "seconds";
 			type = SLV;
 			size = 8; 
 			access_bus = READ_WRITE;
@@ -500,16 +500,16 @@ peripheral {
 	};
 
 
--- UTC trigger enable value. Readable-writable the bus, readble from the device.
+-- Monostable/Programmable output or GPIO selection
 	reg {
-		name = "FMC-DIO UTC-based trigger Enable-register for pulse generation";
-		description = "enable register for using using utc trigger values for dio output.";
-		prefix = "trig_ena";
+		name = "FMC-DIO output configuration register. ";
+		description = "It allows to choose a Monostable/programmable output or a standard GPIO output.";
+		prefix = "out";
 
 		field {
-			name = "trig_enable field";
-			description = "TBD";
-			prefix = "ena";
+			name = "outmode";
+			description = "1 for programmable, 0 for GPIO output mode";
+			prefix = "mode";
 			type = SLV;
 			size = 5; 
 			access_bus = READ_WRITE;
@@ -517,11 +517,49 @@ peripheral {
 		};
 	};
 
--- UTC trigger ready value. Readable-writable the bus, writable from the device.
+-- Single-cycle strobe signal to latch  the second/cycles values of the programamble output
 	reg {
-		name = "FMC-DIO UTC-based trigger ready informaton for pulse generation";
-		description = "ready state, waiting trigger commands for dio output.";
-		prefix = "trig_ena";
+		name = "Time-programmable output strobe signal";
+		description = "It is used to latch second/cycles values generation just 1 clock cycle output ";
+		prefix = "latch";
+
+		field {
+			name = "Sincle-cycle strobe";
+			description = "It generates a one-clock cycle pulse for programmable time latching";
+			prefix = "time_ch0";
+			type = MONOSTABLE;
+		};
+		field {
+			name = "Sincle-cycle strobe";
+			description = "It generates a one-clock cycle pulse for programmable time latching";
+			prefix = "time_ch1";
+			type = MONOSTABLE;
+		};
+		field {
+			name = "Sincle-cycle strobe";
+			description = "It generates a one-clock cycle pulse for programmable time latching";
+			prefix = "time_ch2";
+			type = MONOSTABLE;
+		};
+		field {
+			name = "Sincle-cycle strobe";
+			description = "It generates a one-clock cycle pulse for programmable time latching";
+			prefix = "time_ch3";
+			type = MONOSTABLE;
+		};
+		field {
+			name = "Sincle-cycle strobe";
+			description = "It generates a one-clock cycle pulse for programmable time latching";
+			prefix = "time_ch4";
+			type = MONOSTABLE;
+		};
+	};
+
+-- seconds trigger ready value. Readable-writable the bus, writable from the device.
+	reg {
+		name = "FMC-DIO seconds-based trigger is ready to accept a new trigger generation request";
+		description = "ready state, waiting new trigger commands for dio output.";
+		prefix = "trig";
 
 		field {
 			name = "trig_rdy field";
@@ -576,7 +614,6 @@ peripheral {
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 			};
-
 	};
 
 };
