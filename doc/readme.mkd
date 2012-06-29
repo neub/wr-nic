@@ -1,0 +1,20 @@
+% readme
+% Javier Díaz, UGR-7S
+% 21 Jun. 2012
+
+Required software
+=========================
+
+First install  
+sudo apt-get install texlive-xetex  
+sudo apt-get install texlive-xetex
+
+
+Document compilation
+=====================
+use make command or  
+pandoc --toc -o wr-nic.pdf wr-nic.mkd
+
+Problems?
+------------
+Check latex tools are installed and use command texhash
