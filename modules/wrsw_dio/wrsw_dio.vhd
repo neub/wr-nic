@@ -3,7 +3,7 @@
 -- Project    : White Rabbit Network Interface
 -------------------------------------------------------------------------------
 -- File       : wrsw_dio.vhd
--- Author     : Rafael Rodriguez
+-- Author     : Rafael Rodriguez, Javier Díaz
 -- Company    : Seven Solutions
 -- Created    : 2012-03-03
 -- Last update: 2012-03-20
@@ -23,6 +23,7 @@
 -- Date        Version  Author          Description
 -- 2012-03-03  0.1      Rafa.r          Created
 -- 2012-03-08  0.2      Javier.d        Added wrsw_dio_wb
+-- 2012-07-05  0.3		Javier.d        Midified wrsw_dio_wb, modified interface
 -------------------------------------------------------------------------------
 
 -- WARNING: only pipelined mode is supported (Intercon is pipelined only) - T.W.
@@ -56,13 +57,15 @@ entity wrsw_dio is
     dio_led_top_o    : out std_logic;
     dio_led_bot_o    : out std_logic;		
 		
-    fmc_scl_b        : inout std_logic;
-    fmc_sda_b        : inout std_logic;
-
+    dio_scl_b        : inout std_logic;
+    dio_sda_b        : inout std_logic;
+    dio_ga_o	     : out std_logic_vector(1 downto 0); 
+	 
     tm_time_valid_i  : in std_logic;
     tm_seconds_i         : in std_logic_vector(39 downto 0);
     tm_cycles_i      : in std_logic_vector(27 downto 0);
 
+    -- Debug signals for chipscope
     TRIG0            : out std_logic_vector(31 downto 0);
     TRIG1            : out std_logic_vector(31 downto 0);
     TRIG2            : out std_logic_vector(31 downto 0);
@@ -70,7 +73,7 @@ entity wrsw_dio is
 		
     slave_i            : in  t_wishbone_slave_in;
     slave_o            : out t_wishbone_slave_out
-  --  wb_irq_data_fifo_o : out std_logic
+  --  wb_irq_data_fifo_o : out std_logic  -- T.B.DELETED
   );
   end wrsw_dio; 
 
@@ -349,7 +352,7 @@ architecture rtl of wrsw_dio is
   signal cbar_master_in   : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
   signal cbar_master_out  : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
 
-  -- DIO related signasls
+  -- DIO related signals
   signal dio_monost        : std_logic_vector(4 downto 0);
   signal dio_prog          : std_logic_vector(4 downto 0);
   signal dio_puls_inmed    : std_logic_vector(4 downto 0);
@@ -459,12 +462,12 @@ begin
       sda_padoen_o => sda_pad_oen);
 
 		
-  fmc_scl_b <= scl_pad_out when scl_pad_oen = '0' else 'Z';
-  fmc_sda_b <= sda_pad_out when sda_pad_oen = '0' else 'Z';
+  dio_scl_b <= scl_pad_out when scl_pad_oen = '0' else 'Z';
+  dio_sda_b <= sda_pad_out when sda_pad_oen = '0' else 'Z';
 
-  scl_pad_in <= fmc_scl_b;
-  sda_pad_in <= fmc_sda_b;		
-
+  scl_pad_in <= dio_scl_b;
+  sda_pad_in <= dio_sda_b;		
+  dio_ga_o<="00"; -- Innused because SPEC boards have these fmc signals to ground
 
   ------------------------------------------------------------------------------
   -- WB GPIO PORT
@@ -525,7 +528,6 @@ begin
   dio_sdn_ck_n_o <= gpio_out(30);
   dio_sdn_n_o    <= gpio_out(31);
   
-  --gpio_in(30)    <= prsnt_m2c_l;
   ------------------------------------------------------------------------------
   -- WB seconds-BASED PULSE GENERATION & INPUT STAMPING
   ------------------------------------------------------------------------------  
@@ -533,7 +535,7 @@ begin
     port map(
       rst_n_i     => rst_n_i,
       clk_sys_i   => clk_sys_i,
-      wb_adr_i    => cbar_master_out(3).adr(7 downto 2),
+      wb_adr_i    => cbar_master_out(3).adr(7 downto 2), -- only word acesses are available
       wb_dat_i    => cbar_master_out(3).dat,
       wb_dat_o    => cbar_master_in(3).dat,
       wb_cyc_i    => cbar_master_out(3).cyc, 
@@ -622,6 +624,30 @@ begin
       dio_puls_inmed_pul_inm_4_o  =>   dio_puls_inmed(4)
    );
 
+  -- seconds timestamped FIFO-no-empty interrupts
+  irq_fifos : for i in 0 to 4 generate
+    irq_nempty(i)     <= not dio_tsf_wr_empty(i);
+
+    process(clk_sys_i, rst_n_i) 
+      begin
+        if rising_edge(clk_sys_i) then
+          if rst_n_i = '0' then
+            dio_tsf_wr_req(i)        <= '0';
+            dio_tsf_tag_seconds(i)   <= (others => '0');
+            dio_tsf_tag_cycles(i)	 <= (others => '0');        
+          else
+            if ((tag_valid_p1(i) = '1') AND (dio_tsf_wr_full(i)='0')) then
+              dio_tsf_wr_req(i)      <='1';
+              dio_tsf_tag_seconds(i) <=tag_seconds(i);
+              dio_tsf_tag_cycles(i)  <=tag_cycles(i);
+            else
+              dio_tsf_wr_req(i)      <='0';				
+            end if;
+          end if; 
+        end if; 
+      end process; 
+    end generate irq_fifos;
+
 -----------------------------------------------------------------------------------
 ------ signals for debugging
 -----------------------------------------------------------------------------------
@@ -633,33 +659,7 @@ begin
     --TRIG3(4 downto 0)  <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
------------------------------------------------------------------------------------
-
-
-  -- seconds timestamped FIFO-no-empty interrupts
-  irq_fifos : for i in 0 to 4 generate
-    irq_nempty(i)     <= not dio_tsf_wr_empty(i);
-
-    process(clk_sys_i, rst_n_i) 
-      begin
-        if rising_edge(clk_sys_i) then
-          if rst_n_i = '0' then
-            dio_tsf_wr_req(i)       <= '0';
-            dio_tsf_tag_seconds(i)      <= (others => '0');
-            dio_tsf_tag_cycles(i)	<= (others => '0');        
-          else
-            if ((tag_valid_p1(i) = '1') AND (dio_tsf_wr_full(i)='0')) then
-              dio_tsf_wr_req(i)     <='1';
-              dio_tsf_tag_seconds(i)    <=tag_seconds(i);
-              dio_tsf_tag_cycles(i) <=tag_cycles(i);
-            else
-              dio_tsf_wr_req(i)     <='0';				
-            end if;
-          end if; 
-        end if; 
-      end process; 
-    end generate irq_fifos;
-	
+-----------------------------------------------------------------------------------	
 end rtl;
 
 

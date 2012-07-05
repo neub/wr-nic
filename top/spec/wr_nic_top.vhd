@@ -3,8 +3,8 @@
 -- Project    : WhiteRabbit
 -------------------------------------------------------------------------------
 -- File       : wr_nic_top.vhd
--- Author     : Grzegorz Daniluk, Rafael Rodriguez
--- Company    : Elproma, Seven Solutions
+-- Author     : Grzegorz Daniluk, Rafael Rodriguez, Javier Díaz
+-- Company    : Elproma, Seven Solutions, UGR
 -- Created    : 2012-02-08
 -- Last update: 2012-06-07
 -- Platform   : FPGA-generics
@@ -18,15 +18,18 @@
 -- # IRQ Gen (VIC core)
 -- # WRSW TxTSU module
 -- # GN4124 core
--- # DIO core (tbd)
+-- # DIO core 
+-- # 
 -------------------------------------------------------------------------------
--- Copyright (c) 2012 Grzegorz Daniluk, Rafael Rodriguez
+-- Copyright (c) 2012 Grzegorz Daniluk, Rafael Rodriguez, Javier Díaz
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author          Description
 -- 2012-02-08  1.0      greg.d          Created
 -- 2012-02-20  1.1      greg.d          added GN4124 to wrsw_nic DMA connection
 -- 2012-03-10  1.2      rafa.r          added dio_core
+-- 2012-06-25  1.3		javi.d			 New dio_functionality
+-- 2012-07-06  1.4		javi.d          Updating of files and integration test
 -------------------------------------------------------------------------------
 -- TODO:
 -- testing
@@ -78,14 +81,14 @@ entity wr_nic_top is
 
       -- General Purpose Interface
       GPIO       : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
-                                        -- GPIO[1] -> GN4124 GPIO9
+                                                        -- GPIO[1] -> GN4124 GPIO9
       -- PCIe to Local [Inbound Data] - RX
-      P2L_RDY    : out   std_logic;     -- Rx Buffer Full Flag
-      P2L_CLKn   : in    std_logic;     -- Receiver Source Synchronous Clock-
-      P2L_CLKp   : in    std_logic;     -- Receiver Source Synchronous Clock+
+      P2L_RDY    : out   std_logic;                      -- Rx Buffer Full Flag
+      P2L_CLKn   : in    std_logic;                      -- Receiver Source Synchronous Clock-
+      P2L_CLKp   : in    std_logic;                      -- Receiver Source Synchronous Clock+
       P2L_DATA   : in    std_logic_vector(15 downto 0);  -- Parallel receive data
-      P2L_DFRAME : in    std_logic;     -- Receive Frame
-      P2L_VALID  : in    std_logic;     -- Receive Data Valid
+      P2L_DFRAME : in    std_logic;                      -- Receive Frame
+      P2L_VALID  : in    std_logic;                      -- Receive Data Valid
 
       -- Inbound Buffer Request/Status
       P_WR_REQ : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
@@ -93,18 +96,18 @@ entity wr_nic_top is
       RX_ERROR : out std_logic;                     -- Receive Error
 
       -- Local to Parallel [Outbound Data] - TX
-      L2P_DATA   : out std_logic_vector(15 downto 0);  -- Parallel transmit data
-      L2P_DFRAME : out std_logic;       -- Transmit Data Frame
-      L2P_VALID  : out std_logic;       -- Transmit Data Valid
-      L2P_CLKn   : out std_logic;  -- Transmitter Source Synchronous Clock-
-      L2P_CLKp   : out std_logic;  -- Transmitter Source Synchronous Clock+
-      L2P_EDB    : out std_logic;       -- Packet termination and discard
+      L2P_DATA   : out std_logic_vector(15 downto 0);-- Parallel transmit data
+      L2P_DFRAME : out std_logic;                    -- Transmit Data Frame
+      L2P_VALID  : out std_logic;                    -- Transmit Data Valid
+      L2P_CLKn   : out std_logic;                    -- Transmitter Source Synchronous Clock-
+      L2P_CLKp   : out std_logic;                    -- Transmitter Source Synchronous Clock+
+      L2P_EDB    : out std_logic;                    -- Packet termination and discard
 
       -- Outbound Buffer Status
-      L2P_RDY    : in std_logic;        -- Tx Buffer Full Flag
+      L2P_RDY    : in std_logic;                     -- Tx Buffer Full Flag
       L_WR_RDY   : in std_logic_vector(1 downto 0);  -- Local-to-PCIe Write
       P_RD_D_RDY : in std_logic_vector(1 downto 0);  -- PCIe-to-Local Read Response Data Ready
-      TX_ERROR   : in std_logic;        -- Transmit Error
+      TX_ERROR   : in std_logic;                     -- Transmit Error
       VC_RDY     : in std_logic_vector(1 downto 0);  -- Channel ready
 
       -- Front panel LEDs
@@ -113,7 +116,7 @@ entity wr_nic_top is
 
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic;
-      dac_clr_n_o : out std_logic;
+      -- dac_clr_n_o : out std_logic;  -- NOT AVAILABLE
       dac_cs1_n_o : out std_logic;
       dac_cs2_n_o : out std_logic;
 
@@ -161,15 +164,16 @@ entity wr_nic_top is
       dio_term_en_o : out std_logic_vector(4 downto 0);
 
       dio_onewire_b  : inout std_logic;
-      dio_sdn_n_o    : out   std_logic;
+      dio_sdn_n_o    : out   std_logic; -- this is for ??
       dio_sdn_ck_n_o : out   std_logic;
 
       dio_led_top_o : out std_logic;
       dio_led_bot_o : out std_logic;
 
-      fmc_scl_b : inout std_logic;
-      fmc_sda_b : inout std_logic;
-
+      dio_scl_b : inout std_logic;
+      dio_sda_b : inout std_logic;
+		-- dio_GA signals conneected to ground on SPEC board.  
+		
 
       -----------------------------------------
       --UART
@@ -408,7 +412,7 @@ architecture rtl of wr_nic_top is
       snk_o : out t_wrf_sink_out;
       src_i : in  t_wrf_source_in;
       src_o : out t_wrf_source_out;
-
+		-- fake RTU
       rtu_dst_port_mask_o : out std_logic_vector(31 downto 0);
       rtu_prio_o          : out std_logic_vector(2 downto 0);
       rtu_drop_o          : out std_logic;
@@ -492,9 +496,10 @@ architecture rtl of wr_nic_top is
       dio_led_top_o  : out   std_logic;
       dio_led_bot_o  : out   std_logic;
 
-      fmc_scl_b : inout std_logic;
-      fmc_sda_b : inout std_logic;
-
+      dio_scl_b : inout std_logic;
+      dio_sda_b : inout std_logic;
+      dio_ga_o  : out std_logic_vector(1 downto 0);
+		
       tm_time_valid_i : in std_logic;
       tm_seconds_i        : in std_logic_vector(39 downto 0);
       tm_cycles_i     : in std_logic_vector(27 downto 0);
@@ -506,10 +511,11 @@ architecture rtl of wr_nic_top is
 
       slave_i                      : in  t_wishbone_slave_in;
       slave_o                      : out t_wishbone_slave_out
-               -- wb_irq_data_fifo_o : out std_logic
+      -- wb_irq_data_fifo_o : out std_logic --> Test T.B.D
   );
   end component;  --DIO core
 
+  -- DEBUG STUFF
   component chipscope_ila
     port (
       CONTROL : inout std_logic_vector(35 downto 0);
@@ -535,10 +541,10 @@ architecture rtl of wr_nic_top is
   ------------------------------------------------------------------------------
   -- Constants declaration
   ------------------------------------------------------------------------------
-  constant c_BAR0_APERTURE     : integer := 20;
-  constant c_CSR_WB_SLAVES_NB  : integer := 1;
+  constant c_BAR0_APERTURE     : integer := 20; -- 1 MB for spec card
   constant c_DMA_WB_SLAVES_NB  : integer := 1;
-  constant c_DMA_WB_ADDR_WIDTH : integer := 26;
+  constant c_CSR_WB_SLAVES_NB  : integer := 1;	-- NOT IN USE
+  constant c_DMA_WB_ADDR_WIDTH : integer := 26;	-- NOT IN USE
 
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -561,15 +567,15 @@ architecture rtl of wr_nic_top is
   signal dma_dat_i   : std_logic_vector((32*c_DMA_WB_SLAVES_NB)-1 downto 0);
   signal dma_dat_o   : std_logic_vector(31 downto 0);
   signal dma_sel     : std_logic_vector(3 downto 0);
-  signal dma_cyc     : std_logic;  --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+  signal dma_cyc     : std_logic;                      --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
   signal dma_stb     : std_logic;
   signal dma_we      : std_logic;
-  signal dma_ack     : std_logic;  --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
-  signal dma_stall   : std_logic;  --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
-  signal ram_we      : std_logic_vector(0 downto 0);
-  signal ddr_dma_adr : std_logic_vector(29 downto 0);
+  signal dma_ack     : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+  signal dma_stall   : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+  signal ram_we      : std_logic_vector(0 downto 0);	-- NOT IN USE
+  signal ddr_dma_adr : std_logic_vector(29 downto 0); -- NOT IN USE
 
-  signal irq_to_gn4124 : std_logic;
+  signal irq_to_gn4124 : std_logic;							-- NOT IN USE
 
   -- SPI
   signal spi_slave_select : std_logic_vector(7 downto 0);
@@ -634,11 +640,11 @@ architecture rtl of wr_nic_top is
 
   -- Timecode output
   signal tm_time_valid : std_logic;
-  signal tm_tai        : std_logic_vector(39 downto 0);
+  signal tm_seconds        : std_logic_vector(39 downto 0);
   signal tm_cycles     : std_logic_vector(27 downto 0);
 
   -- DIO core
-  --signal wb_irq_data_fifo_dio : std_logic;
+  --signal wb_irq_data_fifo_dio : std_logic; -- T.B.DELETED
   -------------------
   -- NIC
   -------------------
@@ -692,7 +698,7 @@ begin
       CLKOUT0_DIVIDE     => 16,         -- 62.5 MHz
       CLKOUT0_PHASE      => 0.000,
       CLKOUT0_DUTY_CYCLE => 0.500,
-      CLKOUT1_DIVIDE     => 16,         -- 125 MHz
+      CLKOUT1_DIVIDE     => 16,         -- 62,5 MHz
       CLKOUT1_PHASE      => 0.000,
       CLKOUT1_DUTY_CYCLE => 0.500,
       CLKOUT2_DIVIDE     => 16,
@@ -710,8 +716,8 @@ begin
       CLKOUT5  => open,
       LOCKED   => open,
       RST      => '0',
-      CLKFBIN  => pllout_clk_fb_pllref,
-      CLKIN    => clk_125m_pllref);
+      CLKFBIN  => pllout_clk_fb_pllref,  
+      CLKIN    => clk_125m_pllref);   -- 125 MHz
 
   cmp_dmtd_clk_pll : PLL_BASE
     generic map (
@@ -743,7 +749,7 @@ begin
       LOCKED   => open,
       RST      => '0',
       CLKFBIN  => pllout_clk_fb_dmtd,
-      CLKIN    => clk_20m_vcxo_buf);
+      CLKIN    => clk_20m_vcxo_buf);  -- 20 MHz
 
 
  local_reset_n <= L_RST_N;
@@ -768,24 +774,24 @@ begin
   ------------------------------------------------------------------------------
   cmp_l_clk_buf : IBUFDS
     generic map (
-      DIFF_TERM    => false,            -- Differential Termination
+      DIFF_TERM    => false, -- Differential Termination
       IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
       IOSTANDARD   => "DEFAULT")
     port map (
-      O  => l_clk,                      -- Buffer output
-      I  => L_CLKp,  -- Diff_p buffer input (connect directly to top-level port)
-      IB => L_CLKn  -- Diff_n buffer input (connect directly to top-level port)
+      O  => l_clk,           -- Buffer output
+      I  => L_CLKp,          -- Diff_p buffer input (connect directly to top-level port)
+      IB => L_CLKn           -- Diff_n buffer input (connect directly to top-level port)
       );
 
   cmp_pllrefclk_buf : IBUFGDS
     generic map (
-      DIFF_TERM    => true,             -- Differential Termination
+      DIFF_TERM    => true,  -- Differential Termination
       IBUF_LOW_PWR => true,  -- Low power (TRUE) vs. performance (FALSE) setting for referenced I/O standards
       IOSTANDARD   => "DEFAULT")
     port map (
-      O  => clk_125m_pllref,            -- Buffer output
+      O  => clk_125m_pllref,      -- Buffer output
       I  => clk_125m_pllref_p_i,  -- Diff_p buffer input (connect directly to top-level port)
-      IB => clk_125m_pllref_n_i  -- Diff_n buffer input (connect directly to top-level port)
+      IB => clk_125m_pllref_n_i   -- Diff_n buffer input (connect directly to top-level port)
       );
 
 
@@ -806,7 +812,7 @@ begin
   ------------------------------------------------------------------------------
   -- Active high reset
   ------------------------------------------------------------------------------
-  rst <= not(L_RST_N);
+  -- rst <= not(L_RST_N); -- Test & delete T.B.D
 
   ------------------------------------------------------------------------------
   -- WB Crossbar
@@ -836,8 +842,9 @@ begin
   U_Gennum_Core : gn4124_core
     port map (
       rst_n_a_i    => L_RST_N,
---      status_o        => status_o,
-      p2l_clk_p_i  => P2L_CLKp,
+      status_o     => open,
+      
+		p2l_clk_p_i  => P2L_CLKp,
       p2l_clk_n_i  => P2L_CLKn,
       p2l_data_i   => P2L_DATA,
       p2l_dframe_i => P2L_DFRAME,
@@ -847,7 +854,8 @@ begin
       p_wr_rdy_o   => P_WR_RDY,
       rx_error_o   => RX_ERROR,
       vc_rdy_i     => VC_RDY,
-      l2p_clk_p_o  => L2P_CLKp,
+      
+		l2p_clk_p_o  => L2P_CLKp,
       l2p_clk_n_o  => L2P_CLKn,
       l2p_data_o   => L2P_DATA,
       l2p_dframe_o => L2P_DFRAME,
@@ -857,13 +865,14 @@ begin
       l_wr_rdy_i   => L_WR_RDY,
       p_rd_d_rdy_i => P_RD_D_RDY,
       tx_error_i   => TX_ERROR,
---      dma_irq_o       => dma_irq_o,
+      
+		dma_irq_o       => open, -- T.B.D. Check it is ok
       irq_p_i      => vic_irq,
       irq_p_o      => GPIO(0),
 
-      dma_reg_clk_i => clk_sys,
-      csr_clk_i     => clk_sys,
-
+      dma_reg_clk_i => clk_sys, -- Look, many signals just take default values if not used
+		
+		csr_clk_i     => clk_sys,
       csr_adr_o   => cbar_slave_adr_words,
       csr_dat_o   => cbar_slave_i.dat,
       csr_sel_o   => cbar_slave_i.sel,
@@ -878,26 +887,28 @@ begin
 
   cbar_slave_i.adr <= cbar_slave_adr_words(29 downto 0) & "00";
 
-  process(clk_sys, rst)
-  begin
-    if rising_edge(clk_sys) then
-      led_divider <= led_divider + 1;
-    end if;
-  end process;
+  ---------------------------------------------
+  --   Miscelaneous stuff (i2c, onewire, etc..)
+  ---------------------------------------------
 
   fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
   fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
   wrc_scl_i  <= fpga_scl_b;
   wrc_sda_i  <= fpga_sda_b;
 
+  thermo_id <= '0' when owr_en(0) = '1' else 'Z';
+  owr_i(0)  <= thermo_id;
+
+  ---------------------------------------------
+  --   SFPs
+  ---------------------------------------------
+
   sfp_mod_def1_b <= '0' when sfp_scl_o = '0' else 'Z';
   sfp_mod_def2_b <= '0' when sfp_sda_o = '0' else 'Z';
   sfp_scl_i      <= sfp_mod_def1_b;
   sfp_sda_i      <= sfp_mod_def2_b;
-
-  thermo_id <= '0' when owr_en(0) = '1' else 'Z';
-  owr_i(0)  <= thermo_id;
-
+  sfp_tx_disable_o <= '0';   
+  
   -------------------------------------
   -- WR PTP Core
   -------------------------------------
@@ -918,8 +929,8 @@ begin
       clk_dmtd_i => clk_dmtd,
       clk_ref_i  => clk_125m_pllref,
       clk_aux_i  => (others => '0'),
-      clk_ext_i  => dio_clk,
-      pps_ext_i  => dio_in(3),
+      clk_ext_i  => dio_clk,        -- It correspond to dio_in(4)
+      pps_ext_i  => dio_in(3),      -- It need to be documented
       rst_n_i    => local_reset_n,
 
       dac_hpll_load_p1_o => dac_hpll_load_p1,
@@ -976,7 +987,7 @@ begin
       tm_clk_aux_lock_en_i => '0',
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => tm_time_valid,
-      tm_utc_o             => tm_tai,
+      tm_utc_o             => tm_seconds,
       tm_cycles_o          => tm_cycles,
       pps_p_o              => pps,
 
@@ -1117,8 +1128,6 @@ begin
       pad_rxp1_i         => sfp_rxp_i);
 
   
-
-  
   U_DAC_ARB : spec_serial_dac_arb
     generic map (
       g_invert_sclk    => false,
@@ -1136,19 +1145,10 @@ begin
 
       dac_cs_n_o(0) => dac_cs1_n_o,
       dac_cs_n_o(1) => dac_cs2_n_o,
-      dac_clr_n_o   => dac_clr_n_o,
+      dac_clr_n_o   => open,
       dac_sclk_o    => dac_sclk_o,
       dac_din_o     => dac_din_o);
 
-
-  U_Extend_PPS : gc_extend_pulse
-    generic map (
-      g_width => 10000000)
-    port map (
-      clk_i      => clk_125m_pllref,
-      rst_n_i    => local_reset_n,
-      pulse_i    => pps,
-      extended_o => dio_led_top_o);
 
 -----------------------------------
 --   DIO core
@@ -1168,29 +1168,31 @@ begin
       dio_out_o      => dio_out,
       dio_oe_n_o     => dio_oe_n_o,
       dio_term_en_o  => dio_term_en_o,
-      dio_onewire_b  => dio_onewire_b,
+      
+		dio_onewire_b  => dio_onewire_b,
       dio_sdn_n_o    => dio_sdn_n_o,
       dio_sdn_ck_n_o => dio_sdn_ck_n_o,
-      dio_led_top_o  => open,           --dio_led_top_o,
+		dio_led_top_o  => dio_led_top_o,
       dio_led_bot_o  => dio_led_bot_o,
 
-      fmc_scl_b => fmc_scl_b,
-      fmc_sda_b => fmc_sda_b,
-
+      dio_scl_b => dio_scl_b,
+      dio_sda_b => dio_sda_b,
+      dio_ga_o       => open,
+		
       tm_time_valid_i => tm_time_valid,
-      tm_seconds_i        => tm_tai,
+      tm_seconds_i        => tm_seconds,
       tm_cycles_i     => tm_cycles,
-
+      
+		-- Chipscope, debugging signals
       --TRIG0           => TRIG0,
       --TRIG1           => TRIG1,
       --TRIG2           => TRIG2,
---      TRIG3           => TRIG3,
+      --TRIG3           => TRIG3,
 
       slave_i                      => cbar_master_o(4),
       slave_o                      => cbar_master_i(4)
-            --    wb_irq_data_fifo_o => wb_irq_data_fifo_dio
+      --    wb_irq_data_fifo_o => wb_irq_data_fifo_dio -- To test & delete
   );
-
   gen_dio_iobufs : for i in 0 to 4 generate
     U_ibuf : IBUFDS
       generic map (
@@ -1217,6 +1219,25 @@ begin
       IB => dio_clk_n_i
       );
 
+
+
+-- DEBUGGING.......................
+--  U_Extend_PPS : gc_extend_pulse
+--    generic map (
+--      g_width => 10000000)
+--    port map (
+--      clk_i      => clk_125m_pllref,
+--      rst_n_i    => local_reset_n,
+--      pulse_i    => pps,
+--      extended_o => dio_led_top_o);
+
+--  process(clk_sys, rst)
+--  begin
+--    if rising_edge(clk_sys) then
+--      led_divider <= led_divider + 1;
+--    end if;
+--  end process;
+
 --  dio_led_bot_o <= '0';
 --  dio_out(0)             <= pps;
 --  dio_oe_n_o(0)          <= '0';
@@ -1230,7 +1251,6 @@ begin
 --  dio_sdn_ck_n_o <= '1';
 --  dio_sdn_n_o    <= '1';
 
-  sfp_tx_disable_o <= '0';
 
   --chipscope_ila_1 : chipscope_ila
   --  port map (
@@ -1261,8 +1281,6 @@ begin
   --TRIG2(13)         <= cbar_master_o(4).cyc;
   --TRIG3             <= cbar_master_i(0).dat;
   
-
-
 end rtl;
 
 
