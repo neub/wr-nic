@@ -6,9 +6,9 @@ peripheral {
 
 	 hdl_entity="wrsw_dio_wb";
 
----------------------------------------
--- FIFOS FOR INPUT EVENT TIME STAMPING
----------------------------------------
+----------------------------------------------------
+-- FIFOS & INTERRUPTS FOR INPUT EVENT TIME STAMPING
+----------------------------------------------------
 	 
 -- CHANNEL 0 INPUT FIFO
 
@@ -499,11 +499,14 @@ peripheral {
 		};
 	};
 
+-----------------------------------------
+-- OUTPUT CONFIGURATION/CONTROL REGISTERS
+-----------------------------------------
 
--- Monostable/Programmable output or GPIO selection
+-- Programmable output or GPIO selection
 	reg {
 		name = "FMC-DIO output configuration register. ";
-		description = "It allows to choose a Monostable/programmable output or a standard GPIO output.";
+		description = "It allows to choose a programmable output or a standard GPIO output.";
 		prefix = "out";
 
 		field {
@@ -557,7 +560,7 @@ peripheral {
 
 -- seconds trigger ready value. Readable-writable the bus, writable from the device.
 	reg {
-		name = "FMC-DIO seconds-based trigger is ready to accept a new trigger generation request";
+		name = "FMC-DIO time trigger is ready to accept a new trigger generation request";
 		description = "ready state, waiting new trigger commands for dio output.";
 		prefix = "trig";
 
@@ -572,45 +575,167 @@ peripheral {
 		};
 	};
 
+-- DIO CHANNEL 0 trigger ready interrupt
+	irq {
+		 name = "Channel 0 trigger ready interrupt";
+		 description = "Interrupt active when time-programmable output channels accept new time trigger command.";
+		 prefix = "trigger_ready_0";
+		 trigger = LEVEL_1;
+	};
+-- DIO CHANNEL 1 trigger ready interrupt
+	irq {
+		 name = "Channel 1 trigger ready interrupt";
+		 description = "Interrupt active when time-programmable output channels accept new time trigger command.";
+		 prefix = "trigger_ready_1";
+		 trigger = LEVEL_1;
+	};
+-- DIO CHANNEL 2 trigger ready interrupt
+	irq {
+		 name = "Channel 2 trigger ready interrupt";
+		 description = "Interrupt active when time-programmable output channels accept new time trigger command.";
+		 prefix = "trigger_ready_2";
+		 trigger = LEVEL_1;
+	};
+-- DIO CHANNEL 3 trigger ready interrupt
+	irq {
+		 name = "Channel 3 trigger ready interrupt";
+		 description = "Interrupt active when time-programmable output channels accept new time trigger command.";
+		 prefix = "trigger_ready_3";
+		 trigger = LEVEL_1;
+	};
+-- DIO CHANNEL 4 trigger ready interrupt
+	irq {
+		 name = "Channel 4 trigger ready interrupt";
+		 description = "Interrupt active when time-programmable output channels accept new time trigger command.";
+		 prefix = "trigger_ready_4";
+		 trigger = LEVEL_1;
+	};
+
+-- DIO CHANNEL 0: Programmable/immediate output pulse length . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio channel 0 Programmable/immediate output pulse length";
+		description = "Number of clk_ref clock ticks that output will be active";
+		prefix = "prog0_pulse";
+
+		field {
+			name = "number of ticks field for channel 0";
+			description = "ticks number";
+			prefix = "length";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+-- DIO CHANNEL 1: Programmable/immediate output pulse length . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio channel 1 Programmable/immediate output pulse length";
+		description = "Number of clk_ref clock ticks that output will be active";
+		prefix = "prog1_pulse";
+
+		field {
+			name = "number of ticks field for channel 1";
+			description = "ticks number";
+			prefix = "length";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 2: Programmable/immediate output pulse length . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio channel 2 Programmable/immediate output pulse length";
+		description = "Number of clk_ref clock ticks that output will be active";
+		prefix = "prog2_pulse";
+
+		field {
+			name = "number of ticks field for channel 2";
+			description = "ticks number";
+			prefix = "length";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 3: Programmable/immediate output pulse length . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio channel 3 Programmable/immediate output pulse length";
+		description = "Number of clk_ref clock ticks that output will be active";
+		prefix = "prog3_pulse";
+
+		field {
+			name = "number of ticks field for channel 3";
+			description = "ticks number";
+			prefix = "length";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+-- DIO CHANNEL 4: Programmable/immediate output pulse length . Readable-writable the bus, readble from the device.
+	reg {
+		name = "fmc-dio channel 4 Programmable/immediate output pulse length";
+		description = "Number of clk_ref clock ticks that output will be active";
+		prefix = "prog4_pulse";
+
+		field {
+			name = "number of ticks field for channel 4";
+			description = "ticks number";
+			prefix = "length";
+			type = SLV;
+			size = 28;
+			access_bus = READ_WRITE;
+			access_dev = READ_ONLY;
+		};
+	};
+
+
+-----------------------------------------
+-- IMMEDIATE OUTPUT REGISTERS
+-----------------------------------------
 
 -- Pulse generator.
 	reg {
 		name = "Pulse generate immediately";
 		description = "It is used to generate a pulse immediately";
-		prefix = "puls_inmed";
+		prefix = "pulse";
 
 		field {
 			name = "pulse_gen_now_0";
 			description = "It generates a pulse";
-			prefix = "pul_inm_0";
+			prefix = "imm_0";
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 		};
 		field {
 			name = "pulse_gen_now_1";
 			description = "It generates a pulse";
-			prefix = "pul_inm_1";
+			prefix = "imm_1";
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 		};
 		field {
 			name = "pulse_gen_now_2";
 			description = "It generates a pulse";
-			prefix = "pul_inm_2";
+			prefix = "imm_2";
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 		};
 		field {
 			name = "pulse_gen_now_3";
 			description = "It generates a pulse";
-			prefix = "pul_inm_3";
+			prefix = "imm_3";
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 		};
 		field {
 			name = "pulse_gen_now_4";
 			description = "It generates a pulse";
-			prefix = "pul_inm_4";
+			prefix = "imm_4";
 			type = MONOSTABLE;
       clock = "clk_asyn_i";
 			};

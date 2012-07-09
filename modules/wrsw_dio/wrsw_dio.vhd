@@ -96,7 +96,7 @@ architecture rtl of wrsw_dio is
   -- output when the seconds time passed to it through a vector equals a
   -- pre-programmed seconds time.
   -------------------------------------------------------------------------------
-  component pulse_gen is
+  component pulse_gen_pl  is
     generic (
       g_ref_clk_rate : integer := 125000000
     );
@@ -126,7 +126,8 @@ architecture rtl of wrsw_dio is
       -- latch it in
       trig_utc_i      : in std_logic_vector(39 downto 0);
       trig_cycles_i   : in std_logic_vector(27 downto 0);
-      trig_valid_p1_i : in std_logic
+      trig_valid_p1_i : in std_logic;
+      pulse_length_i  : in std_logic_vector(27 downto 0)
     );
   end component;
   
@@ -166,6 +167,23 @@ architecture rtl of wrsw_dio is
     );
   end component;
 
+  component immed_pulse_counter is
+    generic (
+    -- reference clock frequency
+    pulse_length_width : integer := 28
+    );
+
+    port (
+      clk_i          : in std_logic;    
+      rst_n_i        : in std_logic;      -- asynchronous system reset
+    
+      pulse_start_i  : in std_logic;      -- strobe for pulse generation
+      pulse_length_i : in std_logic_vector(pulse_length_width-1 downto 0);
+  
+      pulse_output_o : out std_logic
+    );
+  end component;
+
   component wrsw_dio_wb is
     port (
     rst_n_i                                  : in     std_logic;
@@ -181,111 +199,126 @@ architecture rtl of wrsw_dio is
     wb_stall_o                               : out    std_logic;
     wb_int_o                                 : out    std_logic;
     clk_asyn_i                               : in     std_logic;
-    -- FIFO write request
+-- FIFO write request
     dio_tsf0_wr_req_i                        : in     std_logic;
-    -- FIFO full flag
+-- FIFO full flag
     dio_tsf0_wr_full_o                       : out    std_logic;
-    -- FIFO empty flag
+-- FIFO empty flag
     dio_tsf0_wr_empty_o                      : out    std_logic;
-    dio_tsf0_tag_seconds_i                       : in     std_logic_vector(31 downto 0);
-    dio_tsf0_tag_secondsh_i                      : in     std_logic_vector(7 downto 0);
+    dio_tsf0_tag_seconds_i                   : in     std_logic_vector(31 downto 0);
+    dio_tsf0_tag_secondsh_i                  : in     std_logic_vector(7 downto 0);
     dio_tsf0_tag_cycles_i                    : in     std_logic_vector(27 downto 0);
     irq_nempty_0_i                           : in     std_logic;
-    -- FIFO write request
+-- FIFO write request
     dio_tsf1_wr_req_i                        : in     std_logic;
-    -- FIFO full flag
+-- FIFO full flag
     dio_tsf1_wr_full_o                       : out    std_logic;
-    -- FIFO empty flag
+-- FIFO empty flag
     dio_tsf1_wr_empty_o                      : out    std_logic;
-    dio_tsf1_tag_seconds_i                       : in     std_logic_vector(31 downto 0);
-    dio_tsf1_tag_secondsh_i                      : in     std_logic_vector(7 downto 0);
+    dio_tsf1_tag_seconds_i                   : in     std_logic_vector(31 downto 0);
+    dio_tsf1_tag_secondsh_i                  : in     std_logic_vector(7 downto 0);
     dio_tsf1_tag_cycles_i                    : in     std_logic_vector(27 downto 0);
     irq_nempty_1_i                           : in     std_logic;
-    -- FIFO write request
+-- FIFO write request
     dio_tsf2_wr_req_i                        : in     std_logic;
-    -- FIFO full flag
+-- FIFO full flag
     dio_tsf2_wr_full_o                       : out    std_logic;
-    -- FIFO empty flag
+-- FIFO empty flag
     dio_tsf2_wr_empty_o                      : out    std_logic;
-    dio_tsf2_tag_seconds_i                       : in     std_logic_vector(31 downto 0);
-    dio_tsf2_tag_secondsh_i                      : in     std_logic_vector(7 downto 0);
+    dio_tsf2_tag_seconds_i                   : in     std_logic_vector(31 downto 0);
+    dio_tsf2_tag_secondsh_i                  : in     std_logic_vector(7 downto 0);
     dio_tsf2_tag_cycles_i                    : in     std_logic_vector(27 downto 0);
     irq_nempty_2_i                           : in     std_logic;
-    -- FIFO write request
+-- FIFO write request
     dio_tsf3_wr_req_i                        : in     std_logic;
-    -- FIFO full flag
+-- FIFO full flag
     dio_tsf3_wr_full_o                       : out    std_logic;
-    -- FIFO empty flag
+-- FIFO empty flag
     dio_tsf3_wr_empty_o                      : out    std_logic;
-    dio_tsf3_tag_seconds_i                       : in     std_logic_vector(31 downto 0);
-    dio_tsf3_tag_secondsh_i                      : in     std_logic_vector(7 downto 0);
+    dio_tsf3_tag_seconds_i                   : in     std_logic_vector(31 downto 0);
+    dio_tsf3_tag_secondsh_i                  : in     std_logic_vector(7 downto 0);
     dio_tsf3_tag_cycles_i                    : in     std_logic_vector(27 downto 0);
     irq_nempty_3_i                           : in     std_logic;
-    -- FIFO write request
+-- FIFO write request
     dio_tsf4_wr_req_i                        : in     std_logic;
-    -- FIFO full flag
+-- FIFO full flag
     dio_tsf4_wr_full_o                       : out    std_logic;
-    -- FIFO empty flag
+-- FIFO empty flag
     dio_tsf4_wr_empty_o                      : out    std_logic;
-    dio_tsf4_tag_seconds_i                       : in     std_logic_vector(31 downto 0);
-    dio_tsf4_tag_secondsh_i                      : in     std_logic_vector(7 downto 0);
+    dio_tsf4_tag_seconds_i                   : in     std_logic_vector(31 downto 0);
+    dio_tsf4_tag_secondsh_i                  : in     std_logic_vector(7 downto 0);
     dio_tsf4_tag_cycles_i                    : in     std_logic_vector(27 downto 0);
     irq_nempty_4_i                           : in     std_logic;
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 0 seconds-based trigger for pulse generation'
-    dio_trig0_seconds_o                          : out    std_logic_vector(31 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 0 seconds-based trigger for pulse generation'
-    dio_trigh0_seconds_o                         : out    std_logic_vector(7 downto 0);
-    -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 0 cycles to  trigger a pulse generation'
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 0 seconds-based trigger for pulse generation'
+    dio_trig0_seconds_o                      : out    std_logic_vector(31 downto 0);
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 0 seconds-based trigger for pulse generation'
+    dio_trigh0_seconds_o                     : out    std_logic_vector(7 downto 0);
+-- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 0 cycles to  trigger a pulse generation'
     dio_cyc0_cyc_o                           : out    std_logic_vector(27 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 1 seconds-based trigger for pulse generation'
-    dio_trig1_seconds_o                          : out    std_logic_vector(31 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 1 seconds-based trigger for pulse generation'
-    dio_trigh1_seconds_o                         : out    std_logic_vector(7 downto 0);
-    -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 1 cycles to  trigger a pulse generation'
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 1 seconds-based trigger for pulse generation'
+    dio_trig1_seconds_o                      : out    std_logic_vector(31 downto 0);
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 1 seconds-based trigger for pulse generation'
+    dio_trigh1_seconds_o                     : out    std_logic_vector(7 downto 0);
+-- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 1 cycles to  trigger a pulse generation'
     dio_cyc1_cyc_o                           : out    std_logic_vector(27 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 2 seconds-based trigger for pulse generation'
-    dio_trig2_seconds_o                          : out    std_logic_vector(31 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 2 seconds-based trigger for pulse generation'
-    dio_trigh2_seconds_o                         : out    std_logic_vector(7 downto 0);
-    -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 2 cycles to  trigger a pulse generation'
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 2 seconds-based trigger for pulse generation'
+    dio_trig2_seconds_o                      : out    std_logic_vector(31 downto 0);
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 2 seconds-based trigger for pulse generation'
+    dio_trigh2_seconds_o                     : out    std_logic_vector(7 downto 0);
+-- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 2 cycles to  trigger a pulse generation'
     dio_cyc2_cyc_o                           : out    std_logic_vector(27 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 3 seconds-based trigger for pulse generation'
-    dio_trig3_seconds_o                          : out    std_logic_vector(31 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 3 seconds-based trigger for pulse generation'
-    dio_trigh3_seconds_o                         : out    std_logic_vector(7 downto 0);
-    -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 3 cycles to  trigger a pulse generation'
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 3 seconds-based trigger for pulse generation'
+    dio_trig3_seconds_o                      : out    std_logic_vector(31 downto 0);
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 3 seconds-based trigger for pulse generation'
+    dio_trigh3_seconds_o                     : out    std_logic_vector(7 downto 0);
+-- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 3 cycles to  trigger a pulse generation'
     dio_cyc3_cyc_o                           : out    std_logic_vector(27 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 4 seconds-based trigger for pulse generation'
-    dio_trig4_seconds_o                          : out    std_logic_vector(31 downto 0);
-    -- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 4 seconds-based trigger for pulse generation'
-    dio_trigh4_seconds_o                         : out    std_logic_vector(7 downto 0);
-    -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 4 cycles to  trigger a pulse generation'
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 4 seconds-based trigger for pulse generation'
+    dio_trig4_seconds_o                      : out    std_logic_vector(31 downto 0);
+-- Port for std_logic_vector field: 'seconds field' in reg: 'fmc-dio 4 seconds-based trigger for pulse generation'
+    dio_trigh4_seconds_o                     : out    std_logic_vector(7 downto 0);
+-- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 4 cycles to  trigger a pulse generation'
     dio_cyc4_cyc_o                           : out    std_logic_vector(27 downto 0);
 -- Port for std_logic_vector field: 'outmode' in reg: 'FMC-DIO output configuration register. '
     dio_out_mode_o                           : out    std_logic_vector(4 downto 0);
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
-    dio_latch_time_ch0_o                : out    std_logic;
+    dio_latch_time_ch0_o                     : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
-    dio_latch_time_ch1_o                : out    std_logic;
+    dio_latch_time_ch1_o                     : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
-    dio_latch_time_ch2_o                : out    std_logic;
+    dio_latch_time_ch2_o                     : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
-    dio_latch_time_ch3_o                : out    std_logic;
+    dio_latch_time_ch3_o                     : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
-    dio_latch_time_ch4_o                : out    std_logic;
--- Port for std_logic_vector field: 'trig_rdy field' in reg: 'FMC-DIO seconds-based trigger is ready to accept a new trigger generation request'
+    dio_latch_time_ch4_o                     : out    std_logic;
+-- Port for std_logic_vector field: 'trig_rdy field' in reg: 'FMC-DIO time trigger is ready to accept a new trigger generation request'
     dio_trig_rdy_i                           : in     std_logic_vector(4 downto 0);
-    -- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_0' in reg: 'Pulse generate immediately'
-    dio_puls_inmed_pul_inm_0_o               : out    std_logic;
-    -- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_1' in reg: 'Pulse generate immediately'
-    dio_puls_inmed_pul_inm_1_o               : out    std_logic;
-    -- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_2' in reg: 'Pulse generate immediately'
-    dio_puls_inmed_pul_inm_2_o               : out    std_logic;
-    -- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_3' in reg: 'Pulse generate immediately'
-    dio_puls_inmed_pul_inm_3_o               : out    std_logic;
-    -- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_4' in reg: 'Pulse generate immediately'
-    dio_puls_inmed_pul_inm_4_o               : out    std_logic
-  );
+    irq_trigger_ready_0_i                    : in     std_logic;
+    irq_trigger_ready_1_i                    : in     std_logic;
+    irq_trigger_ready_2_i                    : in     std_logic;
+    irq_trigger_ready_3_i                    : in     std_logic;
+    irq_trigger_ready_4_i                    : in     std_logic;
+-- Port for std_logic_vector field: 'number of ticks field for channel 0' in reg: 'fmc-dio channel 0 Programmable/immediate output pulse length'
+    dio_prog0_pulse_length_o                 : out    std_logic_vector(27 downto 0);
+-- Port for std_logic_vector field: 'number of ticks field for channel 1' in reg: 'fmc-dio channel 1 Programmable/immediate output pulse length'
+    dio_prog1_pulse_length_o                 : out    std_logic_vector(27 downto 0);
+-- Port for std_logic_vector field: 'number of ticks field for channel 2' in reg: 'fmc-dio channel 2 Programmable/immediate output pulse length'
+    dio_prog2_pulse_length_o                 : out    std_logic_vector(27 downto 0);
+-- Port for std_logic_vector field: 'number of ticks field for channel 3' in reg: 'fmc-dio channel 3 Programmable/immediate output pulse length'
+    dio_prog3_pulse_length_o                 : out    std_logic_vector(27 downto 0);
+-- Port for std_logic_vector field: 'number of ticks field for channel 4' in reg: 'fmc-dio channel 4 Programmable/immediate output pulse length'
+    dio_prog4_pulse_length_o                 : out    std_logic_vector(27 downto 0);
+-- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_0' in reg: 'Pulse generate immediately'
+    dio_pulse_imm_0_o                        : out    std_logic;
+-- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_1' in reg: 'Pulse generate immediately'
+    dio_pulse_imm_1_o                        : out    std_logic;
+-- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_2' in reg: 'Pulse generate immediately'
+    dio_pulse_imm_2_o                        : out    std_logic;
+-- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_3' in reg: 'Pulse generate immediately'
+    dio_pulse_imm_3_o                        : out    std_logic;
+-- Port for asynchronous (clock: clk_asyn_i) MONOSTABLE field: 'pulse_gen_now_4' in reg: 'Pulse generate immediately'
+    dio_pulse_imm_4_o                        : out    std_logic
+	 );
   end component;
 
 
@@ -308,24 +341,26 @@ architecture rtl of wrsw_dio is
   signal sda_pad_in, sda_pad_out, sda_pad_oen : std_logic;
 
   -- Pulse generator trigger registers signals
-  type t_seconds_array is array (4 downto 0) of std_logic_vector (39 downto 0);
-  type t_cycles_array is array (4 downto 0) of std_logic_vector (27 downto 0);
+  type t_seconds_array     is array (4 downto 0) of std_logic_vector (39 downto 0);
+  type t_cycles_array      is array (4 downto 0) of std_logic_vector (27 downto 0);
+  type t_pulselength_array is array (4 downto 0) of std_logic_vector (27 downto 0);
   
   signal trig_seconds       : t_seconds_array;
   signal trig_cycles    : t_cycles_array;
   signal trig_valid_p1 	: std_logic_vector (4 downto 0);
   
   signal trig_ready     : std_logic_vector (4 downto 0);
-
-  signal tag_seconds        : t_seconds_array;
+  
+  signal tag_seconds    : t_seconds_array;
   signal tag_cycles     : t_cycles_array;
   signal tag_valid_p1   : std_logic_vector (4 downto 0);
+  signal pulse_length   : t_pulselength_array; 
 
   -- FIFO signals
   signal dio_tsf_wr_req      : std_logic_vector (4 downto 0);
   signal dio_tsf_wr_full     : std_logic_vector (4 downto 0);
   signal dio_tsf_wr_empty    : std_logic_vector (4 downto 0);
-  signal dio_tsf_tag_seconds     : t_seconds_array;
+  signal dio_tsf_tag_seconds : t_seconds_array;
   signal dio_tsf_tag_cycles  : t_cycles_array;
   
   -- Fifos no-empty interrupts
@@ -353,10 +388,11 @@ architecture rtl of wrsw_dio is
   signal cbar_master_out  : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
 
   -- DIO related signals
-  signal dio_monost        : std_logic_vector(4 downto 0);
-  signal dio_prog          : std_logic_vector(4 downto 0);
-  signal dio_puls_inmed    : std_logic_vector(4 downto 0);
-  signal dio_out_mode      : std_logic_vector(4 downto 0);
+  signal dio_pulse           : std_logic_vector(4 downto 0);
+  signal dio_pulse_prog      : std_logic_vector(4 downto 0);
+  signal dio_pulse_immed     : std_logic_vector(4 downto 0);
+  signal dio_pulse_immed_stb : std_logic_vector(4 downto 0);
+  signal dio_out_mode        : std_logic_vector(4 downto 0);
   
 -------------------------------------------------------------------------------
 -- rtl
@@ -376,13 +412,13 @@ begin
   -- GEN AND STAMPER
   ------------------------------------------------------------------------------    
   gen_pulse_modules : for i in 0 to 4 generate
-    U_pulse_gen : pulse_gen
+    U_pulse_gen : pulse_gen_pl
       port map(
         clk_ref_i        => clk_ref_i,
         clk_sys_i        => clk_sys_i,
         rst_n_i          => rst_n_i,
 
-        pulse_o          => dio_prog(i),
+        pulse_o          => dio_pulse_prog(i),
         -- DEBUG
 --        tm_time_valid_i  => '1',--tm_time_valid_i,
 --        tm_utc_i         => tm_utc,--tm_utc_i, 
@@ -395,7 +431,9 @@ begin
 
         trig_utc_i       => trig_seconds(i), 
         trig_cycles_i    => trig_cycles(i), 
-        trig_valid_p1_i  => trig_valid_p1(i));
+        trig_valid_p1_i  => trig_valid_p1(i),
+		  pulse_length_i   => pulse_length(i)
+		  );
 	 
 
     U_pulse_stamper : pulse_stamper
@@ -512,11 +550,24 @@ begin
       master_o      => cbar_master_out
       );
 
+  immediate_output_with_pulse_length: for i in 0 to 4 generate
+    immediate_output_component: immed_pulse_counter
+    generic map (
+      pulse_length_width => 28
+    )
+    port map(
+      clk_i          => clk_ref_i,
+      rst_n_i        => rst_n_i,
+      pulse_start_i  => dio_pulse_immed_stb(i),
+      pulse_length_i => pulse_length(i),
+      pulse_output_o => dio_pulse_immed(i)
+    );
+  end generate immediate_output_with_pulse_length;
+
   gen_pio_assignment: for i in 0 to 4 generate
     gpio_in(4*i)     <= dio_in_i(i);
-	 
-    dio_monost(i) <= '1' when dio_puls_inmed(i) = '1' else dio_prog(i);
-    dio_out_o(i) <= dio_monost(i) when dio_out_mode(i) ='1' else gpio_out(4*i);
+    dio_pulse(i) <= '1' when dio_pulse_immed(i) = '1' else dio_pulse_prog(i);
+    dio_out_o(i) <= dio_pulse(i) when dio_out_mode(i) ='1' else gpio_out(4*i);
     dio_oe_n_o(i)    <= gpio_out(4*i+1);
     dio_term_en_o(i) <= gpio_out(4*i+2);
   end generate gen_pio_assignment;
@@ -616,12 +667,24 @@ begin
       dio_latch_time_ch4_o                => trig_valid_p1(4),
 
       dio_trig_rdy_i          => trig_ready,
+		
+		irq_trigger_ready_0_i   => trig_ready(0),
+      irq_trigger_ready_1_i   => trig_ready(1),
+      irq_trigger_ready_2_i   => trig_ready(2),
+      irq_trigger_ready_3_i   => trig_ready(3),
+      irq_trigger_ready_4_i   => trig_ready(4),      
 
-      dio_puls_inmed_pul_inm_0_o  =>   dio_puls_inmed(0),		
-      dio_puls_inmed_pul_inm_1_o  =>   dio_puls_inmed(1),		
-      dio_puls_inmed_pul_inm_2_o  =>   dio_puls_inmed(2),		
-      dio_puls_inmed_pul_inm_3_o  =>   dio_puls_inmed(3),		
-      dio_puls_inmed_pul_inm_4_o  =>   dio_puls_inmed(4)
+		dio_prog0_pulse_length_o=> pulse_length(0),
+      dio_prog1_pulse_length_o=> pulse_length(1),
+      dio_prog2_pulse_length_o=> pulse_length(2),
+      dio_prog3_pulse_length_o=> pulse_length(3),
+      dio_prog4_pulse_length_o=> pulse_length(4),
+
+      dio_pulse_imm_0_o  =>   dio_pulse_immed_stb(0),		
+      dio_pulse_imm_1_o  =>   dio_pulse_immed_stb(1),		
+      dio_pulse_imm_2_o  =>   dio_pulse_immed_stb(2),		
+      dio_pulse_imm_3_o  =>   dio_pulse_immed_stb(3),		
+      dio_pulse_imm_4_o  =>   dio_pulse_immed_stb(4)
    );
 
   -- seconds timestamped FIFO-no-empty interrupts
@@ -655,7 +718,7 @@ begin
 --     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
 --     TRIG1(0)  <= cbar_master_in(3).int;
 --     TRIG2               <= tm_utc(31 downto 0);
-    -- TRIG3(2 downto 0)   <= dio_in_i(0) & dio_out(0) & dio_puls_inmed(0);
+    -- TRIG3(2 downto 0)   <= dio_in_i(0) & dio_out(0) & dio_pulse_immed(0);
     --TRIG3(4 downto 0)  <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
