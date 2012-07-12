@@ -22,7 +22,7 @@ The main block modules of the architecture are described on next figure.
 
 ![Main HDL blocks of the wr-nic gateware](./img/wr_nic_blocks2.png)
 
-Here`s a quick description of each block:
+Here is a quick description of each block:
 
 * The `DIO core` allows configuration of each one of the 5 channels of the DIO mezzanine as input or output. For inputs, it provides an accurate time stamp (using time information from the WRPC, not shown in the diagram) and optionally a host (PCIe) interrupt via the IRQ Gen block. For outputs, it allows the user to schedule the generation of a pulse at a given future time, or to generate it immediately.
 * The `IRQ Gen` block receives one-tick-long pulses from other blocks and generates interrupt requests to the GN4124 core. It also includes interrupt source and mask registers.
@@ -30,7 +30,7 @@ Here`s a quick description of each block:
 The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the internal Wishbone bus, allowing communication with the host and interrupts --> pipelined version!
 * The `WRPC (White Rabbit PTP Core)` communicates with the outside world through the SFP socket in the SPEC, typically using fiber optics. It deals with the WR PTP using an internal LM32 CPU running a portable PTP stack. It forwards/receives non-PTP frames to/from the NIC block, using two pipelined Wishbone interfaces (master and slave for forwarding and receiving respectively). It also provides time information to other cores (not represented in the diagram), and time-tags for transmitted and received frames that can be read through Wishbone for diagnostics purposes. Future versions will include the PPSi library instead of the current PTP stack. 
 * The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe DMA via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
-* The `TxTSU module` collect tiemstamps with associated frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
+* The `TxTSU module` collect timestamps with associated frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
 
 
 DIO core
@@ -70,27 +70,30 @@ Any address within this memory space may be addressed by the PC to configure cor
 DIO core utilization
 --------------------
 
-The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an  monostable output inmediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All this elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: http://www.ohwr.org/projects/fmc-dio-5chttla
+The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an output signals immediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All this elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: http://www.ohwr.org/projects/fmc-dio-5chttla
+Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging. Outputs need to be generated align on 8 ns time-slices but their time-stamps values have subnanosecond accuracy thanks to the White-Rabbit timing properties. 
 
 In order to use input/output channels as previously described, the following actions are required:  
 
-* Standard GPIO output generation is selected by defautl. In order to use monostable output (time-programmed or immediate), each channel should be properly configured written to the `di_out_mode register`. A value of 1 indicates that channel will be used for monostable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
+* Standard GPIO output generation is selected by default. In order to use monostable output (time-programmed or immediate), each channel should be properly configured written to the `dio_out_mode register`. A value of 1 indicates that channel will be used for programmable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
 
 * Programmed pulse generation: Generate a programmed input at any time at channel X (X between 0 and 4 identifies the required card channel). For this purpose you need to perform the following actions:
 	* Set the required time. This means to provide the 40 bits for the time value and the number of cycles (28 bits). This 		requires to write the registers `dio_trigX_seconds, dio_trighX_seconds` (high part of the time value) and `dio_cyc0_cyc`.
-	* Checking if the the board is ready for accepting new triggers. A `1` will be found at each bit of `dio_trig_rdy` register 		only when required channel is ready to accepts new request. 
+	* Checking if the the board is ready for accepting new triggers. This can be done by reading a `1` found at each bit of `dio_trig_rdy` register. The EIC bits 9 to 5 have associated interrupts (active means system is ready to accept new trigger values (but please check you have properly configure EIC interrupt mask). Both methods are possible to check the status. Nevertheless note that the non-ready periods are very shorts (13 cycles of a 62.5 MHz clock, 208 ns) so systems is almost always ready for new trigger values. 
 	* Arming the trigger. You need to write a `1` a the corresponding bit of the `dio_latch_time_chX` bit field.  
-	After these operations, a monostable output will be presented on the desired channel at the requested time.  
+	After these operations, a monostable output will be presented on the desired channel at the requested time. It is not necessary to do software reset to the register.   
 
-* Immediate pulse generation: A immediate pulse is generated a the output of each of the card channels just by writing a corresponding `1` at the bit field dio_puls_inmed when output mode is set to monostable outputs. No erase is required.
+* Immediate pulse generation: A immediate pulse is generated a the output of each of the card channels just by writing a corresponding `1` at the bit field dio_pulse_imm_X when output mode is set to programmable outputs. No reset is required.
 
-* Input time-tagging: for each of the 5 inputs, if a `1` is detected at this channel, a precise time information is stored on logic FIFOs including the 40 bits time counters and 28 bits more for the cycles. For accessing this information you need to read `dio_tsfX_tag_tai` (32 low bits), `dio_tsfX_tag_taih` (high bits), `dio_tsfX_tag_cycles`. Each time the time tag of any channel is stored, the `fifo not empty` flag generates an interruption to the PC. In the next section we will describe this mechanisms. 
+* Variable pulse length: by writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register use the 28 low significant bits and allow a length equal to register_value x 8 ns.
+
+* Input time-tagging: for each of the 5 inputs, if a `1` is detected at this channel, a precise time information is stored on logic FIFOs including the 40 bits time counters and 28 bits more for the cycles (fifo depth is 256 each one). Currently this information is collected even for pins configured in output mode, GPIO, immediate or time-programmable configurations but it is straightforward to change this at the HDL code. For accessing this information you need to read `dio_tsfX_tag_seconds` (32 low bits), `dio_tsfX_tag_secondsh` (high bits), `dio_tsfX_tag_cycles`. Each time the time tag of any channel is stored, the `fifo not empty` flag generates an interruption to the PC. In the next section we will describe these mechanisms. 
 
 A detailed information about the memory maps and related registers names are available by generating html documentation of http://www.ohwr.org/projects/wr-nic/repository/revisions/master/changes/modules/wrsw_nic/wr_nic.wb file. Download the file and generate the HTML documentation using wbgen2 tool (for instance wbgen2 -D diocore.htm wr_nic.wb).
 
 Interrupt handling
 ------------------
-The VIC module block is in charge of handling the different interrupts and provide proper registers to inform of the source of each interruption. The main interrupt signal is communicated to the PC using the gn4124 core and the irq_req_p1_i signal and proper GPIO pins needs to be assigned at the hardware level. 
+The VIC module block is in charge of handling the different interrupts and provide proper registers to inform of the source of each interruption. The main interrupt signal is communicated to the PC using the gn4124 chip and gn4124 and GPIO-8. A proper core in the FPGA uses the irq_req_p1_i signal to activate this external GPIO pin which needs to be assigned at the low-level hardware. 
 
 The base address, as shown on the memory map figure is 0x00060000. It handles the following interrupts sources:  
 
@@ -122,7 +125,7 @@ This project could be used as starting demo with White-Rabbit technology. Betwee
 	* The user supplies a ~100Hz square wave on one of the inputs of the master card. The master host reads the time value of the rising edge of the external pulse upon IRQ. Then it adds a constant time (something like 1 ms) and sends a frame with that value to the slave. 
 	* The slave schedules a pulse to be produced at that time. On the scope we should see a constant time offset between the two pulses.
 
-* Network latency measurements. This is interesting if we connect a switch between the SPEC cards. By using th timestamps on Ethernet frames we could get the measurement of the network latency, verify it it is constant or how traffic affect this parameter. 
+* Network latency measurements. This is interesting if we connect a switch between the SPEC cards. By using the timestamps on Ethernet frames we could get the measurement of the network latency, verify it it is constant or how traffic affect this parameter. 
 
 * Many other options are possible. For instance, the measurement of the DIO card latency (we know when we generate a pulse and we could measure when it is received). Please fell free to propose new experiments!
 

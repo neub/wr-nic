@@ -40,7 +40,7 @@ library work;
 use work.wishbone_pkg.all;
 
 
-entity wrsw_dio is
+entity xwrsw_dio is
   generic (
     g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
     g_address_granularity : t_wishbone_address_granularity := WORD
@@ -79,10 +79,10 @@ entity wrsw_dio is
     slave_o            : out t_wishbone_slave_out
   --  wb_irq_data_fifo_o : out std_logic  -- T.B.DELETED
   );
-  end wrsw_dio; 
+  end xwrsw_dio; 
 
 
-architecture rtl of wrsw_dio is
+architecture rtl of xwrsw_dio is
 
   -------------------------------------------------------------------------------
   -- Component only for debugging (in order to generate seconds time) 
@@ -408,13 +408,13 @@ architecture rtl of wrsw_dio is
 begin  
 
   -- Dummy counter for simulationg WRPC seconds time
-  U_dummy: dummy_time
-    port map(
-      clk_sys     => clk_ref_i,
-      rst_n       => rst_n_i, 
-      tm_utc      => tm_seconds, 
-      tm_cycles   => tm_cycles
-    );	
+--  U_dummy: dummy_time
+--    port map(
+--      clk_sys     => clk_ref_i,
+--      rst_n       => rst_n_i, 
+--      tm_utc      => tm_seconds, 
+--      tm_cycles   => tm_cycles
+--    );	
 	
   ------------------------------------------------------------------------------
   -- GEN AND STAMPER
@@ -428,12 +428,12 @@ begin
 
         pulse_o          => dio_pulse_prog(i),
         -- DEBUG
-        tm_time_valid_i  => '1',--tm_time_valid_i,
-        tm_utc_i         => tm_seconds,--tm_utc_i, 
-        tm_cycles_i      => tm_cycles, --tm_cycles_i, 
---        tm_time_valid_i  => tm_time_valid_i,
---        tm_utc_i         => tm_seconds_i, 
---        tm_cycles_i      => tm_cycles_i, 
+--        tm_time_valid_i  => '1',--tm_time_valid_i,
+--        tm_utc_i         => tm_seconds,--tm_utc_i, 
+--        tm_cycles_i      => tm_cycles, --tm_cycles_i, 
+        tm_time_valid_i  => tm_time_valid_i,
+        tm_utc_i         => tm_seconds_i, 
+        tm_cycles_i      => tm_cycles_i, 
 		
         trig_ready_o     => trig_ready(i),
 
@@ -453,12 +453,12 @@ begin
         pulse_a_i       => dio_in_i(i),
         
 		  -- DEBUG
-        tm_time_valid_i => '1',--tm_time_valid_i,
-        tm_utc_i        => tm_seconds, --tm_utc_i, 
-        tm_cycles_i     => tm_cycles, --tm_cycles_i, 
---        tm_time_valid_i => tm_time_valid_i,
---        tm_utc_i        => tm_seconds_i, 
---        tm_cycles_i     => tm_cycles_i, 
+--        tm_time_valid_i => '1',
+--        tm_utc_i        => tm_seconds,  
+--        tm_cycles_i     => tm_cycles, 
+        tm_time_valid_i => tm_time_valid_i,
+        tm_utc_i        => tm_seconds_i, 
+        tm_cycles_i     => tm_cycles_i, 
 
         tag_utc_o       => tag_seconds(i), 
         tag_cycles_o    => tag_cycles(i), 
@@ -568,11 +568,11 @@ begin
   slave_bypass_i.we <= slave_i.we;	
 
   slave_o.ack        <= slave_bypass_o.ack;		
-  --slave_o.err        <= slave_bypass_o.err;
-  --slave_o.rty        <= slave_bypass_o.rty;
   slave_o.stall      <= slave_bypass_o.stall;
   slave_o.int        <= wb_dio_irq;
   slave_o.dat        <= slave_bypass_o.dat;	 
+  --slave_o.err        <= slave_bypass_o.err;
+  --slave_o.rty        <= slave_bypass_o.rty;
 
   immediate_output_with_pulse_length: for i in 0 to 4 generate
     immediate_output_component: immed_pulse_counter

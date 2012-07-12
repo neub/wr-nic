@@ -23,6 +23,17 @@ class VIC_irq:
     def get_reg(self, adr):        
         return self.bus.iread(0, self.base + adr, 4)
 
+class wrcore_time:
+
+    def __init__(self, bus, base):
+	self.bus = bus;
+	self.base = base;
+
+    def set_reg(self, adr, value):        
+        self.bus.iwrite(0, self.base + adr, 4, value)
+
+    def get_reg(self, adr):        
+        return self.bus.iread(0, self.base + adr, 4)
 
 class CDAC5578:
 
@@ -63,10 +74,10 @@ class CDAC5578:
 
 class CFmcDio:
 
-    BASE_REGS = 0x300
-    BASE_GPIO = 0x200
-    BASE_I2C = 0x100
     BASE_ONEWIRE = 0x0
+    BASE_I2C = 0x100
+    BASE_GPIO = 0x200
+    BASE_REGS = 0x300
     
     I2C_ADDR_DAC = 0x48
     I2C_ADDR_EEPROM = 0x50
@@ -132,13 +143,13 @@ class CFmcDio:
             return self.ds1820.read_temp(serial_number)
 
     def set_reg(self, adr, value):        
-        self.bus.iwrite(0, 0x60000 + self.BASE_REGS + adr, 4, value)
+        self.bus.iwrite(0, 0x62000 + self.BASE_REGS + adr, 4, value)
 
     def get_reg(self, adr):        
-        return self.bus.iread(0, 0x60000 + self.BASE_REGS + adr, 4)
+        return self.bus.iread(0, 0x62000 + self.BASE_REGS + adr, 4)
 
     def get_reg_long(self, adr):        
-        return self.bus.iread(0, 0x60000 + self.BASE_REGS + adr, 8)
+        return self.bus.iread(0, 0x62000 + self.BASE_REGS + adr, 8)
 
     def wait_irq_spec(self):
         return self.bus.irqwait()

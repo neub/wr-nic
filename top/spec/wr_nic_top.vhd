@@ -40,6 +40,11 @@
 --  0x00060000: VIC  
 --  0x00061000: TxTSU
 --  0x00062000: DIO
+--       0x000: DIO-ONEWIRE
+--       0x100: DIO-I2C
+--       0x200: DIO-GPIO
+--       0x300: DIO-REGISTERS
+
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -80,8 +85,8 @@ entity wr_nic_top is
       L_RST_N : in std_logic;           -- Reset from GN4124 (RSTOUT18_N)
 
       -- General Purpose Interface
-      GPIO       : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8
-                                                        -- GPIO[1] -> GN4124 GPIO9
+      GPIO       : inout std_logic_vector(1 downto 0);  -- GPIO[0] -> GN4124 GPIO8 -- T.B.V. datasheet write 9 
+                                                        -- GPIO[1] -> GN4124 GPIO9 -- T.B.V. datasheet write 9 
       -- PCIe to Local [Inbound Data] - RX
       P2L_RDY    : out   std_logic;                      -- Rx Buffer Full Flag
       P2L_CLKn   : in    std_logic;                      -- Receiver Source Synchronous Clock-
@@ -475,7 +480,7 @@ architecture rtl of wr_nic_top is
   end component;
 
   -- DIO core
-  component wrsw_dio
+  component xwrsw_dio
     generic (
       g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
       g_address_granularity : t_wishbone_address_granularity := WORD
@@ -866,9 +871,9 @@ begin
       p_rd_d_rdy_i => P_RD_D_RDY,
       tx_error_i   => TX_ERROR,
       
-		dma_irq_o       => open, -- T.B.D. Check it is ok
+		dma_irq_o       => open,
       irq_p_i      => vic_irq,
-      irq_p_o      => GPIO(0),
+      irq_p_o      => GPIO(1),  -- T.B.D. Check if GPIO is 1 or 0
 
       dma_reg_clk_i => clk_sys, -- Look, many signals just take default values if not used
 		
@@ -1153,7 +1158,7 @@ begin
 -----------------------------------
 --   DIO core
 -----------------------------------
-  U_dio_core : wrsw_dio
+  U_dio_core : xwrsw_dio
     generic map (
       g_interface_mode      => PIPELINED,
       g_address_granularity => BYTE)

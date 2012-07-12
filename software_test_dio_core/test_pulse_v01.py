@@ -55,8 +55,8 @@ def main(default_directory="."):
  
    # DIO Interrupts
    print "(DIO Interrupts)"
-   #dio.set_reg(0x64, 0x1f)   # Interrupts when the fifos have datas (UTC time from the pulse stamper)
-   dio.set_reg(0x64, 0x3ff)  # fifos and pulse gen rdy interrupts
+   dio.set_reg(0x64, 0x1f)   # Interrupts when the fifos have datas (UTC time from the pulse stamper)
+   #dio.set_reg(0x64, 0x3ff)  # fifos and pulse gen rdy interrupts
    mask_irq = dio.get_reg(0x68)
    print "MASK IRQ DIO =>", mask_irq
    status_irq = dio.get_reg(0x6c) 
@@ -77,7 +77,7 @@ def main(default_directory="."):
    # Simulate interrupts
    #VIC.set_reg(0x18, 0x7)   # generate soft irq
    #status_irq_vic = VIC.get_reg(0x4) 
-   #print "STATUS VIC IRQ =>", status_irq_vic
+   #print "STATUS VIC IRQ AFTER SOFTWARE INTERRUPTS =>", status_irq_vic
 
    # Checking interrupts at pc level
    #print "Waiting irq ..."   
@@ -145,7 +145,7 @@ def main(default_directory="."):
    dio.set_reg(0x48, 0x1)   
    dio.set_reg(0x4C, 0x8)   
    dio.set_reg(0x50, 0x10)   
-   dio.set_reg(0x54, 0x20)   
+   dio.set_reg(0x54, 0x1)   
    dio.set_reg(0x58, 0x40) 
 
    # Time-stamps FIFOs registers address
@@ -220,7 +220,7 @@ def main(default_directory="."):
    print
    print "Starting time-programmable test" 
    print
-   print "(------------CONFIGURING TRIGGER TIME FOR EACH LEMO--------------)"
+   print "(------------TIME-TRIGGER BASED OUTPUTS--------------)"
    # Programmable output test	
    dio_rdy = dio.get_reg(0x44)
    if dio_rdy != 0x1f:
@@ -232,19 +232,19 @@ def main(default_directory="."):
    dio.set_reg(0x4, 0)      #trig0 seconds_high
    dio.set_reg(0x8, 0)      #trig0 cycles
 
-   dio.set_reg(0xc, 10)     #trig1 seconds_low
+   dio.set_reg(0xc, 5)     #trig1 seconds_low
    dio.set_reg(0x10, 0)     #trig1 seconds_high
    dio.set_reg(0x14, 67)    #trig1 cycles
 
-   dio.set_reg(0x18, 15)    #trig2 seconds_low
+   dio.set_reg(0x18, 10)    #trig2 seconds_low
    dio.set_reg(0x1c, 0)     #trig2 seconds_high
    dio.set_reg(0x20, 430)   #trig2 cycles
 
-   dio.set_reg(0x24, 20)    #trig3 seconds_low
+   dio.set_reg(0x24, 12)    #trig3 seconds_low
    dio.set_reg(0x28, 0)     #trig3 seconds_high
    dio.set_reg(0x2c, 94)    #trig3 cycles
 
-   dio.set_reg(0x30, 25)    #trig4 seconds_low
+   dio.set_reg(0x30, 15)    #trig4 seconds_low
    dio.set_reg(0x34, 0)     #trig4 seconds_high
    dio.set_reg(0x38, 98)    #trig4 cycles
    
