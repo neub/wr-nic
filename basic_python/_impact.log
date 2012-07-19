@@ -1,0 +1,121 @@
+iMPACT Version: 13.4
+
+iMPACT log file Started on Tue Jul 10 15:25:48 2012
+
+Welcome to iMPACT
+iMPACT Version: 13.4
+Project: /home/javier/OHWR/wr-nic/syn/spec//auto_project.ipf created.
+// *** BATCH CMD : setMode -bs
+GUI --- Auto connect to cable...
+// *** BATCH CMD : setCable -port auto
+AutoDetecting cable. Please wait.
+PROGRESS_START - Starting Operation.
+ OS platform = i686.
+Connecting to cable (Usb Port - USB21).
+Checking cable driver.
+File version of /opt/Xilinx/13.4/ISE_DS/ISE/bin/lin/xusbdfwu.hex = 1030.
+File version of /usr/share/xusbdfwu.hex = 1030.
+ Using libusb.
+ Kernel release = 3.2.0-26-generic-pae.
+ Max current requested during enumeration is 300 mA.
+Type = 0x0005.
+write (count, cmdBuffer, dataBuffer) failed 20000020.
+ Cable Type = 3, Revision = 0.
+ Setting cable speed to 6 MHz.
+Cable connection established.
+Firmware version = 2300.
+File version of /opt/Xilinx/13.4/ISE_DS/ISE/data/xusb_xp2.hex = 2401.
+Firmware hex file version = 2401.
+Downloading /opt/Xilinx/13.4/ISE_DS/ISE/data/xusb_xp2.hex.
+Downloaded firmware version = 2401.
+PLD file version = 200Dh.
+ PLD version = 200Dh.
+PROGRESS_END - End Operation.
+Elapsed time =      1 sec.
+Type = 0x0005.
+ESN option: 000013CCF5A501.
+Attempting to identify devices in the boundary-scan chain configuration...
+INFO:iMPACT - Current time: 7/10/12 3:25 PM
+// *** BATCH CMD : Identify -inferir 
+PROGRESS_START - Starting Operation.
+Identifying chain contents...'0': : Manufacturer's ID = Xilinx xc6slx45t, Version : 3
+INFO:iMPACT:1777 - 
+   Reading /opt/Xilinx/13.4/ISE_DS/ISE/spartan6/data/xc6slx45t.bsd...
+INFO:iMPACT:501 - '1': Added Device xc6slx45t successfully.
+----------------------------------------------------------------------
+done.
+PROGRESS_END - End Operation.
+Elapsed time =      0 sec.
+// *** BATCH CMD : identifyMPM 
+// *** BATCH CMD : assignFile -p 1 -file"/home/javier/OHWR/wr-nic/syn/spec/wr_nic_top.bit"
+'1': Loading file '/home/javier/OHWR/wr-nic/syn/spec/wr_nic_top.bit' ...
+done.
+INFO:iMPACT:2257 - Startup Clock has been changed to 'JtagClk' in the bitstream   stored in memory,
+   but the original bitstream file remains unchanged.
+UserID read from the bitstream file = 0xFFFFFFFF.
+Data width read from the bitstream file = 1.
+INFO:iMPACT:501 - '1': Added Device xc6slx45t successfully.
+----------------------------------------------------------------------
+INFO:iMPACT - Current time: 7/10/12 3:26 PM
+// *** BATCH CMD : Program -p 1 
+Maximum TCK operating frequency for this device chain: 25000000.
+Validating chain...
+Boundary-scan chain validated successfully.
+'1': Programming device...
+PROGRESS_START - Starting Operation.
+ LCK_cycle = NoWait.
+LCK cycle: NoWait
+done.
+'1': Reading status register contents...
+[0] CRC ERROR                                                              :        0
+[1] IDCODE ERROR                                                           :        0
+[2] DCM LOCK STATUS                                                        :        1
+[3] GTS_CFG_B STATUS                                                       :        1
+[4] GWE STATUS                                                             :        1
+[5] GHIGH STATUS                                                           :        1
+[6] DECRYPTION ERROR                                                       :        0
+[7] DECRYPTOR ENABLE                                                       :        0
+[8] HSWAPEN PIN                                                            :        1
+[9] MODE PIN M[0]                                                          :        1
+[10] MODE PIN M[1]                                                         :        1
+[11] RESERVED                                                              :        0
+[12] INIT_B PIN                                                            :        1
+[13] DONE PIN                                                              :        1
+[14] SUSPEND STATUS                                                        :        0
+[15] FALLBACK STATUS                                                       :        0
+INFO:iMPACT:2219 - Status register values:
+INFO:iMPACT - 0011 1100 1110 1100 
+INFO:iMPACT:579 - '1': Completed downloading bit file to device.
+INFO:iMPACT:188 - '1': Programming completed successfully.
+ LCK_cycle = NoWait.
+LCK cycle: NoWait
+INFO:iMPACT - '1': Checking done pin....done.
+'1': Programmed successfully.
+PROGRESS_END - End Operation.
+Elapsed time =      4 sec.
+Project: '/home/javier/OHWR/wr-nic/syn/spec//auto_project.ipf' created.
+// *** BATCH CMD : setMode -bs
+// *** BATCH CMD : setMode -ss
+// *** BATCH CMD : setMode -sm
+// *** BATCH CMD : setMode -hw140
+// *** BATCH CMD : setMode -spi
+// *** BATCH CMD : setMode -acecf
+// *** BATCH CMD : setMode -acempm
+// *** BATCH CMD : setMode -pff
+// *** BATCH CMD : setMode -bs
+// *** BATCH CMD : saveProjectFile -file"/home/javier/OHWR/wr-nic/syn/spec//auto_project.ipf"
+INFO:iMPACT - User_EnvOsname: 'Ubuntu'
+INFO:iMPACT - User_EnvOsrelease: 'Ubuntu 12.04 LTS'
+// *** BATCH CMD : setMode -bs
+INFO:iMPACT - Launching WebTalk, please refer to the webtalk log at   /home/javier/OHWR/wr-nic/syn/spec/webtalk.log for details.
+INFO:iMPACT - Running wbtc successfully.
+// *** BATCH CMD : setMode -bs
+// *** BATCH CMD : deleteDevice -position 1
+// *** BATCH CMD : setMode -bs
+// *** BATCH CMD : setMode -ss
+// *** BATCH CMD : setMode -sm
+// *** BATCH CMD : setMode -hw140
+// *** BATCH CMD : setMode -spi
+// *** BATCH CMD : setMode -acecf
+// *** BATCH CMD : setMode -acempm
+// *** BATCH CMD : setMode -pff

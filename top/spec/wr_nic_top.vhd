@@ -28,8 +28,8 @@
 -- 2012-02-08  1.0      greg.d          Created
 -- 2012-02-20  1.1      greg.d          added GN4124 to wrsw_nic DMA connection
 -- 2012-03-10  1.2      rafa.r          added dio_core
--- 2012-06-25  1.3		javi.d			 New dio_functionality
--- 2012-07-06  1.4		javi.d          Updating of files and integration test
+-- 2012-06-25  1.3	javi.d	        New dio_functionality
+-- 2012-07-06  1.4	javi.d          Updating of files and integration test
 -------------------------------------------------------------------------------
 -- TODO:
 -- testing
@@ -50,7 +50,6 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
-
 library UNISIM;
 use UNISIM.vcomponents.all;
 
@@ -62,6 +61,7 @@ use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wrsw_txtsu_pkg.all;
 use work.genram_pkg.all;
+use work.wr_xilinx_pkg.all;
 
 entity wr_nic_top is
   generic
@@ -121,7 +121,7 @@ entity wr_nic_top is
 
       dac_sclk_o  : out std_logic;
       dac_din_o   : out std_logic;
-      -- dac_clr_n_o : out std_logic;  -- NOT AVAILABLE
+      dac_clr_n_o : out std_logic;  -- NOT AVAILABLE
       dac_cs1_n_o : out std_logic;
       dac_cs2_n_o : out std_logic;
 
@@ -143,7 +143,7 @@ entity wr_nic_top is
       sfp_rxp_i : in std_logic;
       sfp_rxn_i : in std_logic;
 
-      sfp_mod_def0_b    : inout std_logic;  -- sfp detect
+      sfp_mod_def0_b    : in    std_logic;  -- sfp detect
       sfp_mod_def1_b    : inout std_logic;  -- scl
       sfp_mod_def2_b    : inout std_logic;  -- sda
       sfp_rate_select_b : inout std_logic;
@@ -195,33 +195,53 @@ architecture rtl of wr_nic_top is
   -- Components declaration
   ------------------------------------------------------------------------------
 
-  component gn4124_core
-    port (
-      rst_n_a_i       : in  std_logic;
-      status_o        : out std_logic_vector(31 downto 0);
-      p2l_clk_p_i     : in  std_logic;
-      p2l_clk_n_i     : in  std_logic;
-      p2l_data_i      : in  std_logic_vector(15 downto 0);
-      p2l_dframe_i    : in  std_logic;
-      p2l_valid_i     : in  std_logic;
-      p2l_rdy_o       : out std_logic;
-      p_wr_req_i      : in  std_logic_vector(1 downto 0);
-      p_wr_rdy_o      : out std_logic_vector(1 downto 0);
-      rx_error_o      : out std_logic;
-      vc_rdy_i        : in  std_logic_vector(1 downto 0);
-      l2p_clk_p_o     : out std_logic;
-      l2p_clk_n_o     : out std_logic;
-      l2p_data_o      : out std_logic_vector(15 downto 0);
-      l2p_dframe_o    : out std_logic;
-      l2p_valid_o     : out std_logic;
-      l2p_edb_o       : out std_logic;
-      l2p_rdy_i       : in  std_logic;
-      l_wr_rdy_i      : in  std_logic_vector(1 downto 0);
-      p_rd_d_rdy_i    : in  std_logic_vector(1 downto 0);
-      tx_error_i      : in  std_logic;
-      dma_irq_o       : out std_logic_vector(1 downto 0);
-      irq_p_i         : in  std_logic;
-      irq_p_o         : out std_logic;
+  component gn4124_core is
+    port(
+      ---------------------------------------------------------
+      -- Control and status
+      rst_n_a_i : in  std_logic;        -- Asynchronous reset from GN4124
+      status_o  : out std_logic_vector(31 downto 0);  -- Core status output
+
+      ---------------------------------------------------------
+      -- P2L Direction
+      --
+      -- Source Sync DDR related signals
+      p2l_clk_p_i  : in  std_logic;     -- Receiver Source Synchronous Clock+
+      p2l_clk_n_i  : in  std_logic;     -- Receiver Source Synchronous Clock-
+      p2l_data_i   : in  std_logic_vector(15 downto 0);  -- Parallel receive data
+      p2l_dframe_i : in  std_logic;     -- Receive Frame
+      p2l_valid_i  : in  std_logic;     -- Receive Data Valid
+      -- P2L Control
+      p2l_rdy_o    : out std_logic;     -- Rx Buffer Full Flag
+      p_wr_req_i   : in  std_logic_vector(1 downto 0);  -- PCIe Write Request
+      p_wr_rdy_o   : out std_logic_vector(1 downto 0);  -- PCIe Write Ready
+      rx_error_o   : out std_logic;     -- Receive Error
+      vc_rdy_i     : in  std_logic_vector(1 downto 0);  -- Virtual channel ready
+
+      ---------------------------------------------------------
+      -- L2P Direction
+      --
+      -- Source Sync DDR related signals
+      l2p_clk_p_o  : out std_logic;  -- Transmitter Source Synchronous Clock+
+      l2p_clk_n_o  : out std_logic;  -- Transmitter Source Synchronous Clock-
+      l2p_data_o   : out std_logic_vector(15 downto 0);  -- Parallel transmit data
+      l2p_dframe_o : out std_logic;     -- Transmit Data Frame
+      l2p_valid_o  : out std_logic;     -- Transmit Data Valid
+      -- L2P Control
+      l2p_edb_o    : out std_logic;     -- Packet termination and discard
+      l2p_rdy_i    : in  std_logic;     -- Tx Buffer Full Flag
+      l_wr_rdy_i   : in  std_logic_vector(1 downto 0);  -- Local-to-PCIe Write
+      p_rd_d_rdy_i : in  std_logic_vector(1 downto 0);  -- PCIe-to-Local Read Response Data Ready
+      tx_error_i   : in  std_logic;     -- Transmit Error
+
+      ---------------------------------------------------------
+      -- Interrupt interface
+      dma_irq_o : out std_logic_vector(1 downto 0);  -- Interrupts sources to IRQ manager
+      irq_p_i   : in  std_logic;  -- Interrupt request pulse from IRQ manager
+      irq_p_o   : out std_logic;  -- Interrupt request pulse to GN4124 GPIO
+
+      ---------------------------------------------------------
+      -- DMA registers wishbone interface (slave classic)
       dma_reg_clk_i   : in  std_logic;
       dma_reg_adr_i   : in  std_logic_vector(31 downto 0) := x"00000000";
       dma_reg_dat_i   : in  std_logic_vector(31 downto 0) := x"00000000";
@@ -232,175 +252,183 @@ architecture rtl of wr_nic_top is
       dma_reg_dat_o   : out std_logic_vector(31 downto 0);
       dma_reg_ack_o   : out std_logic;
       dma_reg_stall_o : out std_logic;
-      csr_clk_i       : in  std_logic;
-      csr_adr_o       : out std_logic_vector(31 downto 0);
-      csr_dat_o       : out std_logic_vector(31 downto 0);
-      csr_sel_o       : out std_logic_vector(3 downto 0);
-      csr_stb_o       : out std_logic;
-      csr_we_o        : out std_logic;
-      csr_cyc_o       : out std_logic;
-      csr_dat_i       : in  std_logic_vector(31 downto 0);
-      csr_ack_i       : in  std_logic;
-      csr_stall_i     : in  std_logic;
-      dma_clk_i       : in  std_logic;
-      dma_adr_o       : out std_logic_vector(31 downto 0);
-      dma_dat_o       : out std_logic_vector(31 downto 0);
-      dma_sel_o       : out std_logic_vector(3 downto 0);
-      dma_stb_o       : out std_logic;
-      dma_we_o        : out std_logic;
-      dma_cyc_o       : out std_logic;
-      dma_dat_i       : in  std_logic_vector(31 downto 0) := x"00000000";
-      dma_ack_i       : in  std_logic                     := '0';
-      dma_stall_i     : in  std_logic                     := '0');
-  end component;
 
-  -- WR PTP Core
-  component xwr_core is
-    generic(
-      g_simulation                : integer                        := 0;
-      g_phys_uart                 : boolean                        := true;
-      g_virtual_uart              : boolean                        := false;
-      g_with_external_clock_input : boolean                        := false;
-      g_aux_clks                  : integer                        := 1;
-      g_ep_rxbuf_size             : integer                        := 1024;
-      g_dpram_initf               : string                         := "";
-      g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
-      g_dpram_size                : integer                        := 20480;  --in 32-bit words
-      g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
-      g_address_granularity       : t_wishbone_address_granularity := WORD
+      ---------------------------------------------------------
+      -- CSR wishbone interface (master pipelined)
+      csr_clk_i   : in  std_logic;
+      csr_adr_o   : out std_logic_vector(31 downto 0);
+      csr_dat_o   : out std_logic_vector(31 downto 0);
+      csr_sel_o   : out std_logic_vector(3 downto 0);
+      csr_stb_o   : out std_logic;
+      csr_we_o    : out std_logic;
+      csr_cyc_o   : out std_logic;
+      csr_dat_i   : in  std_logic_vector(31 downto 0);
+      csr_ack_i   : in  std_logic;
+      csr_stall_i : in  std_logic;
+
+      ---------------------------------------------------------
+      -- DMA wishbone interface (master pipelined)
+      dma_clk_i   : in  std_logic;
+      dma_adr_o   : out std_logic_vector(31 downto 0);
+      dma_dat_o   : out std_logic_vector(31 downto 0);
+      dma_sel_o   : out std_logic_vector(3 downto 0);
+      dma_stb_o   : out std_logic;
+      dma_we_o    : out std_logic;
+      dma_cyc_o   : out std_logic;
+      dma_dat_i   : in  std_logic_vector(31 downto 0) := x"00000000";
+      dma_ack_i   : in  std_logic                     := '0';
+      dma_stall_i : in  std_logic                     := '0'
       );
-    port(
-      clk_sys_i  : in std_logic;
-      clk_dmtd_i : in std_logic;
-      clk_ref_i  : in std_logic;
-      clk_aux_i  : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
-      clk_ext_i  : in std_logic                               := '0';
-      pps_ext_i  : in std_logic                               := '0';
-      rst_n_i    : in std_logic;
+  end component;  --  gn4124_core
 
-      dac_hpll_load_p1_o : out std_logic;
-      dac_hpll_data_o    : out std_logic_vector(15 downto 0);
-      dac_dpll_load_p1_o : out std_logic;
-      dac_dpll_data_o    : out std_logic_vector(15 downto 0);
 
-      phy_ref_clk_i      : in  std_logic;
-      phy_tx_data_o      : out std_logic_vector(7 downto 0);
-      phy_tx_k_o         : out std_logic;
-      phy_tx_disparity_i : in  std_logic;
-      phy_tx_enc_err_i   : in  std_logic;
-      phy_rx_data_i      : in  std_logic_vector(7 downto 0);
-      phy_rx_rbclk_i     : in  std_logic;
-      phy_rx_k_i         : in  std_logic;
-      phy_rx_enc_err_i   : in  std_logic;
-      phy_rx_bitslide_i  : in  std_logic_vector(3 downto 0);
-      phy_rst_o          : out std_logic;
-      phy_loopen_o       : out std_logic;
-
-      led_red_o   : out std_logic;
-      led_green_o : out std_logic;
-      scl_o       : out std_logic;
-      scl_i       : in  std_logic;
-      sda_o       : out std_logic;
-      sda_i       : in  std_logic;
-      sfp_scl_o   : out std_logic;
-      sfp_scl_i   : in  std_logic;
-      sfp_sda_o   : out std_logic;
-      sfp_sda_i   : in  std_logic;
-      sfp_det_i   : in  std_logic;
-      btn1_i      : in  std_logic;
-      btn2_i      : in  std_logic;
-
-      uart_rxd_i : in  std_logic;
-      uart_txd_o : out std_logic;
-
-      owr_en_o : out std_logic_vector(1 downto 0);
-      owr_i    : in  std_logic_vector(1 downto 0);
-
-      slave_i : in  t_wishbone_slave_in;
-      slave_o : out t_wishbone_slave_out;
-
-      wrf_src_o : out t_wrf_source_out;
-      wrf_src_i : in  t_wrf_source_in := c_dummy_src_in;
-      wrf_snk_o : out t_wrf_sink_out;
-      wrf_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
-
-      timestamps_o     : out t_txtsu_timestamp;
-      timestamps_ack_i : in  std_logic := '1';
-
-      tm_link_up_o         : out std_logic;
-      tm_dac_value_o       : out std_logic_vector(23 downto 0);
-      tm_dac_wr_o          : out std_logic;
-      tm_clk_aux_lock_en_i : in  std_logic;
-      tm_clk_aux_locked_o  : out std_logic;
-      tm_time_valid_o      : out std_logic;
-      tm_utc_o             : out std_logic_vector(39 downto 0);
-      tm_cycles_o          : out std_logic_vector(27 downto 0);
-      pps_p_o              : out std_logic;
-
-      dio_o       : out std_logic_vector(3 downto 0);
-      rst_aux_n_o : out std_logic;
-      link_ok_o   : out std_logic
-    );
-  end component;
-
-  component wr_gtp_phy_spartan6
-    generic (
-      g_simulation         : integer;
-      g_ch0_use_refclk_out : boolean := false;
-      g_ch1_use_refclk_out : boolean := false);
-    port (
-      gtp_clk_i          : in  std_logic;
-      ch0_ref_clk_i      : in  std_logic;
-      ch0_tx_data_i      : in  std_logic_vector(7 downto 0);
-      ch0_tx_k_i         : in  std_logic;
-      ch0_tx_disparity_o : out std_logic;
-      ch0_tx_enc_err_o   : out std_logic;
-      ch0_rx_rbclk_o     : out std_logic;
-      ch0_rx_data_o      : out std_logic_vector(7 downto 0);
-      ch0_rx_k_o         : out std_logic;
-      ch0_rx_enc_err_o   : out std_logic;
-      ch0_rx_bitslide_o  : out std_logic_vector(3 downto 0);
-      ch0_rst_i          : in  std_logic;
-      ch0_loopen_i       : in  std_logic;
-      ch1_ref_clk_i      : in  std_logic;
-      ch1_tx_data_i      : in  std_logic_vector(7 downto 0) := "00000000";
-      ch1_tx_k_i         : in  std_logic                    := '0';
-      ch1_tx_disparity_o : out std_logic;
-      ch1_tx_enc_err_o   : out std_logic;
-      ch1_rx_data_o      : out std_logic_vector(7 downto 0);
-      ch1_rx_rbclk_o     : out std_logic;
-      ch1_rx_k_o         : out std_logic;
-      ch1_rx_enc_err_o   : out std_logic;
-      ch1_rx_bitslide_o  : out std_logic_vector(3 downto 0);
-      ch1_rst_i          : in  std_logic                    := '0';
-      ch1_loopen_i       : in  std_logic                    := '0';
-      pad_txn0_o         : out std_logic;
-      pad_txp0_o         : out std_logic;
-      pad_rxn0_i         : in  std_logic                    := '0';
-      pad_rxp0_i         : in  std_logic                    := '0';
-      pad_txn1_o         : out std_logic;
-      pad_txp1_o         : out std_logic;
-      pad_rxn1_i         : in  std_logic                    := '0';
-      pad_rxp1_i         : in  std_logic                    := '0');
-  end component;
-
-  component spec_serial_dac_arb
-    generic(
-      g_invert_sclk    : boolean;
-      g_num_extra_bits : integer);        
-    port (
-      clk_i       : in  std_logic;
-      rst_n_i     : in  std_logic;
-      val1_i      : in  std_logic_vector(15 downto 0);
-      load1_i     : in  std_logic;
-      val2_i      : in  std_logic_vector(15 downto 0);
-      load2_i     : in  std_logic;
-      dac_cs_n_o  : out std_logic_vector(1 downto 0);
-      dac_clr_n_o : out std_logic;
-      dac_sclk_o  : out std_logic;
-      dac_din_o   : out std_logic);
-  end component;
-
+--  -- WR PTP Core
+--  component xwr_core is
+--    generic(
+--      g_simulation                : integer                        := 0;
+--      g_phys_uart                 : boolean                        := true;
+--      g_virtual_uart              : boolean                        := false;
+--      g_with_external_clock_input : boolean                        := false;
+--      g_aux_clks                  : integer                        := 1;
+--      g_ep_rxbuf_size             : integer                        := 1024;
+--      g_dpram_initf               : string                         := "";
+--      g_dpram_initv               : t_xwb_dpram_init               := c_xwb_dpram_init_nothing;
+--      g_dpram_size                : integer                        := 20480;  --in 32-bit words
+--      g_interface_mode            : t_wishbone_interface_mode      := CLASSIC;
+--      g_address_granularity       : t_wishbone_address_granularity := WORD
+--      );
+--    port(
+--      clk_sys_i  : in std_logic;
+--      clk_dmtd_i : in std_logic;
+--      clk_ref_i  : in std_logic;
+--      clk_aux_i  : in std_logic_vector(g_aux_clks-1 downto 0) := (others => '0');
+--      clk_ext_i  : in std_logic                               := '0';
+--      pps_ext_i  : in std_logic                               := '0';
+--      rst_n_i    : in std_logic;
+--
+--      dac_hpll_load_p1_o : out std_logic;
+--      dac_hpll_data_o    : out std_logic_vector(15 downto 0);
+--      dac_dpll_load_p1_o : out std_logic;
+--      dac_dpll_data_o    : out std_logic_vector(15 downto 0);
+--
+--      phy_ref_clk_i      : in  std_logic;
+--      phy_tx_data_o      : out std_logic_vector(7 downto 0);
+--      phy_tx_k_o         : out std_logic;
+--      phy_tx_disparity_i : in  std_logic;
+--      phy_tx_enc_err_i   : in  std_logic;
+--      phy_rx_data_i      : in  std_logic_vector(7 downto 0);
+--      phy_rx_rbclk_i     : in  std_logic;
+--      phy_rx_k_i         : in  std_logic;
+--      phy_rx_enc_err_i   : in  std_logic;
+--      phy_rx_bitslide_i  : in  std_logic_vector(3 downto 0);
+--      phy_rst_o          : out std_logic;
+--      phy_loopen_o       : out std_logic;
+--
+--      led_red_o   : out std_logic;
+--      led_green_o : out std_logic;
+--      scl_o       : out std_logic;
+--      scl_i       : in  std_logic;
+--      sda_o       : out std_logic;
+--      sda_i       : in  std_logic;
+--      sfp_scl_o   : out std_logic;
+--      sfp_scl_i   : in  std_logic;
+--      sfp_sda_o   : out std_logic;
+--      sfp_sda_i   : in  std_logic;
+--      sfp_det_i   : in  std_logic;
+--      btn1_i      : in  std_logic;
+--      btn2_i      : in  std_logic;
+--
+--      uart_rxd_i : in  std_logic;
+--      uart_txd_o : out std_logic;
+--
+--      owr_en_o : out std_logic_vector(1 downto 0);
+--      owr_i    : in  std_logic_vector(1 downto 0);
+--
+--      slave_i : in  t_wishbone_slave_in;
+--      slave_o : out t_wishbone_slave_out;
+--
+--      wrf_src_o : out t_wrf_source_out;
+--      wrf_src_i : in  t_wrf_source_in := c_dummy_src_in;
+--      wrf_snk_o : out t_wrf_sink_out;
+--      wrf_snk_i : in  t_wrf_sink_in   := c_dummy_snk_in;
+--
+--      timestamps_o     : out t_txtsu_timestamp;
+--      timestamps_ack_i : in  std_logic := '1';
+--
+--      tm_link_up_o         : out std_logic;
+--      tm_dac_value_o       : out std_logic_vector(23 downto 0);
+--      tm_dac_wr_o          : out std_logic;
+--      tm_clk_aux_lock_en_i : in  std_logic;
+--      tm_clk_aux_locked_o  : out std_logic;
+--      tm_time_valid_o      : out std_logic;
+--      tm_utc_o             : out std_logic_vector(39 downto 0);
+--      tm_cycles_o          : out std_logic_vector(27 downto 0);
+--      pps_p_o              : out std_logic;
+--
+--      dio_o       : out std_logic_vector(3 downto 0);
+--      rst_aux_n_o : out std_logic;
+--      link_ok_o   : out std_logic
+--    );
+--  end component;
+--
+--  component wr_gtp_phy_spartan6
+--    generic (
+--      g_simulation         : integer;
+--      g_ch0_use_refclk_out : boolean := false;
+--      g_ch1_use_refclk_out : boolean := false);
+--    port (
+--      gtp_clk_i          : in  std_logic;
+--      ch0_ref_clk_i      : in  std_logic;
+--      ch0_tx_data_i      : in  std_logic_vector(7 downto 0);
+--      ch0_tx_k_i         : in  std_logic;
+--      ch0_tx_disparity_o : out std_logic;
+--      ch0_tx_enc_err_o   : out std_logic;
+--      ch0_rx_rbclk_o     : out std_logic;
+--      ch0_rx_data_o      : out std_logic_vector(7 downto 0);
+--      ch0_rx_k_o         : out std_logic;
+--      ch0_rx_enc_err_o   : out std_logic;
+--      ch0_rx_bitslide_o  : out std_logic_vector(3 downto 0);
+--      ch0_rst_i          : in  std_logic;
+--      ch0_loopen_i       : in  std_logic;
+--      ch1_ref_clk_i      : in  std_logic;
+--      ch1_tx_data_i      : in  std_logic_vector(7 downto 0) := "00000000";
+--      ch1_tx_k_i         : in  std_logic                    := '0';
+--      ch1_tx_disparity_o : out std_logic;
+--      ch1_tx_enc_err_o   : out std_logic;
+--      ch1_rx_data_o      : out std_logic_vector(7 downto 0);
+--      ch1_rx_rbclk_o     : out std_logic;
+--      ch1_rx_k_o         : out std_logic;
+--      ch1_rx_enc_err_o   : out std_logic;
+--      ch1_rx_bitslide_o  : out std_logic_vector(3 downto 0);
+--      ch1_rst_i          : in  std_logic                    := '0';
+--      ch1_loopen_i       : in  std_logic                    := '0';
+--      pad_txn0_o         : out std_logic;
+--      pad_txp0_o         : out std_logic;
+--      pad_rxn0_i         : in  std_logic                    := '0';
+--      pad_rxp0_i         : in  std_logic                    := '0';
+--      pad_txn1_o         : out std_logic;
+--      pad_txp1_o         : out std_logic;
+--      pad_rxn1_i         : in  std_logic                    := '0';
+--      pad_rxp1_i         : in  std_logic                    := '0');
+--  end component;
+--
+--  component spec_serial_dac_arb
+--    generic(
+--      g_invert_sclk    : boolean;
+--      g_num_extra_bits : integer);        
+--    port (
+--      clk_i       : in  std_logic;
+--      rst_n_i     : in  std_logic;
+--      val1_i      : in  std_logic_vector(15 downto 0);
+--      load1_i     : in  std_logic;
+--      val2_i      : in  std_logic_vector(15 downto 0);
+--      load2_i     : in  std_logic;
+--      dac_cs_n_o  : out std_logic_vector(1 downto 0);
+--      dac_clr_n_o : out std_logic;
+--      dac_sclk_o  : out std_logic;
+--      dac_din_o   : out std_logic);
+--  end component;
+--
   -- NIC
   component xwrsw_nic
     generic
@@ -431,39 +459,39 @@ architecture rtl of wr_nic_top is
       );
   end component;
 
-  component xwb_crossbar
-    generic(
-      g_num_masters : integer;
-      g_num_slaves  : integer;
-      g_registered  : boolean;
-      g_address     : t_wishbone_address_array;
-      g_mask        : t_wishbone_address_array);
-    port(
-      clk_sys_i : in  std_logic;
-      rst_n_i   : in  std_logic;
-      slave_i   : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
-      slave_o   : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
-      master_i  : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
-      master_o  : out t_wishbone_master_out_array(g_num_slaves-1 downto 0));
-  end component;
-
-  -- IRQ Gen
-  component xwb_vic
-    generic (
-      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
-      g_address_granularity : t_wishbone_address_granularity := WORD;
-      g_num_interrupts      : natural                        := 32
-      );
-    port (
-      clk_sys_i    : in  std_logic;
-      rst_n_i      : in  std_logic;
-      slave_i      : in  t_wishbone_slave_in;
-      slave_o      : out t_wishbone_slave_out;
-      irqs_i       : in  std_logic_vector(g_num_interrupts-1 downto 0);
-      irq_master_o : out std_logic
-    );
-  end component;
-
+--  component xwb_crossbar
+--    generic(
+--      g_num_masters : integer;
+--      g_num_slaves  : integer;
+--      g_registered  : boolean;
+--      g_address     : t_wishbone_address_array;
+--      g_mask        : t_wishbone_address_array);
+--    port(
+--      clk_sys_i : in  std_logic;
+--      rst_n_i   : in  std_logic;
+--      slave_i   : in  t_wishbone_slave_in_array(g_num_masters-1 downto 0);
+--      slave_o   : out t_wishbone_slave_out_array(g_num_masters-1 downto 0);
+--      master_i  : in  t_wishbone_master_in_array(g_num_slaves-1 downto 0);
+--      master_o  : out t_wishbone_master_out_array(g_num_slaves-1 downto 0));
+--  end component;
+--
+--  -- IRQ Gen
+--  component xwb_vic
+--    generic (
+--      g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
+--      g_address_granularity : t_wishbone_address_granularity := WORD;
+--      g_num_interrupts      : natural                        := 32
+--      );
+--    port (
+--      clk_sys_i    : in  std_logic;
+--      rst_n_i      : in  std_logic;
+--      slave_i      : in  t_wishbone_slave_in;
+--      slave_o      : out t_wishbone_slave_out;
+--      irqs_i       : in  std_logic_vector(g_num_interrupts-1 downto 0);
+--      irq_master_o : out std_logic
+--    );
+--  end component;
+--
   component xwrsw_tx_tsu
     generic (
       g_num_ports           : integer                        := 10;
@@ -516,37 +544,36 @@ architecture rtl of wr_nic_top is
 
       slave_i                      : in  t_wishbone_slave_in;
       slave_o                      : out t_wishbone_slave_out
-      -- wb_irq_data_fifo_o : out std_logic --> Test T.B.D
   );
   end component;  --DIO core
-
-  -- DEBUG STUFF
-  component chipscope_ila
-    port (
-      CONTROL : inout std_logic_vector(35 downto 0);
-      CLK     : in    std_logic;
-      TRIG0   : in    std_logic_vector(31 downto 0);
-      TRIG1   : in    std_logic_vector(31 downto 0);
-      TRIG2   : in    std_logic_vector(31 downto 0);
-      TRIG3   : in    std_logic_vector(31 downto 0));
-  end component;
-
-  signal CONTROL : std_logic_vector(35 downto 0);
-  signal CLK     : std_logic;
-  signal TRIG0   : std_logic_vector(31 downto 0);
-  signal TRIG1   : std_logic_vector(31 downto 0);
-  signal TRIG2   : std_logic_vector(31 downto 0);
-  signal TRIG3   : std_logic_vector(31 downto 0);
-
-  component chipscope_icon
-    port (
-      CONTROL0 : inout std_logic_vector (35 downto 0));
-  end component;
+--
+--  -- DEBUG STUFF
+--  component chipscope_ila
+--    port (
+--      CONTROL : inout std_logic_vector(35 downto 0);
+--      CLK     : in    std_logic;
+--      TRIG0   : in    std_logic_vector(31 downto 0);
+--      TRIG1   : in    std_logic_vector(31 downto 0);
+--      TRIG2   : in    std_logic_vector(31 downto 0);
+--      TRIG3   : in    std_logic_vector(31 downto 0));
+--  end component;
+--
+--  signal CONTROL : std_logic_vector(35 downto 0);
+--  signal CLK     : std_logic;
+--  signal TRIG0   : std_logic_vector(31 downto 0);
+--  signal TRIG1   : std_logic_vector(31 downto 0);
+--  signal TRIG2   : std_logic_vector(31 downto 0);
+--  signal TRIG3   : std_logic_vector(31 downto 0);
+--
+--  component chipscope_icon
+--    port (
+--      CONTROL0 : inout std_logic_vector (35 downto 0));
+--  end component;
 
   ------------------------------------------------------------------------------
   -- Constants declaration
   ------------------------------------------------------------------------------
-  constant c_BAR0_APERTURE     : integer := 20; -- 1 MB for spec card
+  constant c_BAR0_APERTURE     : integer := 20; -- 1 MB for spec card, NOT USED!
   constant c_DMA_WB_SLAVES_NB  : integer := 1;
   constant c_CSR_WB_SLAVES_NB  : integer := 1;	-- NOT IN USE
   constant c_DMA_WB_ADDR_WIDTH : integer := 26;	-- NOT IN USE
@@ -567,20 +594,20 @@ architecture rtl of wr_nic_top is
   -- Reset
   signal rst : std_logic;
 
-  -- DMA wishbone bus
-  signal dma_adr     : std_logic_vector(31 downto 0);
-  signal dma_dat_i   : std_logic_vector((32*c_DMA_WB_SLAVES_NB)-1 downto 0);
-  signal dma_dat_o   : std_logic_vector(31 downto 0);
-  signal dma_sel     : std_logic_vector(3 downto 0);
-  signal dma_cyc     : std_logic;                      --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
-  signal dma_stb     : std_logic;
-  signal dma_we      : std_logic;
-  signal dma_ack     : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
-  signal dma_stall   : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
-  signal ram_we      : std_logic_vector(0 downto 0);	-- NOT IN USE
-  signal ddr_dma_adr : std_logic_vector(29 downto 0); -- NOT IN USE
+  -- DMA wishbone bus -- NOT IN USE
+--  signal dma_adr     : std_logic_vector(31 downto 0);
+--  signal dma_dat_i   : std_logic_vector((32*c_DMA_WB_SLAVES_NB)-1 downto 0);
+--  signal dma_dat_o   : std_logic_vector(31 downto 0);
+--  signal dma_sel     : std_logic_vector(3 downto 0);
+--  signal dma_cyc     : std_logic;                      --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+--  signal dma_stb     : std_logic;
+--  signal dma_we      : std_logic;
+--  signal dma_ack     : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+--  signal dma_stall   : std_logic;                     --_vector(c_DMA_WB_SLAVES_NB-1 downto 0);
+--  signal ram_we      : std_logic_vector(0 downto 0);	
+--  signal ddr_dma_adr : std_logic_vector(29 downto 0); 
 
-  signal irq_to_gn4124 : std_logic;							-- NOT IN USE
+  signal irq_to_gn4124 : std_logic;							
 
   -- SPI
   signal spi_slave_select : std_logic_vector(7 downto 0);
@@ -670,6 +697,7 @@ architecture rtl of wr_nic_top is
      3 => x"00061000",                  -- TxTSU
      4 => x"00062000");                 -- DIO
 
+  -- 19 bits are active for 1 MB memory map ...
   constant c_cfg_base_mask : t_wishbone_address_array(4 downto 0) :=
     (0 => x"00040000",
      1 => x"00060000",
@@ -844,40 +872,60 @@ begin
   ------------------------------------------------------------------------------
   -- Gennun Core
   ------------------------------------------------------------------------------
+	
   U_Gennum_Core : gn4124_core
-    port map (
-      rst_n_a_i    => L_RST_N,
-      status_o     => open,
-      
-		p2l_clk_p_i  => P2L_CLKp,
+    port map
+    (
+      ---------------------------------------------------------
+      -- Control and status
+      rst_n_a_i => L_RST_N,
+      status_o  => open,
+
+      ---------------------------------------------------------
+      -- P2L Direction
+      --
+      -- Source Sync DDR related signals
+      p2l_clk_p_i  => P2L_CLKp,
       p2l_clk_n_i  => P2L_CLKn,
       p2l_data_i   => P2L_DATA,
       p2l_dframe_i => P2L_DFRAME,
       p2l_valid_i  => P2L_VALID,
+      -- P2L Control
       p2l_rdy_o    => P2L_RDY,
       p_wr_req_i   => P_WR_REQ,
       p_wr_rdy_o   => P_WR_RDY,
       rx_error_o   => RX_ERROR,
       vc_rdy_i     => VC_RDY,
-      
-		l2p_clk_p_o  => L2P_CLKp,
+
+      ---------------------------------------------------------
+      -- L2P Direction
+      --
+      -- Source Sync DDR related signals
+      l2p_clk_p_o  => L2P_CLKp,
       l2p_clk_n_o  => L2P_CLKn,
       l2p_data_o   => L2P_DATA,
       l2p_dframe_o => L2P_DFRAME,
       l2p_valid_o  => L2P_VALID,
+      -- L2P Control
       l2p_edb_o    => L2P_EDB,
       l2p_rdy_i    => L2P_RDY,
       l_wr_rdy_i   => L_WR_RDY,
       p_rd_d_rdy_i => P_RD_D_RDY,
       tx_error_i   => TX_ERROR,
-      
-		dma_irq_o       => open,
-      irq_p_i      => vic_irq,
-      irq_p_o      => GPIO(1),  -- T.B.D. Check if GPIO is 1 or 0
 
-      dma_reg_clk_i => clk_sys, -- Look, many signals just take default values if not used
-		
-		csr_clk_i     => clk_sys,
+      ---------------------------------------------------------
+      -- Interrupt interface
+      dma_irq_o => open,
+      irq_p_i   => vic_irq,
+      irq_p_o   => GPIO(0), -- T.B.D. Check if GPIO is 1 or 0
+
+      ---------------------------------------------------------
+      -- DMA registers wishbone interface (slave classic)
+      dma_reg_clk_i => clk_sys,
+
+      ---------------------------------------------------------
+      -- CSR wishbone interface (master pipelined)
+      csr_clk_i   => clk_sys,
       csr_adr_o   => cbar_slave_adr_words,
       csr_dat_o   => cbar_slave_i.dat,
       csr_sel_o   => cbar_slave_i.sel,
@@ -885,17 +933,32 @@ begin
       csr_we_o    => cbar_slave_i.we,
       csr_cyc_o   => cbar_slave_i.cyc,
       csr_dat_i   => cbar_slave_o.dat,
-      csr_ack_i   => cbar_slave_o.ack,
+      csr_ack_i   => (cbar_slave_o.ack or cbar_slave_o.err),
       csr_stall_i => cbar_slave_o.stall,
 
-      dma_clk_i => clk_sys);
-
-  cbar_slave_i.adr <= cbar_slave_adr_words(29 downto 0) & "00";
+      ---------------------------------------------------------
+      -- L2P DMA Interface (Pipelined Wishbone master)
+		-- Look, many signals just take default values if not used
+      dma_clk_i => clk_sys
+      --dma_adr_o   => dma_adr,
+      --dma_dat_o   => dma_dat_o,
+      --dma_sel_o   => dma_sel,
+      --dma_stb_o   => dma_stb,
+      --dma_we_o    => dma_we,
+      --dma_cyc_o   => dma_cyc,
+      --dma_dat_i   => dma_dat_i,
+      --dma_ack_i   => dma_ack,
+      --dma_stall_i => dma_stall
+      );		
+		
+		
+  -- From words to bytes. TODO: change to adapter block
+  cbar_slave_i.adr (18 downto  0) <= cbar_slave_adr_words(16 downto 0) & "00";
+  cbar_slave_i.adr (31 downto 19) <= (others=>'0'); -- SPEC memory space is 1 MB
 
   ---------------------------------------------
   --   Miscelaneous stuff (i2c, onewire, etc..)
   ---------------------------------------------
-
   fpga_scl_b <= '0' when wrc_scl_o = '0' else 'Z';
   fpga_sda_b <= '0' when wrc_sda_o = '0' else 'Z';
   wrc_scl_i  <= fpga_scl_b;
@@ -976,8 +1039,8 @@ begin
       owr_en_o => owr_en,
       owr_i    => owr_i,
 
-      slave_i => cbar_master_o(0),
-      slave_o => cbar_master_i(0),
+      slave_i => cbar_master_o(0), -- cbar_slave_i, --
+      slave_o => cbar_master_i(0), -- cbar_slave_o, --
 
       wrf_src_o => nic_snk_in,
       wrf_src_i => nic_snk_out,
@@ -1029,24 +1092,24 @@ begin
       --dma_o => nic_dma_out
     );
 
-  GEN_DMA : if(g_nic_usedma) generate
-      nic_dma_in.cyc <= dma_cyc;
-      nic_dma_in.stb <= dma_stb;
-      nic_dma_in.we  <= dma_we;
-      nic_dma_in.adr <= dma_adr;
-      nic_dma_in.sel <= dma_sel;
-      nic_dma_in.dat <= dma_dat_o;
-
-      dma_dat_i(31 downto 0) <= nic_dma_out.dat;
-      dma_ack                <= nic_dma_out.ack;
-      dma_stall              <= nic_dma_out.stall;
-  end generate;
-
-  GEN_PIPELINED : if(not(g_nic_usedma)) generate
-      nic_dma_in <= cc_dummy_slave_in;
-      dma_ack    <= '0';
-      dma_stall  <= '0';
-  end generate;
+--  GEN_DMA : if(g_nic_usedma) generate
+--      nic_dma_in.cyc <= dma_cyc;
+--      nic_dma_in.stb <= dma_stb;
+--      nic_dma_in.we  <= dma_we;
+--      nic_dma_in.adr <= dma_adr;
+--      nic_dma_in.sel <= dma_sel;
+--      nic_dma_in.dat <= dma_dat_o;
+--
+--      dma_dat_i(31 downto 0) <= nic_dma_out.dat;
+--      dma_ack                <= nic_dma_out.ack;
+--      dma_stall              <= nic_dma_out.stall;
+--  end generate;
+--
+--  GEN_PIPELINED : if(not(g_nic_usedma)) generate
+--      nic_dma_in <= cc_dummy_slave_in;
+--      dma_ack    <= '0';
+--      dma_stall  <= '0';
+--  end generate;
 
   -------------------------------------
   -- VIC 
@@ -1068,7 +1131,7 @@ begin
   vic_slave_irq(0) <= cbar_master_i(3).int;  -- wrpc, txtsu
   vic_slave_irq(1) <= cbar_master_i(1).int;  -- wrsw-nic
   vic_slave_irq(2) <= cbar_master_i(4).int;  -- DIO core
-															--wb_irq_data_fifo_dio; 
+															
 
   -------------------------------------
   -- WRSW TXTSU
@@ -1086,7 +1149,6 @@ begin
       wb_i                => cbar_master_o(3),
       wb_o                => cbar_master_i(3)
     );
-
 
   ---------------------
   -- GTP
@@ -1150,7 +1212,7 @@ begin
 
       dac_cs_n_o(0) => dac_cs1_n_o,
       dac_cs_n_o(1) => dac_cs2_n_o,
-      dac_clr_n_o   => open,
+      dac_clr_n_o   => dac_clr_n_o,
       dac_sclk_o    => dac_sclk_o,
       dac_din_o     => dac_din_o);
 
@@ -1198,6 +1260,7 @@ begin
       slave_o                      => cbar_master_i(4)
       --    wb_irq_data_fifo_o => wb_irq_data_fifo_dio -- To test & delete
   );
+  
   gen_dio_iobufs : for i in 0 to 4 generate
     U_ibuf : IBUFDS
       generic map (

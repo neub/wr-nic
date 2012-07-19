@@ -47,7 +47,7 @@ The different submodules description are:
 
 * Modules to generate or stamping pulses:  
 
-	1. `Pulse generator:` It produces a 1-tick-long pulse in its output when the time passed to it through a vector equals a pre-programmed time.
+	1. `Pulse generator:` It produces a  programmable ticks-long pulse in its output when the time passed to it through a vector equals a pre-programmed time.
 	2. `Pulse stamper:` It associates a time-tag with an asynchronous input pulse
 
 * Additional Wishbone slave core generated elements are:  
@@ -77,19 +77,19 @@ In order to use input/output channels as previously described, the following act
 
 * Standard GPIO output generation is selected by default. In order to use monostable output (time-programmed or immediate), each channel should be properly configured written to the `dio_out_mode register`. A value of 1 indicates that channel will be used for programmable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
 
-* Programmed pulse generation: Generate a programmed input at any time at channel X (X between 0 and 4 identifies the required card channel). For this purpose you need to perform the following actions:
+* Time-programmable pulse generation: Generate a programmed input at any time at channel X (X between 0 and 4 identifies the requested channel). For this purpose you need to perform the following actions:
 	* Set the required time. This means to provide the 40 bits for the time value and the number of cycles (28 bits). This 		requires to write the registers `dio_trigX_seconds, dio_trighX_seconds` (high part of the time value) and `dio_cyc0_cyc`.
 	* Checking if the the board is ready for accepting new triggers. This can be done by reading a `1` found at each bit of `dio_trig_rdy` register. The EIC bits 9 to 5 have associated interrupts (active means system is ready to accept new trigger values (but please check you have properly configure EIC interrupt mask). Both methods are possible to check the status. Nevertheless note that the non-ready periods are very shorts (13 cycles of a 62.5 MHz clock, 208 ns) so systems is almost always ready for new trigger values. 
 	* Arming the trigger. You need to write a `1` a the corresponding bit of the `dio_latch_time_chX` bit field.  
-	After these operations, a monostable output will be presented on the desired channel at the requested time. It is not necessary to do software reset to the register.   
+	After these operations, an output with the programmed tick-length will be presented on the desired channel at the requested time. It is not necessary to do software reset to the register.   
 
 * Immediate pulse generation: A immediate pulse is generated a the output of each of the card channels just by writing a corresponding `1` at the bit field dio_pulse_imm_X when output mode is set to programmable outputs. No reset is required.
 
-* Variable pulse length: by writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register use the 28 low significant bits and allow a length equal to register_value x 8 ns.
+* Variable pulse length: both output modes, time-programmable as well as immediate allows to configure the output length. By writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register use the 28 low significant bits and allow a time duration equal to register_value x 8 ns.
 
 * Input time-tagging: for each of the 5 inputs, if a `1` is detected at this channel, a precise time information is stored on logic FIFOs including the 40 bits time counters and 28 bits more for the cycles (fifo depth is 256 each one). Currently this information is collected even for pins configured in output mode, GPIO, immediate or time-programmable configurations but it is straightforward to change this at the HDL code. For accessing this information you need to read `dio_tsfX_tag_seconds` (32 low bits), `dio_tsfX_tag_secondsh` (high bits), `dio_tsfX_tag_cycles`. Each time the time tag of any channel is stored, the `fifo not empty` flag generates an interruption to the PC. In the next section we will describe these mechanisms. 
 
-A detailed information about the memory maps and related registers names are available by generating html documentation of http://www.ohwr.org/projects/wr-nic/repository/revisions/master/changes/modules/wrsw_nic/wr_nic.wb file. Download the file and generate the HTML documentation using wbgen2 tool (for instance wbgen2 -D diocore.htm wr_nic.wb).
+A detailed information about the memory maps and related registers names are available by generating html documentation of the different wishbone slaves. Download the related .wb file and generate the HTML documentation using wbgen2 tool (for instance wbgen2 -D diocore.htm wr_nic.wb).
 
 Interrupt handling
 ------------------
@@ -134,6 +134,8 @@ Troubleshooting
 ===============
 
 Properly setting of interrupts registers or wrong memory maps are the typical errors at this stage (in addition to HDL bugs!).   
+
+Please verify that the embedded LM32 processor has been loaded with the corresponding software and it runs on the proper mode (slave or master). Otherwise time information will not be available and therefore time-stamping information and programmable outputs will not be able to run properly. The software manual provide information about how to program the softprocessor and verify its right behavior.
 
 Further information will be provided.   
 
