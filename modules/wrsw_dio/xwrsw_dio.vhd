@@ -2,7 +2,7 @@
 -- Title      : DIO Core
 -- Project    : White Rabbit Network Interface
 -------------------------------------------------------------------------------
--- File       : wrsw_dio.vhd
+-- File       : xwrsw_dio.vhd
 -- Author     : Rafael Rodriguez, Javier Díaz
 -- Company    : Seven Solutions
 -- Created    : 2012-03-03
@@ -17,13 +17,14 @@
 -- to schedule the generation of a pulse at a given future seconds time, or to generate 
 -- it immediately. 
 -------------------------------------------------------------------------------
--- TODO:
+-- TODO: Include wb adapter
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author          Description
 -- 2012-03-03  0.1      Rafa.r          Created
--- 2012-03-08  0.2      Javier.d        Added wrsw_dio_wb
--- 2012-07-05  0.3		Javier.d        Midified wrsw_dio_wb, modified interface
+-- 2012-03-08  0.1      JDiaz           Added wrsw_dio_wb
+-- 2012-07-05  0.2		JDiaz           Modified wrsw_dio_wb, modified interface
+-- 2012-07-20  0.2		JDiaz           Include sdb support
 -------------------------------------------------------------------------------
 --     Memory map:
 --       0x000: DIO-ONEWIRE
@@ -38,7 +39,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.wishbone_pkg.all;
-
+use work.wrnic_sdb_pkg.all;
 
 entity xwrsw_dio is
   generic (
@@ -68,16 +69,15 @@ entity xwrsw_dio is
     tm_time_valid_i  : in std_logic;
     tm_seconds_i         : in std_logic_vector(39 downto 0);
     tm_cycles_i      : in std_logic_vector(27 downto 0);
-
-    -- Debug signals for chipscope
+		
+    slave_i            : in  t_wishbone_slave_in;
+    slave_o            : out t_wishbone_slave_out;
+   
+	-- Debug signals for chipscope
     TRIG0            : out std_logic_vector(31 downto 0);
     TRIG1            : out std_logic_vector(31 downto 0);
     TRIG2            : out std_logic_vector(31 downto 0);
-    TRIG3            : out std_logic_vector(31 downto 0);
-		
-    slave_i            : in  t_wishbone_slave_in;
-    slave_o            : out t_wishbone_slave_out
-  --  wb_irq_data_fifo_o : out std_logic  -- T.B.DELETED
+    TRIG3            : out std_logic_vector(31 downto 0)	 	 	 
   );
   end xwrsw_dio; 
 
@@ -375,18 +375,14 @@ architecture rtl of xwrsw_dio is
   signal tm_seconds             : std_logic_vector (39 downto 0);
   signal tm_cycles              : std_logic_vector (27 downto 0);
 	
-  -- WB Crossbar
-  constant c_cfg_base_addr : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"00000000",  -- ONEWIRE                
-     1 => x"00000100",  -- I2C                
-     2 => x"00000200",  -- GPIO                 
-     3 => x"00000300"); -- PULSE GEN & STAMPER                 
-
-  constant c_cfg_base_mask : t_wishbone_address_array(3 downto 0) :=
-    (0 => x"00000f00",
-     1 => x"00000f00",
-     2 => x"00000f00",
-     3 => x"00000f00");
+  -- WB SDB Crossbar
+  constant c_diobar_layout : t_sdb_record_array(3 downto 0) :=
+    (0 => f_sdb_embed_device(c_xwb_onewire_master_sdb ,   x"00000000"), -- ONEWIRE
+     1 => f_sdb_embed_device(c_xwb_i2c_master_sdb     ,   x"00000100"), -- I2C
+     2 => f_sdb_embed_device(c_xwb_gpio_port_sdb      ,   x"00000200"), -- GPIO
+     3 => f_sdb_embed_device(c_xwrsw_dio_wb_sdb       ,   x"00000300")  -- DIO REGISTERS
+     );	  
+  constant c_diobar_sdb_address : t_wishbone_address := x"00000400";	  
 
   signal cbar_master_in   : t_wishbone_master_in_array(c_WB_SLAVES_DIO-1 downto 0);
   signal cbar_master_out  : t_wishbone_master_out_array(c_WB_SLAVES_DIO-1 downto 0);
@@ -444,7 +440,7 @@ begin
 		  );
 	 
 
-    U_pulse_stamper : pulse_stamper
+    U_PULSE_STAMPER : pulse_stamper
       port map(
         clk_ref_i       => clk_ref_i,
         clk_sys_i       => clk_sys_i,
@@ -469,10 +465,10 @@ begin
   ------------------------------------------------------------------------------
   -- WB ONEWIRE MASTER
   ------------------------------------------------------------------------------    
-  U_Onewire : xwb_onewire_master
+  U_ONEWIRE : xwb_onewire_master
     generic map (
       g_interface_mode => PIPELINED,
-      g_address_granularity => BYTE,
+      g_address_granularity => g_address_granularity,
       g_num_ports      => 1)
     port map (
       clk_sys_i        => clk_sys_i,
@@ -492,7 +488,7 @@ begin
   U_I2C : xwb_i2c_master
     generic map (
       g_interface_mode => PIPELINED,
-      g_address_granularity => BYTE
+      g_address_granularity => g_address_granularity
       )
     
     port map (
@@ -522,7 +518,7 @@ begin
   U_GPIO : xwb_gpio_port
     generic map (
       g_interface_mode         => PIPELINED,
-      g_address_granularity => BYTE,
+      g_address_granularity => g_address_granularity,
       g_num_pins               => 32,
       g_with_builtin_tristates => false)
     port map (
@@ -539,26 +535,26 @@ begin
   ------------------------------------------------------------------------------
   -- WB Crossbar
   ------------------------------------------------------------------------------
-  WB_INTERCON : xwb_crossbar
+ WB_DIO_INTERCON : xwb_sdb_crossbar
     generic map(
       g_num_masters => 1,
       g_num_slaves  => 4,
       g_registered  => true,
-      -- Address of the slaves connected
-      g_address     => c_cfg_base_addr,
-      g_mask        => c_cfg_base_mask
+      g_wraparound  => true,
+      g_layout      => c_diobar_layout,
+      g_sdb_addr    => c_diobar_sdb_address
       )
     port map(
-      clk_sys_i     => clk_sys_i,
-      rst_n_i       => rst_n_i,
+      clk_sys_i  => clk_sys_i,
+      rst_n_i    => rst_n_i,
       -- Master connections
       slave_i(0)    => slave_bypass_i,
       slave_o(0)    => slave_bypass_o,
       -- Slave conenctions
       master_i      => cbar_master_in,
       master_o      => cbar_master_out
-      );
-	
+      );				
+
   -- Irq form one slave is bypassed to the Master connection 
   slave_bypass_i.cyc <= slave_i.cyc;
   slave_bypass_i.stb <= slave_i.stb;
@@ -604,9 +600,9 @@ begin
   dio_sdn_n_o    <= gpio_out(31);
   
   ------------------------------------------------------------------------------
-  -- WB seconds-BASED PULSE GENERATION & INPUT STAMPING
+  -- WB DIO control registers
   ------------------------------------------------------------------------------  
-  U_seconds_wbslave : wrsw_dio_wb 
+  U_DIO_REGISTERS : wrsw_dio_wb 
     port map(
       rst_n_i     => rst_n_i,
       clk_sys_i   => clk_sys_i,

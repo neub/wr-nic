@@ -3,10 +3,11 @@
 `include "gn4124_bfm.svh"   
 
 const uint64_t BASE_WRPC = 'h0080000;
-const uint64_t BASE_NIC = 'ha0000;
-const uint64_t BASE_VIC = 'hc0000;
-const uint64_t BASE_TXTSU = 'h000d0000;
-const uint64_t BASE_DIO = 'h000e0000;
+const uint64_t BASE_NIC =  'h00c0000;
+const uint64_t BASE_VIC =  'h00e0000;
+const uint64_t BASE_TXTSU ='h00e1000;
+const uint64_t BASE_DIO =  'h00e2000;
+
 
 module main;
    reg clk_125m_pllref = 0;
@@ -17,7 +18,7 @@ module main;
    
    IGN4124PCIMaster I_Gennum ();
 
-   wr_nic_top
+   wr_nic_sdb_top
      DUT (
           .clk_125m_pllref_p_i(clk_125m_pllref),
           .clk_125m_pllref_n_i(~clk_125m_pllref),
@@ -35,7 +36,7 @@ module main;
 
       $display("Startup");
 
-      acc.write('ha0400, 'h1deadbee);
+      acc.write('ha0400, 'h1deadbee); // reset lm32, h20004
       acc.write('ha0400, 'h0deadbee);      
 
       acc.write('hc0000, 'h0deadbee);      
@@ -52,7 +53,7 @@ module main;
       acc.read(BASE_WRPC + 'h100, rval);
       $display("MemReadback1 %x", rval);
       acc.read(BASE_WRPC + 'h104, rval);
-      $display("MemReadback2 %x", rval);
+      //$display("MemReadback2 %x", rval);
 
 /* -----\/----- EXCLUDED -----\/-----
       acc.write(BASE_VIC + 'h4, 'h1); // enable IRQ 0

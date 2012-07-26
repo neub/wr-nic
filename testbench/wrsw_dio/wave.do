@@ -1,19 +1,9 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
-#add wave -noupdate /main/DUT/g_USE_DMA
 add wave -noupdate /main/DUT/clk_sys_i
+add wave -noupdate /main/DUT/clk_ref_i
 add wave -noupdate /main/DUT/rst_n_i
-
-#add wave -divider DMA
-#add wave -noupdate /main/DUT/dma_cyc_i
-#add wave -noupdate /main/DUT/dma_stb_i
-#add wave -noupdate /main/DUT/dma_we_i
-#add wave -noupdate /main/DUT/dma_sel_i
-#add wave -noupdate /main/DUT/dma_adr_i
-#add wave -noupdate /main/DUT/dma_dat_i
-#add wave -noupdate /main/DUT/dma_dat_o
-#add wave -noupdate /main/DUT/dma_ack_o
-#add wave -noupdate /main/DUT/dma_stall_o
+add wave -noupdate /main/DUT/tm_time_valid_i
 
 add wave -divider WB
 add wave -noupdate /main/DUT/wb_cyc_i
@@ -26,17 +16,6 @@ add wave -noupdate /main/DUT/wb_dat_o
 add wave -noupdate /main/DUT/wb_ack_o
 add wave -noupdate /main/DUT/wb_stall_o
 
-add wave -divider RAM
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_cyc_i
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_stb_i
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_we_i
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_addr_i
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_data_i
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/wb_data_o
-
-add wave -divider BRAM
-add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/RAM/qb_o 
-#add wave -noupdate /main/DUT/U_Wrapped_NIC/U_BUFFER/RAM/ram(0:5)
 
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {90685000000 fs} 0}

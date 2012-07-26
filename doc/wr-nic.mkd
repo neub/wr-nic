@@ -9,12 +9,12 @@ This document focus on the description of the project gateware. This manual is p
 
 ![Basic wr-nic project elements](./img/wrnic_components.png)
 
-Note that the WR-NIC project inherits many code and working methodology of many other project. Specially important to highly the following ones: 
+Note that the WR-NIC project inherits many code and working methodology of many other projects. Specially important to highly the following ones: 
 
-1. White-Rabbit core collection: http://www.ohwr.org/projects/wr-cores (wishbonized branch). Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU, WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
-2. Software for White-Rabbit PTP core: http://www.ohwr.org/projects/wrpc-sw (a subproject of the previous one)
-3. Gennum GN4124 core: http://www.ohwr.org/projects/gn4124-core 
-4. The platform independent core collection: http://www.ohwr.org/projects/general-cores. An important one is the Wishbone crossbar with is download at the DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone. 
+1. White-Rabbit core collection: `http://www.ohwr.org/projects/wr-cores` (wishbonized branch). Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU, WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
+2. Software for White-Rabbit PTP core: `http://www.ohwr.org/projects/wrpc-sw` (a subproject of the previous one)
+3. Gennum GN4124 core: `http://www.ohwr.org/projects/gn4124-core` 
+4. The platform independent core collection: `http://www.ohwr.org/projects/general-cores`. An important one is the Wishbone crossbar with is download at the DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone. 
 
 Gateware elements
 =====================
@@ -29,20 +29,43 @@ Here is a quick description of each block:
 * The `WB intercon` block ensures seamless interconnection of Wishbone masters and slaves using a crossbar topology.
 The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the internal Wishbone bus, allowing communication with the host and interrupts --> pipelined version!
 * The `WRPC (White Rabbit PTP Core)` communicates with the outside world through the SFP socket in the SPEC, typically using fiber optics. It deals with the WR PTP using an internal LM32 CPU running a portable PTP stack. It forwards/receives non-PTP frames to/from the NIC block, using two pipelined Wishbone interfaces (master and slave for forwarding and receiving respectively). It also provides time information to other cores (not represented in the diagram), and time-tags for transmitted and received frames that can be read through Wishbone for diagnostics purposes. Future versions will include the PPSi library instead of the current PTP stack. 
-* The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe DMA via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
-* The `TxTSU module` collect timestamps with associated frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
+* The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
+* The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is include to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
 
+In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works. 
+
+WRPC (White Rabbit PTP Core)
+----------------------------
+The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible the White-Rabbit timing functionalities on the White-Rabbit nodes. It is a black-box standalone WR-PTP protocol core, incorporating a CPU LM32, WR MAC and PLLs. It could be configure to work on 3 different operations modes:  
+
+* Grandmaster: WRPC locks to a external 10 MHz and PPS signal provided for instance from a Cesium clock / GPS. This signals are provided from the channel 4 (PPS) and channel 5 (10 MHz) lemo connectors of the DIO card.
+
+* Master: the systems uses the VCO oscillators of the SPEC board basically on a free running modes. 
+
+* Slaves: The clock information is recovered from the Ethernet connections and the local clock uses the DDMTD method to follow the external clock.  
+
+In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 8 ns. 
+
+It is important to remark that for this release the I2C bus of the FMC-DIO card is connected to WRPC. This is needed because current implementation of WRPC store configuration data on the FMC-DIO card EEPROM. Please be aware that for future releases this could change. 
+ 
+The whole description of the core goes beyond the scope of this documentation but the additional information is available at: `http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_core` and in: 
+
+G. Daniluk, White Rabbit PTP Core the sub-nanosecond time synchronization over Ethernet, 2012.
+M.Sc thesis describing the development and implementation of the first standalone HDL module handling the sub-nanosecond synchronization over a regular Ethernet - the White Rabbit PTP Core.
+Available at: `http://www.ohwr.org/attachments/1368/GD_mgr.pdf` 
 
 DIO core
 ----------
-The `DIO Core` block is the HDL block that access to the fmc-dio-5chls mezzanine card. Their main elements are shown on the next figure. 
+The `DIO Core` block is the HDL block that access to the fmc-dio-5chls mezzanine card. The core goes beyond a standard GPIO core to include advanced functionalities related with timing. Their main elements are shown on the next figure. 
 
 ![Main DIO Core block elements](./img/diocore2.png)
 
 The different submodules description are:  
 
 * `GPIO:` It allows to enable/disable the output drivers and the termination resistors.
-* `I2C:` It allows to set the threshold of the ADCMP604 fast LVDS comparator and to access to write/read data to the EEPROM memory (24AA64).
+
+* `I2C:` It allows to set the threshold of the ADCMP604 fast LVDS comparator and to access to write/read data to the EEPROM memory (24AA64). Please note that already commented, current release do not allow to access I2C signals of the FMC-DIO card from this HDL block. This is assigned to WRPC and therefore it should be handled inside its memory maps (concretely, inside WRPC `Syscon` device). This could change for future releases.
+
 * `Onewire:` It is used for temperature acquisition
 
 * Modules to generate or stamping pulses:  
@@ -57,9 +80,7 @@ The different submodules description are:
 	3. Interrupt control registers that allow to configure the interrupts  generated when there are data in the FIFOs.
 	4. Monostable register, which generates a single clock cycle-long
 
-
-
-Configuration & Control
+DIO Configuration & Control
 ==========================
 Accessing to the different system elements is as simple as doing a read/write memory access. The memory map of the different elements of the board are: 
 
