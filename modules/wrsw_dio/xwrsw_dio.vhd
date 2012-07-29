@@ -30,8 +30,8 @@
 --       0x000: DIO-ONEWIRE
 --       0x100: DIO-I2C
 --       0x200: DIO-GPIO
---       0x300: DIO-REGISTERS
--- WARNING: only pipelined mode is supported (Intercon is pipelined only) - T.W.
+--       0x300: DIO-TIMING REGISTERS
+--       0x400: SDB-BRIDGE --> MAGIC NUMBER
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -390,6 +390,9 @@ architecture rtl of xwrsw_dio is
   signal slave_bypass_i   : t_wishbone_slave_in;
   signal slave_bypass_o   : t_wishbone_slave_out;
 
+  signal wb_dio_slave_in   : t_wishbone_slave_in;
+  signal wb_dio_slave_out  : t_wishbone_slave_out;
+
   -- DIO related signals
   signal dio_pulse           : std_logic_vector(4 downto 0);
   signal dio_pulse_prog      : std_logic_vector(4 downto 0);
@@ -467,7 +470,7 @@ begin
   ------------------------------------------------------------------------------    
   U_ONEWIRE : xwb_onewire_master
     generic map (
-      g_interface_mode => PIPELINED,
+      g_interface_mode => g_interface_mode,
       g_address_granularity => g_address_granularity,
       g_num_ports      => 1)
     port map (
@@ -485,9 +488,13 @@ begin
   ------------------------------------------------------------------------------
   -- WB I2C MASTER
   ------------------------------------------------------------------------------    
+  -- i2c core does not handle extra signals. 
+--  cbar_master_in(1).err<='0';
+--  cbar_master_in(1).rty<='0';
+  
   U_I2C : xwb_i2c_master
     generic map (
-      g_interface_mode => PIPELINED,
+      g_interface_mode => g_interface_mode,
       g_address_granularity => g_address_granularity
       )
     
@@ -517,7 +524,7 @@ begin
   ------------------------------------------------------------------------------  
   U_GPIO : xwb_gpio_port
     generic map (
-      g_interface_mode         => PIPELINED,
+      g_interface_mode         => g_interface_mode,
       g_address_granularity => g_address_granularity,
       g_num_pins               => 32,
       g_with_builtin_tristates => false)
@@ -561,14 +568,14 @@ begin
   slave_bypass_i.adr <= slave_i.adr;
   slave_bypass_i.sel <= slave_i.sel;
   slave_bypass_i.dat <= slave_i.dat;	
-  slave_bypass_i.we <= slave_i.we;	
+  slave_bypass_i.we  <= slave_i.we;	
 
   slave_o.ack        <= slave_bypass_o.ack;		
   slave_o.stall      <= slave_bypass_o.stall;
   slave_o.int        <= wb_dio_irq;
   slave_o.dat        <= slave_bypass_o.dat;	 
-  --slave_o.err        <= slave_bypass_o.err;
-  --slave_o.rty        <= slave_bypass_o.rty;
+  slave_o.err        <= slave_bypass_o.err;
+  slave_o.rty        <= slave_bypass_o.rty;
 
   immediate_output_with_pulse_length: for i in 0 to 4 generate
     immediate_output_component: immed_pulse_counter
@@ -598,23 +605,45 @@ begin
   gpio_in(29)    <= dio_clk_i;
   dio_sdn_ck_n_o <= gpio_out(30);
   dio_sdn_n_o    <= gpio_out(31);
-  
+
+  -- Adapter of wbgen2 salve signals to top wb mode and granularity
+  U_Adapter : wb_slave_adapter
+    generic map (
+      g_master_use_struct  => true,
+      g_master_mode        => PIPELINED,
+      g_master_granularity => WORD, -- only word acesses are available for wbgen2 slaves
+      g_slave_use_struct   => true,
+      g_slave_mode         => g_interface_mode,
+      g_slave_granularity  => g_address_granularity)
+    port map (
+      clk_sys_i => clk_sys_i,
+      rst_n_i   => rst_n_i,
+      slave_i   => cbar_master_out(3),
+      slave_o   => cbar_master_in (3),
+      master_i  => wb_dio_slave_out,
+      master_o  => wb_dio_slave_in);
+ 
   ------------------------------------------------------------------------------
   -- WB DIO control registers
   ------------------------------------------------------------------------------  
+  wb_dio_slave_out.err<='0';
+  wb_dio_slave_out.rty<='0';
+  wb_dio_slave_out.int<='0'; -- Real signal we bypass to crossbar
+  
+  -- SUPPORTING PIPELINE WBGEN2 SLAVES
   U_DIO_REGISTERS : wrsw_dio_wb 
     port map(
       rst_n_i     => rst_n_i,
       clk_sys_i   => clk_sys_i,
-      wb_adr_i    => cbar_master_out(3).adr(7 downto 2), -- only word acesses are available
-      wb_dat_i    => cbar_master_out(3).dat,
-      wb_dat_o    => cbar_master_in(3).dat,
-      wb_cyc_i    => cbar_master_out(3).cyc, 
-      wb_sel_i    => cbar_master_out(3).sel, 
-      wb_stb_i    => cbar_master_out(3).stb, 
-      wb_we_i     => cbar_master_out(3).we,  
-      wb_ack_o    => cbar_master_in(3).ack,
-      wb_stall_o  => cbar_master_in(3).stall,
+      wb_adr_i    => wb_dio_slave_in.adr(5 downto 0), 
+      wb_dat_i    => wb_dio_slave_in.dat,
+      wb_dat_o    => wb_dio_slave_out.dat,
+      wb_cyc_i    => wb_dio_slave_in.cyc, 
+      wb_sel_i    => wb_dio_slave_in.sel, 
+      wb_stb_i    => wb_dio_slave_in.stb, 
+      wb_we_i     => wb_dio_slave_in.we,  
+      wb_ack_o    => wb_dio_slave_out.ack,
+      wb_stall_o  => wb_dio_slave_out.stall,
 		-- Crossbar could not propagate interrupt lines of several slaves  => signal bypass
       wb_int_o    => wb_dio_irq, 
       clk_asyn_i  => clk_ref_i,
@@ -735,12 +764,17 @@ begin
 -----------------------------------------------------------------------------------
 ------ signals for debugging
 -----------------------------------------------------------------------------------
---     TRIG0               <= tag_utc(0)(31 downto 0);
---     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
---     TRIG1(0)  <= cbar_master_in(3).int;
---     TRIG2               <= tm_utc(31 downto 0);
-    -- TRIG3(2 downto 0)   <= dio_in_i(0) & dio_out(0) & dio_pulse_immed(0);
-    --TRIG3(4 downto 0)  <= dio_tsf_wr_req(0) & tag_valid_p1(0) & gpio_out(1) & dio_in_i(0) & dio_out(0);
+     TRIG0(21 downto 0 ) <= tag_seconds(0)(21 downto 0);
+	  TRIG0(22)           <= irq_nempty(0);
+	  TRIG0(23)           <= tm_time_valid_i;
+	  TRIG0(31 downto 24) <= pulse_length(0)(7 downto 0);
+     TRIG1(27 downto 0)  <= tag_cycles(0)(27 downto 0);
+     TRIG1(28)  <= slave_bypass_o.int;
+     TRIG1(29)  <= slave_bypass_o.ack;
+	  TRIG1(30)  <= dio_pulse(0);
+	  TRIG1(31)  <= gpio_out(0);     
+     --TRIG3(2 downto 0)   <= 
+     --TRIG3(4 downto 0)  <= 
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------	

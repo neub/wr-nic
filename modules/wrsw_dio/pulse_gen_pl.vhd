@@ -96,8 +96,9 @@ architecture rtl of pulse_gen_pl is
   signal trig_valid_ref_p1 : std_logic;
 
   -- Aux
-  constant zeros : std_logic_vector(27 downto 0) := (others=>'0');  
-  signal counter : unsigned (27 downto 0); 
+  constant zeros      : std_logic_vector(27 downto 0) := (others=>'0');  
+  signal counter      : unsigned (27 downto 0); 
+  signal nozerolength : boolean; 
   
 begin  -- architecture rtl
 
@@ -176,6 +177,7 @@ begin  -- architecture rtl
       trig_utc_ref <= trig_utc;
       trig_cycles_ref <= trig_cycles;
 		pulse_length_ref <= pulse_length;
+		nozerolength<=pulse_length /= zeros;
      end if;
    end if;
   end process trig_regs_ref;
@@ -210,7 +212,7 @@ begin  -- architecture rtl
    elsif clk_ref_i'event and clk_ref_i='1' then
     if tm_time_valid_i ='0' then
       pulse_o <= '0';
-    elsif tm_utc_i=trig_utc_ref and tm_cycles_i=trig_cycles_ref and pulse_length_ref/=zeros then
+    elsif tm_utc_i=trig_utc_ref and tm_cycles_i=trig_cycles_ref and nozerolength then
       pulse_o <= '1';
 	  	counter <=unsigned(pulse_length_ref)-1;
 	 elsif counter/=0 then

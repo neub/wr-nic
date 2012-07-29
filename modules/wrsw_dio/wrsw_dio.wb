@@ -1,7 +1,35 @@
 -- -*- Mode: LUA; tab-width: 2 -*-
-
+-- White-Rabbit dio spec
+-- author: JDiaz <jdiaz@atc.ugr.es>
+--
+-- Use wbgen2 to generate code, documentation and more.
+-- wbgen2 is available at:
+-- http://www.ohwr.org/projects/wishbone-gen
+--
 peripheral {
-	 name = "FMC-DIO-5chttla";
+	 name = "FMC-DIO-5chttla",
+   description = "This core for adding timing information to a standard GPIO based on WR-CORE information. \
+   \
+   Operation \
+   ~~~~~~~~~~ \
+  The registers used on this module allows to time-stamping input values, generate and immediate output or programmed output at a given time.  \
+\
+      * Programmable output: Use seconds and cycles registers for specify trigger time for each channel. Strobe signal is mandatory to latch these values otherwise no output will be generated. \
+      * Immediate output could be generate by making active the corresponding bits of the 'Pulse generate immediately' register. \
+      * Pulse length can be adjusted by writing a integer value at corresponding registers. The duration will be its value x 8 ns. \
+      * There are some few clock cycles that the system is not ready to latch new time information to triggers. This could be checked by checking dio trigger signals. In addition to pooling, interrupts are generated. Note that because is no ready time is about 200 ns, it would almost always available for the PC. \
+     * To activate programmable or immediate output generation, please remember to set corresponding bits of the output configuration registers. Otherwise this system behaves as normal GPIO without additional timing features. \
+     * FIFOs store seconds and cycles values of time-stamped events. Note that the FIFO depth is 256 and that output generated signals will be also stored in the FIFOs in the same why that external input do. \
+     * Interrupts are handle based on EIC registers. FIFOs not empty as well as ready signals of each GPIO are the interrupt sources. \
+\
+   Todo \
+   ~~~~ \
+      * Improve documentation. \
+\
+   Known issues \
+   ~~~~~~~~~~~ \
+      * None";
+
    prefix="dio";
 
 	 hdl_entity="wrsw_dio_wb";

@@ -32,7 +32,8 @@ The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the int
 * The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
 * The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is include to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
 
-In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works. 
+In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works.   
+Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources.
 
 WRPC (White Rabbit PTP Core)
 ----------------------------
@@ -45,6 +46,8 @@ The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible th
 * Slaves: The clock information is recovered from the Ethernet connections and the local clock uses the DDMTD method to follow the external clock.  
 
 In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 8 ns. 
+
+Please note that the current gateware contains the LM32 firmware (so the FPGA . Latest version is available at: `http://www.ohwr.org/projects/wrpc-sw/repository`. Gateware the wrc.ram file produced after firmware compilation. 
 
 It is important to remark that for this release the I2C bus of the FMC-DIO card is connected to WRPC. This is needed because current implementation of WRPC store configuration data on the FMC-DIO card EEPROM. Please be aware that for future releases this could change. 
  
@@ -131,24 +134,27 @@ Please note that each peripheral generating interrupts has own interrupts regist
 For instance for the DIO core, please check the status of interrupt registers by looking at `wr_nic.wb ` as previously described. 
 
 
-Application & examples
-======================
+Software support and applications
+=================================
 
-[JAVIER: THIS IS MUCH MORE FOR APPROPRIATED IN A GLOBAL DOCUMENT OR ONE ABOUT DEMO EXAMPLES / USE CASES. PERHAPS IT SHOULD BE DELETED FOR FUTURE VERSIONS]
+This project could be used as starting demo with White-Rabbit technology, illustrating the timing capabilities of White-Rabbit technology. As already described, the current configuration allows to transform SPEC board on an Network Interface Card with White-Rabbit capabilities. In order of using it like this, some additional software is required: 
 
-This project could be used as starting demo with White-Rabbit technology. Between others, example applications are:  
+* SPEC driver supporting the DIO card functionalities already described. 
 
-* Simple transmission of PPS from the master to the slave, with nothing hooked to the external inputs of the boards. 
-	* The master is free-running. The master host reads system time and schedules a pulse output on the next second. Then it 		gets an interrupt and from then on it schedules a pulse on each second. 
-	* The slave host does the same. Looking at the outputs on a scope we should see them perfectly aligned.
+* Applications examples. 
 
-* Transmitting an external frequency in the 100 Hz range. 
-	* The user supplies a ~100Hz square wave on one of the inputs of the master card. The master host reads the time value of the rising edge of the external pulse upon IRQ. Then it adds a constant time (something like 1 ms) and sends a frame with that value to the slave. 
-	* The slave schedules a pulse to be produced at that time. On the scope we should see a constant time offset between the two pulses.
+Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe their functionalities. Please read that document in order to have a global understanding of the NIC project. 
+
+Finally, as working examples, current release already provide the following applications: 
+
+* Simple transmission of timing information from the master to the slave, with nothing hooked to the external inputs of the boards. 
+	* The master host could be configured as grandmasters (if external PPS and 10 MHz signal is available from GPS or Cesium clock) or just work as simple master (free-running). 
+	* The slave host schedule a pulse output each second. Looking at the outputs on a scope we should see them perfectly aligned.
 
 * Network latency measurements. This is interesting if we connect a switch between the SPEC cards. By using the timestamps on Ethernet frames we could get the measurement of the network latency, verify it it is constant or how traffic affect this parameter. 
 
-* Many other options are possible. For instance, the measurement of the DIO card latency (we know when we generate a pulse and we could measure when it is received). Please fell free to propose new experiments!
+
+Many other options are possible. For instance, we could transmit an external frequency and schedule a similar output with a fixed delay on both nodes. We should be able to see  a constant time offset between the two pulses on the scope. New examples will be added on next releases.  
 
 
 Troubleshooting
@@ -160,5 +166,5 @@ Please verify that the embedded LM32 processor has been loaded with the correspo
 
 Further information will be provided.   
 
-T.B.D.
+
  

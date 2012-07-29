@@ -178,8 +178,7 @@ U_WRAPPER_DIO : xwrsw_dio
   wb_ack_o   <= wb_out.ack;
   wb_stall_o <= wb_out.stall;
   wb_irq_o   <= wb_out.int;  
-  
-  
+
 -----------------------------------------------------------------------------------	
 end rtl;
 

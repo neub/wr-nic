@@ -54,8 +54,8 @@
 --       0x000: DIO-ONEWIRE
 --       0x100: DIO-I2C
 --       0x200: DIO-GPIO
---       0x300: DIO-REGISTERS
-
+--       0x300: DIO-TIMING REGISTERS
+--  0x00063000: SDB-BRIDGE --> MAGIC NUMBER 
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -378,29 +378,29 @@ architecture rtl of wr_nic_sdb_top is
       slave_o                      : out t_wishbone_slave_out
   );
   end component;  --DIO core
---
+
 --  -- DEBUG STUFF
---  component chipscope_ila
---    port (
---      CONTROL : inout std_logic_vector(35 downto 0);
---      CLK     : in    std_logic;
---      TRIG0   : in    std_logic_vector(31 downto 0);
---      TRIG1   : in    std_logic_vector(31 downto 0);
---      TRIG2   : in    std_logic_vector(31 downto 0);
---      TRIG3   : in    std_logic_vector(31 downto 0));
---  end component;
---
---  signal CONTROL : std_logic_vector(35 downto 0);
---  signal CLK     : std_logic;
---  signal TRIG0   : std_logic_vector(31 downto 0);
---  signal TRIG1   : std_logic_vector(31 downto 0);
---  signal TRIG2   : std_logic_vector(31 downto 0);
---  signal TRIG3   : std_logic_vector(31 downto 0);
---
---  component chipscope_icon
---    port (
---      CONTROL0 : inout std_logic_vector (35 downto 0));
---  end component;
+  component chipscope_ila
+    port (
+      CONTROL : inout std_logic_vector(35 downto 0);
+      CLK     : in    std_logic;
+      TRIG0   : in    std_logic_vector(31 downto 0);
+      TRIG1   : in    std_logic_vector(31 downto 0);
+      TRIG2   : in    std_logic_vector(31 downto 0);
+      TRIG3   : in    std_logic_vector(31 downto 0));
+  end component;
+
+  signal CONTROL : std_logic_vector(35 downto 0);
+  signal CLK     : std_logic;
+  signal TRIG0   : std_logic_vector(31 downto 0);
+  signal TRIG1   : std_logic_vector(31 downto 0);
+  signal TRIG2   : std_logic_vector(31 downto 0);
+  signal TRIG3   : std_logic_vector(31 downto 0);
+
+  component chipscope_icon
+    port (
+      CONTROL0 : inout std_logic_vector (35 downto 0));
+  end component;
 
   ------------------------------------------------------------------------------
   -- Constants declaration
@@ -696,6 +696,7 @@ begin
       master_o   => cbar_master_o
       );		
 		
+		
 
   ------------------------------------------------------------------------------
   -- Gennun Core
@@ -819,7 +820,7 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "",
+      g_dpram_initf               => "../../../wrpc-sw/wrc.ram",  -- Path to the lm32 file (wrc.ram) of the wrpc_sw repository
       g_dpram_size                => 20480,
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
@@ -1078,15 +1079,15 @@ begin
       dio_ga_o       => open,
 		
       tm_time_valid_i => tm_time_valid,
-      tm_seconds_i        => tm_seconds,
+      tm_seconds_i    => tm_seconds,
       tm_cycles_i     => tm_cycles,      
 
-      slave_i                      => cbar_master_o(4),
-      slave_o                      => cbar_master_i(4)
+      slave_i         => cbar_master_o(4),
+      slave_o         => cbar_master_i(4),
 		
 		-- Chipscope, debugging signals
-      --TRIG0           => TRIG0,
-      --TRIG1           => TRIG1,
+      TRIG0           => TRIG0,
+      TRIG1           => TRIG1
       --TRIG2           => TRIG2,
       --TRIG3           => TRIG3,		
   );
@@ -1118,66 +1119,52 @@ begin
       );
 
 
+-- .............................................
+-- ............... DEBUGGING ...................
+-- .............................................
 
--- DEBUGGING.......................
---  U_Extend_PPS : gc_extend_pulse
---    generic map (
---      g_width => 10000000)
+--  chipscope_ila_1 : chipscope_ila
 --    port map (
---      clk_i      => clk_125m_pllref,
---      rst_n_i    => local_reset_n,
---      pulse_i    => pps,
---      extended_o => dio_led_top_o);
-
---  process(clk_sys, rst)
---  begin
---    if rising_edge(clk_sys) then
---      led_divider <= led_divider + 1;
---    end if;
---  end process;
-
---  dio_led_bot_o <= '0';
---  dio_out(0)             <= pps;
---  dio_oe_n_o(0)          <= '0';
---  dio_oe_n_o(4 downto 1) <= (others => '0');
+--      CONTROL => CONTROL,
+--      CLK     => clk_sys,
+--      TRIG0   => TRIG0,
+--      TRIG1   => TRIG1,
+--      TRIG2   => TRIG2,
+--      TRIG3   => TRIG3);
 --
---  dio_onewire_b <= '0' when owr_en(1) = '1' else 'Z';
---  owr_i(1)      <= dio_onewire_b;
+--  chipscope_icon_1 : chipscope_icon
+--    port map (
+--      CONTROL0 => CONTROL
+--      );
 --
---  dio_term_en_o <= (others => '0');
+--  -- Genumm wb bus
+--  TRIG2(18 downto 0)  <= cbar_slave_i.adr (18 downto  0);
+--  TRIG2(19)           <= cbar_slave_i.stb; 
+--  --TRIG2(20)           <= cbar_slave_i.dat;
+--  TRIG2(21)           <= cbar_slave_i.cyc;
+--  TRIG2(22)           <= cbar_slave_i.we;
+--  TRIG2(26 downto 23) <= cbar_slave_i.sel;
+--  TRIG2(27)           <= cbar_slave_o.ack;
+--  TRIG2(28)           <= cbar_slave_o.stall; 
+--  
+--  -- Global interrupts
+--  TRIG2(30 downto 29) <= GPIO(1 downto 0);
+--  TRIG2(31)           <= vic_irq;
+--  
+--  -- DIO wb bus
+--  TRIG3(18 downto 0)  <= cbar_master_o(4).adr (18 downto  0);
+--  TRIG3(19)           <= cbar_master_o(4).stb; 
+--  --TRIG3(20)           <= cbar_master_o(4).dat;
+--  TRIG3(21)           <= cbar_master_o(4).cyc;
+--  TRIG3(22)           <= cbar_master_o(4).we;
+--  TRIG3(26 downto 23) <= cbar_master_o(4).sel;
+--  TRIG3(27)           <= cbar_master_i(4).ack;
+--  TRIG3(28)           <= cbar_master_i(4).stall;
 --
---  dio_sdn_ck_n_o <= '1';
---  dio_sdn_n_o    <= '1';
-
-
-  --chipscope_ila_1 : chipscope_ila
-  --  port map (
-  --    CONTROL => CONTROL,
-  --    CLK     => clk_sys,
-  --    TRIG0   => TRIG0,
-  --    TRIG1   => TRIG1,
-  --    TRIG2   => TRIG2,
-  --    TRIG3   => TRIG3);
-
-  --chipscope_icon_1 : chipscope_icon
-  --  port map (
-  --    CONTROL0 => CONTROL
-  --    );
-
-  --TRIG0             <= cbar_slave_i.adr;
-  --TRIG1             <= cbar_slave_i.dat;
-  --TRIG2(0)          <= cbar_slave_i.cyc;
-  --TRIG2(1)          <= cbar_slave_i.stb;
-  --TRIG2(2)          <= cbar_slave_i.we;
-  --TRIG2(6 downto 3) <= cbar_slave_i.sel;
-  --TRIG2(7)          <= cbar_slave_o.ack;
-  --TRIG2(8)          <= cbar_slave_o.stall;
-  --TRIG2(9)          <= cbar_master_o(0).cyc;
-  --TRIG2(10)         <= cbar_master_o(1).cyc;
-  --TRIG2(11)         <= cbar_master_o(2).cyc;
-  --TRIG2(12)         <= cbar_master_o(3).cyc;
-  --TRIG2(13)         <= cbar_master_o(4).cyc;
-  --TRIG3             <= cbar_master_i(0).dat;
+--  -- Peripherals interrupts
+--  TRIG3(29)           <= vic_slave_irq(0);
+--  TRIG3(30)           <= vic_slave_irq(1);
+--  TRIG3(31)           <= vic_slave_irq(2);
   
 end rtl;
 
