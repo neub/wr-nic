@@ -62,7 +62,7 @@ architecture rtl of immed_pulse_counter is
   
   -- Signal for synchronization (in fact they are not so necessary for current system...)
   signal pulse_start_d0, pulse_start_d1, pulse_start_d2, pulse_start_d3 : std_logic; 
-  signal nozerolength                                                   : boolean; 
+  signal nozerolength, nozerolength_aux                                 : boolean; 
   
   -- Aux
   constant zeros : std_logic_vector(pulse_length_width-1 downto 0) := (others=>'0');  
@@ -83,8 +83,9 @@ begin  -- architecture rtl
 		pulse_start_d1<=pulse_start_d0;
 		pulse_start_d2<=pulse_start_d1;
 	   pulse_start_d3<=pulse_start_d2;
+		nozerolength_aux<=pulse_length_i/=zeros;
 		if (pulse_start_d2='1' and pulse_start_d1='0') then
-			nozerolength<=pulse_length_i/=zeros;
+			nozerolength<=nozerolength_aux;
 		end if;
     end if;		
   end process;  

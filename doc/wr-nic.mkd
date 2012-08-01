@@ -1,6 +1,6 @@
 % White-Rabbit  NIC Gateware
 % Javier Díaz, UGR-7S
-% 21 Jun. 2012
+% 30 Jul. 2012
 
 Introduction
 =========================
@@ -33,7 +33,7 @@ The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the int
 * The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is include to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
 
 In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works.   
-Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources.
+Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources (in fact it could be required to reduce blockram utilization, for instance of NIC or wr_core module in order to use Chipscope on the project, otherwise design is overmapped). 
 
 WRPC (White Rabbit PTP Core)
 ----------------------------
@@ -143,18 +143,18 @@ This project could be used as starting demo with White-Rabbit technology, illust
 
 * Applications examples. 
 
-Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe their functionalities. Please read that document in order to have a global understanding of the NIC project. 
+Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe them with further details. Please read that document in order to have a complete understanding of the NIC project. 
 
 Finally, as working examples, current release already provide the following applications: 
 
-* Simple transmission of timing information from the master to the slave, with nothing hooked to the external inputs of the boards. 
-	* The master host could be configured as grandmasters (if external PPS and 10 MHz signal is available from GPS or Cesium clock) or just work as simple master (free-running). 
+* Simple transmission of timing information from the master to the slave, with nothing necessarily hooked to the external inputs of the boards. 
+	* The master host could be configured as grandmaster (if external PPS and 10 MHz signal is available from GPS or Cesium clock) or just work as simple master (free-running). 
 	* The slave host schedule a pulse output each second. Looking at the outputs on a scope we should see them perfectly aligned.
 
 * Network latency measurements. This is interesting if we connect a switch between the SPEC cards. By using the timestamps on Ethernet frames we could get the measurement of the network latency, verify it it is constant or how traffic affect this parameter. 
 
 
-Many other options are possible. For instance, we could transmit an external frequency and schedule a similar output with a fixed delay on both nodes. We should be able to see  a constant time offset between the two pulses on the scope. New examples will be added on next releases.  
+Many other options are possible. For instance, we could transmit an external frequency and schedule a similar output with a fixed delay on other nodes. We should be able to see  a constant time offset between the two pulses on the scope. Examples like this could be added on next releases.  
 
 
 Troubleshooting

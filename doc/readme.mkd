@@ -18,7 +18,7 @@ pandoc --toc -o wr-nic.pdf wr-nic.mkd
 Additional info
 =====================
 
-Find peripherals register map from wbgen2 tool on NIC_peripheral_registers compressed file. 
+Find peripherals register map from wbgen2 tool on  file NIC_peripheral_registers.tar.gz. 
 
 Problems?
 ------------

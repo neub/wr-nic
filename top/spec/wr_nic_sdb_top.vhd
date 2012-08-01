@@ -64,16 +64,33 @@ use IEEE.NUMERIC_STD.all;
 library UNISIM;
 use UNISIM.vcomponents.all;
 
-library work;
-use work.wishbone_pkg.all;
+--library work;
+--use work.wishbone_pkg.all;
+--use work.gn4124_core_pkg.all;
+--use work.gencores_pkg.all;
+--use work.wrcore_pkg.all;
+--use work.wr_fabric_pkg.all;
+--use work.endpoint_pkg.all;
+--use work.genram_pkg.all;
+--use work.wr_xilinx_pkg.all;
+--use work.wrnic_sdb_pkg.all;
+
+
 use work.gn4124_core_pkg.all;
 use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
-use work.wrsw_txtsu_pkg.all;
-use work.genram_pkg.all;
 use work.wr_xilinx_pkg.all;
+--use work.etherbone_pkg.all;
+
+--library UNISIM;
+--use UNISIM.vcomponents.all;
+
+library work;
+use work.wishbone_pkg.all;
+use work.endpoint_pkg.all;
 use work.wrnic_sdb_pkg.all;
+
 
 entity wr_nic_sdb_top is
   generic
@@ -143,7 +160,7 @@ entity wr_nic_sdb_top is
       button1_i : in std_logic;
       button2_i : in std_logic;
 
-      thermo_id : inout std_logic;      -- 1-Wire interface to DS18B20
+      thermo_id : inout std_logic;      -- 1-Wire interface to DS18B20 on SPEC
 
       -------------------------------------------------------------------------
       -- SFP pins
@@ -189,7 +206,7 @@ entity wr_nic_sdb_top is
 
       dio_scl_b : inout std_logic;
       dio_sda_b : inout std_logic;
-		-- dio_GA signals conneected to ground on SPEC board.  
+      -- dio_GA signals conneected to ground on SPEC board.  
 		
 
       -----------------------------------------
@@ -380,27 +397,29 @@ architecture rtl of wr_nic_sdb_top is
   end component;  --DIO core
 
 --  -- DEBUG STUFF
-  component chipscope_ila
-    port (
-      CONTROL : inout std_logic_vector(35 downto 0);
-      CLK     : in    std_logic;
-      TRIG0   : in    std_logic_vector(31 downto 0);
-      TRIG1   : in    std_logic_vector(31 downto 0);
-      TRIG2   : in    std_logic_vector(31 downto 0);
-      TRIG3   : in    std_logic_vector(31 downto 0));
-  end component;
+--  component chipscope_ila
+--    port (
+--      CONTROL : inout std_logic_vector(35 downto 0);
+--      CLK     : in    std_logic;
+--      TRIG0   : in    std_logic_vector(31 downto 0);
+--      TRIG1   : in    std_logic_vector(31 downto 0);
+--      TRIG2   : in    std_logic_vector(31 downto 0);
+--      TRIG3   : in    std_logic_vector(31 downto 0));
+--  end component;
+--
+--  component chipscope_icon
+--    port (
+--      CONTROL0 : inout std_logic_vector (35 downto 0));
+--  end component;
 
-  signal CONTROL : std_logic_vector(35 downto 0);
-  signal CLK     : std_logic;
-  signal TRIG0   : std_logic_vector(31 downto 0);
-  signal TRIG1   : std_logic_vector(31 downto 0);
-  signal TRIG2   : std_logic_vector(31 downto 0);
-  signal TRIG3   : std_logic_vector(31 downto 0);
+--  signal CONTROL : std_logic_vector(35 downto 0);
+--  signal CLK     : std_logic;
+--  signal TRIG0   : std_logic_vector(31 downto 0);
+--  signal TRIG1   : std_logic_vector(31 downto 0);
+--  signal TRIG2   : std_logic_vector(31 downto 0);
+--  signal TRIG3   : std_logic_vector(31 downto 0);
 
-  component chipscope_icon
-    port (
-      CONTROL0 : inout std_logic_vector (35 downto 0));
-  end component;
+
 
   ------------------------------------------------------------------------------
   -- Constants declaration
@@ -820,8 +839,8 @@ begin
       g_with_external_clock_input => true,
       g_aux_clks                  => 1,
       g_ep_rxbuf_size             => 1024,
-      g_dpram_initf               => "../../../wrpc-sw/wrc.ram",  -- Path to the lm32 file (wrc.ram) of the wrpc_sw repository
-      g_dpram_size                => 20480,
+      g_dpram_initf               => "../../../wrpc-sw/wrc.ram",  --Path to the lm32 file (wrc.ram) of the wrpc_sw repository
+      g_dpram_size                => 90112/4,-- 20480, it is the old value, it does not fit anymore 
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE)
     port map (
@@ -871,8 +890,8 @@ begin
       owr_en_o => owr_en,
       owr_i    => owr_i,
 
-      slave_i => cbar_master_o(0), -- cbar_slave_i, --
-      slave_o => cbar_master_i(0), -- cbar_slave_o, --
+      slave_i =>  cbar_master_o(0), --cbar_slave_i, --
+      slave_o =>  cbar_master_i(0), --cbar_slave_o, --
 
       wrf_src_o => nic_snk_in,
       wrf_src_i => nic_snk_out,
@@ -1071,7 +1090,7 @@ begin
 		dio_onewire_b  => dio_onewire_b,
       dio_sdn_n_o    => dio_sdn_n_o,
       dio_sdn_ck_n_o => dio_sdn_ck_n_o,
-		dio_led_top_o  => dio_led_top_o,
+      dio_led_top_o  => dio_led_top_o,
       dio_led_bot_o  => dio_led_bot_o,
 
     --  dio_scl_b => dio_scl_b,
@@ -1083,13 +1102,13 @@ begin
       tm_cycles_i     => tm_cycles,      
 
       slave_i         => cbar_master_o(4),
-      slave_o         => cbar_master_i(4),
+      slave_o         => cbar_master_i(4)
 		
 		-- Chipscope, debugging signals
-      TRIG0           => TRIG0,
-      TRIG1           => TRIG1
-      --TRIG2           => TRIG2,
-      --TRIG3           => TRIG3,		
+--      TRIG0           => TRIG0,
+--      TRIG1           => TRIG1
+--      TRIG2           => TRIG2,
+--      TRIG3           => TRIG3,		
   );
   
   gen_dio_iobufs : for i in 0 to 4 generate
@@ -1122,7 +1141,7 @@ begin
 -- .............................................
 -- ............... DEBUGGING ...................
 -- .............................................
-
+--
 --  chipscope_ila_1 : chipscope_ila
 --    port map (
 --      CONTROL => CONTROL,
@@ -1151,15 +1170,15 @@ begin
 --  TRIG2(30 downto 29) <= GPIO(1 downto 0);
 --  TRIG2(31)           <= vic_irq;
 --  
---  -- DIO wb bus
---  TRIG3(18 downto 0)  <= cbar_master_o(4).adr (18 downto  0);
---  TRIG3(19)           <= cbar_master_o(4).stb; 
+--  -- crossbar slaves wb bus (0 wrpc, 4 dio, ...)
+--  TRIG3(18 downto 0)  <= cbar_master_o(0).adr (18 downto  0);
+--  TRIG3(19)           <= cbar_master_o(0).stb; 
 --  --TRIG3(20)           <= cbar_master_o(4).dat;
---  TRIG3(21)           <= cbar_master_o(4).cyc;
---  TRIG3(22)           <= cbar_master_o(4).we;
---  TRIG3(26 downto 23) <= cbar_master_o(4).sel;
---  TRIG3(27)           <= cbar_master_i(4).ack;
---  TRIG3(28)           <= cbar_master_i(4).stall;
+--  TRIG3(21)           <= cbar_master_o(0).cyc;
+--  TRIG3(22)           <= cbar_master_o(0).we;
+--  TRIG3(26 downto 23) <= cbar_master_o(0).sel;
+--  TRIG3(27)           <= cbar_master_i(0).ack;
+--  TRIG3(28)           <= cbar_master_i(0).stall;
 --
 --  -- Peripherals interrupts
 --  TRIG3(29)           <= vic_slave_irq(0);
