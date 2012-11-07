@@ -36,7 +36,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all; 
+use ieee.numeric_std.all;
 
 entity pulse_gen_pl is
   
@@ -75,14 +75,14 @@ entity pulse_gen_pl is
     -- latch it in
     trig_utc_i      : in std_logic_vector(39 downto 0);
     trig_cycles_i   : in std_logic_vector(27 downto 0);
-    trig_valid_p1_i : in std_logic; 
+    trig_valid_p1_i : in std_logic;
     pulse_length_i  : in std_logic_vector(27 downto 0)
-);
+    );
 
 end pulse_gen_pl;
 
 architecture rtl of pulse_gen_pl is
- 
+
   -- Internal registers to hold trigger time and pulse duration
   signal trig_utc, trig_utc_ref         : std_logic_vector(39 downto 0);
   signal trig_cycles, trig_cycles_ref   : std_logic_vector(27 downto 0);
@@ -90,38 +90,31 @@ architecture rtl of pulse_gen_pl is
 
   -- Signals for the synchronizer
   signal trig_valid_sys_d1, trig_valid_sys_d2 : std_logic;
-  signal rst_from_sync, rst_from_sync_d1 : std_logic;
-  signal trig_valid_ref : std_logic_vector(2 downto 0);
-  signal trig_valid_back : std_logic_vector(2 downto 0);
-  signal trig_valid_ref_p1 : std_logic;
+  signal rst_from_sync, rst_from_sync_d1      : std_logic;
+  signal trig_valid_ref                       : std_logic_vector(2 downto 0);
+  signal trig_valid_back                      : std_logic_vector(2 downto 0);
+  signal trig_valid_ref_p1                    : std_logic;
 
   -- Aux
-  constant zeros      : std_logic_vector(27 downto 0) := (others=>'0');  
-  signal counter      : unsigned (27 downto 0); 
-  signal nozerolength : boolean; 
+  constant zeros        : std_logic_vector(27 downto 0) := (others => '0');
+  signal   counter      : unsigned (27 downto 0);
+  signal   nozerolength : boolean;
   
 begin  -- architecture rtl
 
   -- Get trigger time into internal registers
-  trig_regs: process (clk_sys_i) is
+  trig_regs : process (clk_sys_i) is
   begin  -- process trig_regs
     if clk_sys_i'event and clk_sys_i = '1' then
-     if rst_n_i='0' then
-      trig_utc     <= (others=>'0');
-      trig_cycles  <= (others=>'0');
-     	pulse_length <= (others=>'0');
-	  elsif trig_valid_p1_i='1' then
-	    if trig_cycles_i=zeros then 
-  	    -- Delay 1 sys_ref tick time trigger to match pulse generation at exact time
-	    -- (otherwise 1 clock cycle delay is presented)
-              trig_utc     <= std_logic_vector(unsigned(trig_utc_i)-to_unsigned(1,trig_utc'length));
-              trig_cycles  <= (others=>'1');
-	    else
-              trig_utc     <= trig_utc_i;
-              trig_cycles  <= std_logic_vector(unsigned(trig_cycles_i)-to_unsigned(1,trig_cycles'length));
-	    end if;
-	    pulse_length <= pulse_length_i;
-     end if; 
+      if rst_n_i = '0' then
+        trig_utc     <= (others => '0');
+        trig_cycles  <= (others => '0');
+        pulse_length <= (others => '0');
+      elsif trig_valid_p1_i = '1' then
+        trig_utc     <= trig_utc_i;
+        trig_cycles  <= trig_cycles_i;
+        pulse_length <= pulse_length_i;
+      end if;
     end if;
   end process trig_regs;
 
@@ -129,74 +122,74 @@ begin  -- architecture rtl
   -- This synchronizer is made with the following four processes
 
   -- First one FF with async reset, still in the clk_sys_i domain
-  sync_first_ff: process (clk_sys_i, rst_n_i, rst_from_sync)
+  sync_first_ff : process (clk_sys_i, rst_n_i, rst_from_sync)
   begin
-   if rst_n_i='0' or rst_from_sync='1' then
-     trig_valid_sys_d1 <= '0';
-   elsif clk_sys_i'event and clk_sys_i='1' then
-     if trig_valid_p1_i='1' then
-       trig_valid_sys_d1 <= '1';
-     end if;
-   end if;
+    if rst_n_i = '0' or rst_from_sync = '1' then
+      trig_valid_sys_d1 <= '0';
+    elsif clk_sys_i'event and clk_sys_i = '1' then
+      if trig_valid_p1_i = '1' then
+        trig_valid_sys_d1 <= '1';
+      end if;
+    end if;
   end process sync_first_ff;
 
   -- OK this is just for the UTC and cycle registers to have time to settle
   -- in the pathological case of a very fast ref clock and very long
   -- combinational delays in the UTC and cycle registers
-  delay_sys: process (clk_sys_i)
+  delay_sys : process (clk_sys_i)
   begin
-   if clk_sys_i'event and clk_sys_i='1' then
-     trig_valid_sys_d2 <= trig_valid_sys_d1;
-   end if;
+    if clk_sys_i'event and clk_sys_i = '1' then
+      trig_valid_sys_d2 <= trig_valid_sys_d1;
+    end if;
   end process delay_sys;
 
   -- Then three FFs to take the strobe safely into the clk_ref_i domain
-  sync_ref: process (clk_ref_i)
+  sync_ref : process (clk_ref_i)
   begin
-   if clk_ref_i'event and clk_ref_i='1' then
-    trig_valid_ref <= trig_valid_ref(1 downto 0) & trig_valid_sys_d2;
-    trig_valid_ref_p1 <= trig_valid_ref(1) and not trig_valid_ref(2);
-   end if;
+    if clk_ref_i'event and clk_ref_i = '1' then
+      trig_valid_ref    <= trig_valid_ref(1 downto 0) & trig_valid_sys_d2;
+      trig_valid_ref_p1 <= trig_valid_ref(1) and not trig_valid_ref(2);
+    end if;
   end process sync_ref;
 
   -- And then back into the clk_sys_i domain
-  sync_sys: process (clk_sys_i)
+  sync_sys : process (clk_sys_i)
   begin
-   if clk_sys_i'event and clk_sys_i='1' then
-     trig_valid_back <= trig_valid_back(1 downto 0) & trig_valid_ref(2);
-     rst_from_sync <= trig_valid_back(2);
-     rst_from_sync_d1 <= rst_from_sync;
-   end if;
+    if clk_sys_i'event and clk_sys_i = '1' then
+      trig_valid_back  <= trig_valid_back(1 downto 0) & trig_valid_ref(2);
+      rst_from_sync    <= trig_valid_back(2);
+      rst_from_sync_d1 <= rst_from_sync;
+    end if;
   end process sync_sys;
 
   -- Now get the trig registers into the clk_ref_i domain
-  trig_regs_ref: process (clk_ref_i)
+  trig_regs_ref : process (clk_ref_i)
   begin
-   if clk_ref_i'event and clk_ref_i='1' then
-     if trig_valid_ref_p1='1' then
-      trig_utc_ref <= trig_utc;
-      trig_cycles_ref <= trig_cycles;
-		pulse_length_ref <= pulse_length;
-		nozerolength<=pulse_length /= zeros;
-     end if;
-   end if;
+    if clk_ref_i'event and clk_ref_i = '1' then
+      if trig_valid_ref_p1 = '1' then
+        trig_utc_ref     <= trig_utc;
+        trig_cycles_ref  <= trig_cycles;
+        pulse_length_ref <= pulse_length;
+        nozerolength     <= pulse_length /= zeros;
+      end if;
+    end if;
   end process trig_regs_ref;
 
   -- Notify we're ready to receive another trigger time write
   -- Having the reset set trig_ready_o to '1' is a kludge.
   -- A proper state machine would be better.
-  ready_for_trig: process (rst_n_i, clk_sys_i)
+  ready_for_trig : process (rst_n_i, clk_sys_i)
   begin
-   if rst_n_i='0' then
-     trig_ready_o <= '1';
-   elsif clk_sys_i'event and clk_sys_i='1' then
-     if trig_valid_p1_i='1' then
-       trig_ready_o <= '0';
-     elsif rst_from_sync_d1='1' and rst_from_sync='0' then
-     -- falling edge of reset_from_sync
-       trig_ready_o <= '1';
-     end if;
-   end if;
+    if rst_n_i = '0' then
+      trig_ready_o <= '1';
+    elsif clk_sys_i'event and clk_sys_i = '1' then
+      if trig_valid_p1_i = '1' then
+        trig_ready_o <= '0';
+      elsif rst_from_sync_d1 = '1' and rst_from_sync = '0' then
+        -- falling edge of reset_from_sync
+        trig_ready_o <= '1';
+      end if;
+    end if;
   end process ready_for_trig;
 
   -- Produce output
@@ -205,22 +198,22 @@ begin  -- architecture rtl
   -- in the output after startup.
   -- This block actually creates a pulse pulse_length ticks when the programmed
   -- time matches the current time.
-  gen_out: process (rst_n_i, clk_ref_i)
+  gen_out : process (rst_n_i, clk_ref_i)
   begin
-   if rst_n_i='0' then
-    pulse_o <= '0';
-   elsif clk_ref_i'event and clk_ref_i='1' then
-    if tm_time_valid_i ='0' then
+    if rst_n_i = '0' then
       pulse_o <= '0';
-    elsif tm_utc_i=trig_utc_ref and tm_cycles_i=trig_cycles_ref and nozerolength then
-      pulse_o <= '1';
-	  	counter <=unsigned(pulse_length_ref)-1;
-	 elsif counter/=0 then
-		counter<=counter-1;
-    else
-      pulse_o <= '0';
+    elsif clk_ref_i'event and clk_ref_i = '1' then
+      if tm_time_valid_i = '0' then
+        pulse_o <= '0';
+      elsif tm_utc_i = trig_utc_ref and tm_cycles_i = trig_cycles_ref and nozerolength then
+        pulse_o <= '1';
+        counter <= unsigned(pulse_length_ref)-1;
+      elsif counter /= 0 then
+        counter <= counter-1;
+      else
+        pulse_o <= '0';
+      end if;
     end if;
-   end if;
   end process gen_out;
   
 end architecture rtl;
