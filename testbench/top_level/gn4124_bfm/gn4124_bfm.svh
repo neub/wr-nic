@@ -163,6 +163,8 @@ GN412X_BFM
 
    task automatic readback(ref uint64_t value);
       @(posedge cmd_rddata_valid);
+      $display("Rdbk: %x", cmd_rddata);
+      
       value = cmd_rddata;
       @(negedge cmd_rddata_valid);
      endtask // readback
@@ -185,6 +187,8 @@ class CBusAccessor_Gennum extends CBusAccessor;
       
       for(i=0;i<addr.size();i++)
         begin
+           $display("GN-write %x %x\n", addr[i], data[i]);
+           
            $sformat(cmd,"wr FF000000%08X F %08X", addr[i], data[i]);
            send_cmd(cmd);
         end
@@ -195,6 +199,8 @@ class CBusAccessor_Gennum extends CBusAccessor;
       int    i;
       uint64_t tmp;
       
+
+      $display("rd %x\n", addr[0]);
       
 
       if(size != 4)
@@ -203,10 +209,10 @@ class CBusAccessor_Gennum extends CBusAccessor;
       for(i=0;i<addr.size();i++)
         begin
            $sformat(cmd,"rd FF000000%08X F", addr[i]);
-           fork
+         //  fork
            send_cmd(cmd);
            readback(tmp);
-           join
+         //  join
            
            data[i] = tmp;
            
