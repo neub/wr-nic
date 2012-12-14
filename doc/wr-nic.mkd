@@ -5,20 +5,20 @@
 Introduction
 =========================
 The White-Rabbit Network Interface Card  (WR-NIC) project is concerned with the development of gateware and software to make the combination of a SPEC and a DIO mezzanine behave as a Network Interface Card (NIC) under Linux. Basic demo uses two SPEC boards, one configured as grandmaster and one as slave. Different  simple use cases will be provided as basic demo.  
-This document focus on the description of the project gateware. This manual is part of the associated hardware project, hosted at http://www.ohwr.org/projects/wr-nic/repository, whose git repository hosts the latest version.
+This document focus on the description of the project gateware. This manual is part of the associated hardware project, hosted at <http://www.ohwr.org/projects/wr-nic/repository>, whose git repository hosts the latest version.
 
 ![Basic wr-nic project elements](./img/wrnic_components.png)
 
 Note that the WR-NIC project inherits many code and working methodology of many other projects. Specially important to highly the following ones: 
 
-1. White-Rabbit core collection: `http://www.ohwr.org/projects/wr-cores` (wishbonized branch). Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU, WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
-2. Software for White-Rabbit PTP core: `http://www.ohwr.org/projects/wrpc-sw` (a subproject of the previous one)
-3. Gennum GN4124 core: `http://www.ohwr.org/projects/gn4124-core` 
-4. The platform independent core collection: `http://www.ohwr.org/projects/general-cores`. An important one is the Wishbone crossbar with is download at the DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone. 
+1. White-Rabbit core collection: <http://www.ohwr.org/projects/wr-cores> (wishbonized branch). Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU, WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
+2. Software for White-Rabbit PTP core: <http://www.ohwr.org/projects/wrpc-sw> (a subproject of the previous one)
+3. Gennum GN4124 core: <http://www.ohwr.org/projects/gn4124-core> 
+4. The platform independent core collection: <http://www.ohwr.org/projects/general-cores>. An important one is the Wishbone crossbar with is download at the `DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone`. 
 
 In addition to these project, software support is provided from the project: 
-1. Software (driver, fmc-bus and NIC working examples) `http://www.ohwr.org/projects/spec-sw/wiki`. This projects requires a "golden  FPGA gateware" (spec-init.bin) which is available at `http://www.ohwr.org/projects/spec/repository/show/trunk/hdl/golden`
-2. Starting kit tutorial. A quick overview about the global project (mainly driver and applications examples). It is available in the documentation folder of this project.  
+1. Software (driver, fmc-bus and NIC working examples) <http://www.ohwr.org/projects/spec-sw>. This projects requires a "golden  FPGA gateware" (spec-init.bin) which is available at <http://www.ohwr.org/projects/spec-sw/files>
+2. Starting kit tutorial. A quick overview about the global project (mainly tutorials and applications examples). It is available at 
 
 
 Gateware elements
@@ -52,11 +52,11 @@ The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible th
 
 In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 8 ns. 
 
-Please note that the current gateware contains the LM32 firmware (so the FPGA . Latest version is available at: `http://www.ohwr.org/projects/wrpc-sw/repository`. Gateware the wrc.ram file produced after firmware compilation. 
+Please note that the current gateware contains the LM32 firmware (so the FPGA) . The embedded binary corresponds to the `wr-nic-v1.0` release available at: <http://www.ohwr.org/projects/wrpc-sw/repository>. 
 
 It is important to remark that for this release the I2C bus of the FMC-DIO card is connected to WRPC. This is needed because current implementation of WRPC store configuration data on the FMC-DIO card EEPROM. Please be aware that for future releases this could change. 
  
-The whole description of the core goes beyond the scope of this documentation but the additional information is available at: `http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_core` and in: 
+The whole description of the core goes beyond the scope of this documentation but the additional information is available at: <http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_core> and in: 
 
 G. Daniluk, White Rabbit PTP Core the sub-nanosecond time synchronization over Ethernet, 2012.
 M.Sc thesis describing the development and implementation of the first standalone HDL module handling the sub-nanosecond synchronization over a regular Ethernet - the White Rabbit PTP Core.
@@ -99,7 +99,7 @@ Any address within this memory space may be addressed by the PC to configure cor
 DIO core utilization
 --------------------
 
-The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an output signals immediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All this elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: http://www.ohwr.org/projects/fmc-dio-5chttla
+The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an output signals immediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All this elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: <http://www.ohwr.org/projects/fmc-dio-5chttla>
 Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging. Outputs need to be generated align on 8 ns time-slices but their time-stamps values have subnanosecond accuracy thanks to the White-Rabbit timing properties. 
 
 In order to use input/output channels as previously described, the following actions are required:  
@@ -139,6 +139,74 @@ Please note that each peripheral generating interrupts has own interrupts regist
 For instance for the DIO core, please check the status of interrupt registers by looking at `wr_nic.wb ` as previously described. 
 
 
+How to synthetize it?
+==================
+
+You first step is to obtain the `wrc.ram` that you need to embedded in your HDL,
+then you can synthetize the gateware.
+
+WRPC-SW (LM32 firmware)
+-----------------------
+
+You can download it from <http://www.ohwr.org/projects/wr-nic/files> or you can try to compile it following the instructions below:
+
+You should first installed the **lm32** compiler as suggested in [wrpc.pdf], then you can compile executing the following commands:
+
+~~~~~~{.bash}
+#Set up CROSS_COMPILE variable for this terminal
+export CROSS_COMPILE="<your_path_to_lm32>/lm32/bin/lm32-elf-";
+
+#Clone the repository
+$ git clone git://ohwr.org/hdl-core-lib/wr-cores/wrpc-sw.git 
+$ git checkout -b wr-nic-v1.0 wr-nic-v1.0 
+$ cd wrpc-sw
+~~~~~~~~~~
+
+And finally configure & compile it
+
+~~~~~~{.bash}
+# Configuring the project for SPEC
+$ make wrnic_defconfig
+
+# Compile
+$ make
+~~~~~~~~~~
+
+You should obtain various files named wrc.bin, wrc.elf, wrc.vhd, wrc.ram
+
+
+> ***Notes***: These steps are a simple resume on how to compile the 
+firware specifically for the wr-nic, you should also look at the [wrpc.pdf] to understand how to use it
+and how to compile for other configurations.
+
+	
+WR-NIC (HDL-gateware)
+----------------------
+
+The final step is to prepare the WR-NIC bitstream (SPEC+FMC DIO) with 
+the wrpc-sw embeded inside.
+
+
+~~~~~~{.bash}
+## Checkout the code
+git clone git://ohwr.org/white-rabbit/wr-nic.git
+git checkout -b wr-nic-v1.0 wr-nic-v1.0
+
+## Import the wrc.ram from wrpc-sw to the wr-nic project
+cp wrpc-sw/wrc.ram wr-nic/syn/spec/
+
+## Go to the main directory
+cd wr-nic/syn/spec/
+
+## Synthetize using hdlmake
+hdlmake --fetch
+hdlmake --fetch
+hdlmake -l
+~~~~~~~~~~~	
+
+you should finally obtain the bitstream to import in your fmc driver folder.
+
+
 Software support and applications
 =================================
 
@@ -159,7 +227,7 @@ There are some considerations about the gateware properties that need to be well
 
 * Properly setting of interrupts registers or wrong memory maps are the typical errors at this stage. Please check it carefully.   
 
-* Please verify that the embedded LM32 processor has been loaded with the corresponding software (WRC.RAM file on the project folder) and it runs on the proper mode (slave or master). Otherwise time information will not be available and therefore time-stamping information and programmable outputs will not be able to run properly. The software manual provide information about how to program the softprocessor and verify its right behavior.
+* Please verify that the embedded LM32 processor has been loaded with the correct firmware (`wrc.ram` file on the project folder) and it runs on the proper mode (slave or master). Otherwise time information will not be available and therefore time-stamping information and programmable outputs will not be able to run properly. The software manual provide information about how to program the softprocessor and verify its right behavior.
 
 * The programmable output does not support buffering mode. Therefore, if one output is programmed, user should avoid to reprogramming until output pulse has been done. Otherwise, previous pulse will be lost. This is implemented as it to simplify the hardware and specifications (current functionality works well for our simple illustrative applications examples). Nevertheless it should be taken into account if you develop your own application. 
 
@@ -169,6 +237,13 @@ There are some considerations about the gateware properties that need to be well
 
 
 Further information will be provided in future releases.   
+
+
+
+[wr-nic]: http://www.ohwr.org/projects/wr-nic/
+[spec-sw]: http://www.ohwr.org/projects/spec-sw/
+[wrpc-sw]: http://www.ohwr.org/projects/wrpc-sw/
+[wrpc.pdf]: http://www.ohwr.org/attachments/download/1586/wrpc-v2.0.pdf
 
 
  
