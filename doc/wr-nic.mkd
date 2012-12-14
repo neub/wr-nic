@@ -1,6 +1,6 @@
 % White-Rabbit  NIC Gateware
-% Javier Díaz, UGR-7S
-% 30 Jul. 2012
+% Javier Díaz Univ. of Granada, Rafael Rodriguez Seven Solutions
+% 14 Dec. 2012
 
 Introduction
 =========================
@@ -15,6 +15,11 @@ Note that the WR-NIC project inherits many code and working methodology of many 
 2. Software for White-Rabbit PTP core: `http://www.ohwr.org/projects/wrpc-sw` (a subproject of the previous one)
 3. Gennum GN4124 core: `http://www.ohwr.org/projects/gn4124-core` 
 4. The platform independent core collection: `http://www.ohwr.org/projects/general-cores`. An important one is the Wishbone crossbar with is download at the DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone. 
+
+In addition to these project, software support is provided from the project: 
+1. Software (driver, fmc-bus and NIC working examples) `http://www.ohwr.org/projects/spec-sw/wiki`. This projects requires a "golden  FPGA gateware" (spec-init.bin) which is available at `http://www.ohwr.org/projects/spec/repository/show/trunk/hdl/golden`
+2. Starting kit tutorial. A quick overview about the global project (mainly driver and applications examples). It is available in the documentation folder of this project.  
+
 
 Gateware elements
 =====================
@@ -143,28 +148,27 @@ This project could be used as starting demo with White-Rabbit technology, illust
 
 * Applications examples. 
 
-Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe them with further details. Please read that document in order to have a complete understanding of the NIC project. 
+Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe them with further details. The corresponding links are provided at the introduction section of this document. Please read that document in order to have a complete understanding of the NIC project. 
 
-Finally, as working examples, current release already provide the following applications: 
-
-* Simple transmission of timing information from the master to the slave, with nothing necessarily hooked to the external inputs of the boards. 
-	* The master host could be configured as grandmaster (if external PPS and 10 MHz signal is available from GPS or Cesium clock) or just work as simple master (free-running). 
-	* The slave host schedule a pulse output each second. Looking at the outputs on a scope we should see them perfectly aligned.
-
-* Network latency measurements. This is interesting if we connect a switch between the SPEC cards. By using the timestamps on Ethernet frames we could get the measurement of the network latency, verify it it is constant or how traffic affect this parameter. 
-
-
-Many other options are possible. For instance, we could transmit an external frequency and schedule a similar output with a fixed delay on other nodes. We should be able to see  a constant time offset between the two pulses on the scope. Examples like this could be added on next releases.  
 
 
 Troubleshooting
 ===============
 
-Properly setting of interrupts registers or wrong memory maps are the typical errors at this stage (in addition to HDL bugs!).   
+There are some considerations about the gateware properties that need to be well understood in order to avoid problems. They are:  
 
-Please verify that the embedded LM32 processor has been loaded with the corresponding software and it runs on the proper mode (slave or master). Otherwise time information will not be available and therefore time-stamping information and programmable outputs will not be able to run properly. The software manual provide information about how to program the softprocessor and verify its right behavior.
+* Properly setting of interrupts registers or wrong memory maps are the typical errors at this stage. Please check it carefully.   
 
-Further information will be provided.   
+* Please verify that the embedded LM32 processor has been loaded with the corresponding software (WRC.RAM file on the project folder) and it runs on the proper mode (slave or master). Otherwise time information will not be available and therefore time-stamping information and programmable outputs will not be able to run properly. The software manual provide information about how to program the softprocessor and verify its right behavior.
+
+* The programmable output does not support buffering mode. Therefore, if one output is programmed, user should avoid to reprogramming until output pulse has been done. Otherwise, previous pulse will be lost. This is implemented as it to simplify the hardware and specifications (current functionality works well for our simple illustrative applications examples). Nevertheless it should be taken into account if you develop your own application. 
+
+* Timestamping granularity of inputs DIO channel is limited to 8ns so there is not any error if further accuracy is not obtained. Nevertheless, note White-Rabbit will still synchronize the system clock with subnanosecond accuracy.  
+
+* Currently virtual UART is not running but it is expected to be solved very soon. 
+
+
+Further information will be provided in future releases.   
 
 
  
