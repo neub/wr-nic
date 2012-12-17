@@ -1,6 +1,25 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Pandoc Template used by Seven Solution to generate pdf from markdown
+%% files.
+%%
+%% Authors: 
+%%	- Benoit Rat (Seven Solutions, www.sevensols.com)
+%%
+%% GNU Lesser General Public License Usage
+%% This file may be used under the terms of the GNU Lesser
+%% General Public License version 2.1 as published by the Free Software
+%% Foundation and appearing in the file LICENSE.LGPL included in the
+%% packaging of this file.  Please review the following information to
+%% ensure the GNU Lesser General Public License version 2.1 requirements
+%% will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[a4paper,oneside,$if(fontsize)$$fontsize$,$endif$$if(lang)$$lang$,$endif$]{$documentclass$}
 \usepackage{amssymb,amsmath}
 \usepackage[left=2.2cm,right=2.2cm,top=3cm,bottom=3cm]{geometry}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Xetex.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usepackage{ifxetex,ifluatex}
 \ifxetex
@@ -15,30 +34,51 @@
   \fi
 \fi
 
-$if(natbib)$
-\usepackage{natbib}
-\bibliographystyle{plainnat}
+
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex,
+              colorlinks=true,
+              urlcolor=blue,
+              anchorcolor=blue,
+              linkcolor=blue]{hyperref}
+\else
+  \usepackage[unicode=true,
+              colorlinks=true,
+              linkcolor=blue]{hyperref}
+\fi
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Generic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+$if(url)$
+\usepackage{url}
 $endif$
-$if(biblatex)$
-\usepackage{biblatex}
-$if(biblio-files)$
-\bibliography{$biblio-files$}
-$endif$
-$endif$
+
+\usepackage{calc}
+\hypersetup{breaklinks=true, pdfborder={0 0 0}}
+\usepackage{pbox}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Environment for code formatting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 $if(listings)$
 \usepackage{listings}
 $endif$
 $if(lhs)$
-\lstnewenvironment{code}{\lstset{language=Haskell,basicstyle=\small\ttfamily}}{}
+\lstnewenvironment{code}
+{\lstset{language=Haskell,basicstyle=\small\ttfamily}}
+{}
 $endif$
 
-
-
 $if(bg-color)$
-%%%%%%%%%% Background color %%%%%%%%%%%%%%%%%%%%
-
-% redefine environment 'verbatim" which is used to hold the code of any language.
+% redefine env verbatim to be used to hold the code of any language.
 \usepackage{framed}
 \let\oldverbatim=\verbatim
 \renewenvironment{verbatim}
@@ -60,7 +100,15 @@ $if(bg-color)$
 % Add highlighting environment (when background color)
 $if(highlighting-macros)$
 	$highlighting-macros$
-	\renewenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+	\renewenvironment{Shaded}{
+	\begingroup
+    \fontsize{10pt}{12pt}\selectfont
+    \begin{snugshade}
+   	}
+   	{
+   		\end{snugshade}
+   		\endgroup
+   	}
 $endif$
 
 %% Define the background (shade) color
@@ -74,39 +122,37 @@ $else$
 	$endif$
 $endif$
 
+\usepackage{alltt}
 
-
-
-
+\let\oldquote=\quote
+\renewenvironment{quote}
+{
+\begingroup
+\sffamily %sans-serif font
+\slshape %slated (almost italic)
+\fontsize{10pt}{12pt}\selectfont
+}
+{ 
+\endgroup
+}
 
 
 $if(verbatim-in-note)$
 %\usepackage{fancyvrb}
 $endif$
 
-\usepackage{float}
 
-\usepackage{ctable}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Graphics & Tables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-$if(fancy-enums)$
-% Redefine labelwidth for lists; otherwise, the enumerate package will cause
-% markers to extend beyond the left margin.
-\makeatletter\AtBeginDocument{%
-  \renewcommand{\@listi}
-    {\setlength{\labelwidth}{4em}}
-}\makeatother
-\usepackage{enumerate}
-$endif$
-
+%% Tables
 $if(tables)$
 \usepackage{ctable}
 \usepackage{float} % provides the H option for float placement
 $endif$
 
-$if(url)$
-\usepackage{url}
-$endif$
-
+%% Images 
 \usepackage{graphicx}
 % We will generate all images so they have a width \maxwidth. This means
 % that they will get their normal width if they fit onto the page, but
@@ -116,29 +162,18 @@ $endif$
 \else\Gin@nat@width\fi}
 \makeatother
 \let\Oldincludegraphics\includegraphics
-\renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=\maxwidth]{#1}}
-
-$if(strikeout)$
-\usepackage[normalem]{ulem}
-% avoid problems with \sout in headers with hyperref:
-\pdfstringdefDisableCommands{\renewcommand{\sout}{}}
-$endif$
+\renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=\maxwidth,
+	height=7cm, keepaspectratio]{#1}}
 
 $if(subscript)$
 \newcommand{\textsubscr}[1]{\ensuremath{_{\scriptsize\textrm{#1}}}}
 $endif$
 
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{6pt plus 2pt minus 1pt}
-\setlength{\emergencystretch}{3em}  % prevent overfull lines
 
-$if(numbersections)$
-$else$
-\setcounter{secnumdepth}{0}
-$endif$
-$if(verbatim-in-note)$
-\VerbatimFootnotes % allows verbatim text in footnotes
-$endif$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lang (TODO: clean this, without breaking)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 $if(lang)$
 \ifxetex
@@ -151,36 +186,94 @@ $if(lang)$
 \fi
 $endif$
 
-\usepackage{calc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\usepackage{enumitem}
+
+$if(fancy-enums)$
+% Redefine labelwidth for lists; otherwise, the enumerate package will 
+% cause markers to extend beyond the left margin.
+\makeatletter\AtBeginDocument{%
+  \renewcommand{\@listi}
+    	{
+	\setlength{\labelwidth}{4em}
+	\leftmargin=25pt
+	\rightmargin=0pt
+	\labelsep=7pt
+	\labelwidth=20pt
+	\itemindent=0pt
+	\listparindent=0pt
+	\topsep=2pt plus 2pt minus 2pt
+	\partopsep=0pt plus 1pt minus 10pt
+	\parsep=1pt plus 1pt
+	\itemsep=\parsep
+	}
+}\makeatother
+\usepackage{enumerate}
+$endif$
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Chapters & Section
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% chapters
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+  {\normalfont\HUGE\bfseries}{\LARGE\thechapter.}{1ex}{}
+\titlespacing*{\chapter}{0pt}{-19pt}{0pt}
+
+
+% Sections
+$if(numbersections)$
+$else$
+\setcounter{secnumdepth}{0} 
+$endif$
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Footer & Header
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+$if(verbatim-in-note)$
+\VerbatimFootnotes % allows verbatim text in footnotes
+$endif$
+
+
 \usepackage{fancyhdr}
 \fancyhf{}
-
-%\fancyhead[R]{\nouppercase{\leftmark}}
-%%\fancyfoot[L]{ www.sevensols.com/whiterabbitsolution}% empty left
-%\fancyfoot[L]{\raisebox{-25pt}{\includegraphics{logo.png}}}
-%\fancyfoot[R]{\raisebox{-15pt}{\thepage}}
-
+\fancyhead[R]{\nouppercase{\leftmark}}
+\fancyfoot[L]{\footnotesize{$for(author)$$author$$sep$ \and $endfor$}}
+\fancyfoot[R]{\thepage}
 \pagestyle{fancy}                      % Sets fancy header and footer
 
 
-\ifxetex
-  \usepackage[setpagesize=false, % page size defined by xetex
-              unicode=false, % unicode breaks when used with xetex
-              xetex,
-              colorlinks=true,
-              urlcolor=blue,
-              anchorcolor=blue,
-              linkcolor=blue]{hyperref}
-\else
-  \usepackage[unicode=true,
-              colorlinks=true,
-              linkcolor=blue]{hyperref}
-\fi
-\hypersetup{breaklinks=true, pdfborder={0 0 0}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-$for(header-includes)$
-$header-includes$
-$endfor$
+$if(natbib)$
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+$endif$
+$if(biblatex)$
+\usepackage{biblatex}
+$if(biblio-files)$
+\bibliography{$biblio-files$}
+$endif$
+$endif$
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Title page (like texinfo)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 $if(title)$
 \title{$title$}
@@ -191,22 +284,6 @@ $endif$
 $if(date)$
 \date{$date$}
 $endif$
-
-% chapters
-\usepackage{titlesec}
-\titleformat{\chapter}[block]
-  {\normalfont\LARGE\bfseries}{\LARGE\thechapter.}{1ex}{}
-\titlespacing*{\chapter}{0pt}{-19pt}{0pt}
-
-\usepackage{pbox}
-
-% Less vertical space between list items
-\setlength{\itemsep}{0cm}
-% Less vertical space before a list
-\setlength{\topsep}{0cm}
-
-\setcounter{secnumdepth}{4}
-
 
 \makeatletter
 \def\thickhrulefill{\leavevmode \leaders \hrule height 1pt\hfill \kern \z@}
@@ -225,7 +302,7 @@ $endif$
     \begin{flushright}
       \large \@date \par
     \end{flushright}
-    \vskip 550\p@
+    \vskip 500\p@
     \vfil\null
     \begin{flushleft}
       \Large \textbf{\@author}
@@ -235,6 +312,9 @@ $endif$
   \setcounter{footnote}{0}%
 }
 \makeatother
+
+%======================================================================%
+%======================================================================%
 
 \begin{document}
 
@@ -247,6 +327,7 @@ $include-before$
 $endfor$
 
 $if(toc)$
+\setcounter{tocdepth}{2}
 \tableofcontents
 \clearpage
 $endif$
