@@ -187,8 +187,8 @@ export CROSS_COMPILE="<your_path_to_lm32>/lm32/bin/lm32-elf-";
 
 #Clone the repository
 $ git clone git://ohwr.org/hdl-core-lib/wr-cores/wrpc-sw.git 
-$ git checkout -b wr-nic-v1.0 wr-nic-v1.0 
 $ cd wrpc-sw
+$ git checkout -b wr-nic-v1.0 wr-nic-v1.0 
 ~~~~~~~~~~
 
 And finally configure & compile it
