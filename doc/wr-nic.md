@@ -5,19 +5,19 @@
 Introduction
 =========================
 The White-Rabbit Network Interface Card  (WR-NIC) project is concerned with the development of gateware and software to make the combination of a SPEC and a DIO mezzanine behave as a Network Interface Card (NIC) under Linux. Basic demo uses two SPEC boards, one configured as grandmaster and one as slave. Different  simple use cases will be provided as basic demo.  
-This document focus on the description of the project gateware. This manual is part of the associated hardware project, hosted at <http://www.ohwr.org/projects/wr-nic/repository>, whose git repository hosts the latest version.
+This document focuses on the description of the project gateware. This manual is part of the associated hardware project, hosted at <http://www.ohwr.org/projects/wr-nic/repository>, whose git repository hosts the latest version.
 
 ![Basic wr-nic project elements](./img/wrnic_components.png)
 
-Note that the WR-NIC project inherits many code and working methodology of many other projects. Specially important to highly the following ones: 
+Note that the WR-NIC project inherits many codes and working methodology of many other projects. Specially important to highly the following ones: 
 
 1. White-Rabbit core collection: <http://www.ohwr.org/projects/wr-cores> (wishbonized branch). Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU, WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
 2. Software for White-Rabbit PTP core: <http://www.ohwr.org/projects/wrpc-sw> (a subproject of the previous one)
 3. Gennum GN4124 core: <http://www.ohwr.org/projects/gn4124-core> 
-4. The platform independent core collection: <http://www.ohwr.org/projects/general-cores>. An important one is the Wishbone crossbar with is download at the `DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone`. 
+4. The platform independent core collection: <http://www.ohwr.org/projects/general-cores>. An important one is the Wishbone crossbar with is downloaded at the `DOWNLOAD_PATH/wr-cores/ip_cores/general-cores/modules/wishbone`. 
 
-In addition to these project, software support is provided from the project: 
-1. Software (driver, fmc-bus and NIC working examples) <http://www.ohwr.org/projects/spec-sw>. This projects requires a "golden  FPGA gateware" (spec-init.bin) which is available at <http://www.ohwr.org/projects/spec-sw/files>
+In addition to these projects, software support is provided from the project: 
+1. Software (driver, fmc-bus and NIC working examples) <http://www.ohwr.org/projects/spec-sw>. This project requires a "golden  FPGA gateware" (spec-init.bin) which is available at <http://www.ohwr.org/projects/spec-sw/files>
 2. Starting kit tutorial. A quick overview about the global project (mainly tutorials and applications examples). It is available at 
 
 
@@ -35,7 +35,7 @@ Here is a quick description of each block:
 The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the internal Wishbone bus, allowing communication with the host and interrupts --> pipelined version!
 * The `WRPC (White Rabbit PTP Core)` communicates with the outside world through the SFP socket in the SPEC, typically using fiber optics. It deals with the WR PTP using an internal LM32 CPU running a portable PTP stack. It forwards/receives non-PTP frames to/from the NIC block, using two pipelined Wishbone interfaces (master and slave for forwarding and receiving respectively). It also provides time information to other cores (not represented in the diagram), and time-tags for transmitted and received frames that can be read through Wishbone for diagnostics purposes. Future versions will include the PPSi library instead of the current PTP stack. 
 * The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
-* The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is include to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
+* The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is included to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
 
 In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works.   
 Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources (in fact it could be required to reduce blockram utilization, for instance of NIC or wr_core module in order to use Chipscope on the project, otherwise design is overmapped). 
@@ -44,7 +44,7 @@ WRPC (White Rabbit PTP Core)
 ----------------------------
 The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible the White-Rabbit timing functionalities on the White-Rabbit nodes. It is a black-box standalone WR-PTP protocol core, incorporating a CPU LM32, WR MAC and PLLs. It could be configure to work on 3 different operations modes:  
 
-* Grandmaster: WRPC locks to a external 10 MHz and PPS signal provided for instance from a Cesium clock / GPS. This signals are provided from the channel 4 (PPS) and channel 5 (10 MHz) lemo connectors of the DIO card.
+* Grandmaster: WRPC locks to an external 10 MHz and PPS signal provided for instance from a Cesium clock / GPS. This signals are provided from the channel 4 (PPS) and channel 5 (10 MHz) lemo connectors of the DIO card.
 
 * Master: the systems uses the VCO oscillators of the SPEC board basically on a free running modes. 
 
@@ -99,22 +99,22 @@ Any address within this memory space may be addressed by the PC to configure cor
 DIO core utilization
 --------------------
 
-The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an output signals immediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All this elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: <http://www.ohwr.org/projects/fmc-dio-5chttla>
+The DIO core, according to its architecture already shown, it allows to read input data of each of the 5 channel with precise time-tag information provided by the WRPTP core. It is also possible to program output at a precise time or we could just generate an output signals immediately. In addition, it is also possible to configure different boards elements as terminator resistors or reference voltage Level using the DAC. All these elements could be controlled independently for each of the 5 channels. More information about the different board configuration elements is available at: <http://www.ohwr.org/projects/fmc-dio-5chttla>
 Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging. Outputs need to be generated align on 8 ns time-slices but their time-stamps values have subnanosecond accuracy thanks to the White-Rabbit timing properties. 
 
 In order to use input/output channels as previously described, the following actions are required:  
 
-* Standard GPIO output generation is selected by default. In order to use monostable output (time-programmed or immediate), each channel should be properly configured written to the `dio_out_mode register`. A value of 1 indicates that channel will be used for programmable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
+* Standard GPIO output generation is selected by default. In order to use monostable output (time-programmed or immediate), each channel should be properly configured to the `dio_out_mode register`. A value of 1 indicates that channel will be used for programmable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
 
 * Time-programmable pulse generation: Generate a programmed input at any time at channel X (X between 0 and 4 identifies the requested channel). For this purpose you need to perform the following actions:
 	* Set the required time. This means to provide the 40 bits for the time value and the number of cycles (28 bits). This 		requires to write the registers `dio_trigX_seconds, dio_trighX_seconds` (high part of the time value) and `dio_cyc0_cyc`.
-	* Checking if the the board is ready for accepting new triggers. This can be done by reading a `1` found at each bit of `dio_trig_rdy` register. The EIC bits 9 to 5 have associated interrupts (active means system is ready to accept new trigger values (but please check you have properly configure EIC interrupt mask). Both methods are possible to check the status. Nevertheless note that the non-ready periods are very shorts (13 cycles of a 62.5 MHz clock, 208 ns) so systems is almost always ready for new trigger values. 
-	* Arming the trigger. You need to write a `1` a the corresponding bit of the `dio_latch_time_chX` bit field.  
+	* Checking if the board is ready for accepting new triggers. This can be done by reading a `1` found at each bit of `dio_trig_rdy` register. The EIC bits 9 to 5 have associated interrupts (active means system is ready to accept new trigger values but please check you have properly configured EIC interrupt mask). Both methods are possible to check the status. Nevertheless note that the non-ready periods are very shorts (13 cycles of a 62.5 MHz clock, 208 ns) so systems is almost always ready for new trigger values. 
+	* Arming the trigger. You need to write a `1` at the corresponding bit of the `dio_latch_time_chX` bit field.  
 	After these operations, an output with the programmed tick-length will be presented on the desired channel at the requested time. It is not necessary to do software reset to the register.   
 
-* Immediate pulse generation: A immediate pulse is generated a the output of each of the card channels just by writing a corresponding `1` at the bit field dio_pulse_imm_X when output mode is set to programmable outputs. No reset is required.
+* Immediate pulse generation: An immediate pulse is generated at the output of each of the card channels just by writing a corresponding `1` at the bit field dio_pulse_imm_X when output mode is set to programmable outputs. No reset is required.
 
-* Variable pulse length: both output modes, time-programmable as well as immediate allows to configure the output length. By writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register use the 28 low significant bits and allow a time duration equal to register_value x 8 ns.
+* Variable pulse length: both output modes, time-programmable as well as immediate allows to configure the output length. By writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register uses the 28 low significant bits and allow a time duration equal to register_value x 8 ns.
 
 * Input time-tagging: for each of the 5 inputs, if a `1` is detected at this channel, a precise time information is stored on logic FIFOs including the 40 bits time counters and 28 bits more for the cycles (fifo depth is 256 each one). Currently this information is collected even for pins configured in output mode, GPIO, immediate or time-programmable configurations but it is straightforward to change this at the HDL code. For accessing this information you need to read `dio_tsfX_tag_seconds` (32 low bits), `dio_tsfX_tag_secondsh` (high bits), `dio_tsfX_tag_cycles`. Each time the time tag of any channel is stored, the `fifo not empty` flag generates an interruption to the PC. In the next section we will describe these mechanisms. 
 
@@ -142,8 +142,37 @@ For instance for the DIO core, please check the status of interrupt registers by
 How to synthetize it?
 ==================
 
-You first step is to obtain the `wrc.ram` that you need to embedded in your HDL,
-then you can synthetize the gateware.
+In the WR-NIC project you will find a `wrc.ram` file which corresponds to the *LM32* firmware that we
+are going to embedded into our *HDL* gateware. It is not needed to recompile it, however if you want to modify the 
+lm32 behaviour you can look at the [WRPC](#wrpc-sw-lm32-firmware) section to check how to build it.
+
+
+	
+WR-NIC (HDL-gateware)
+----------------------
+
+This step show us how to prepare the WR-NIC bitstream (SPEC+FMC DIO) with 
+the wrpc-sw (`wrc.ram` file) embeded inside.
+
+
+~~~~~~{.bash}
+## Checkout the code
+git clone git://ohwr.org/white-rabbit/wr-nic.git
+cd wr-nic
+git checkout -b wr-nic-v1.0 wr-nic-v1.0
+
+## Go to the main directory
+cd wr-nic/syn/spec/
+
+## Synthetize using hdlmake
+hdlmake --fetch
+hdlmake --fetch
+hdlmake -l
+~~~~~~~~~~~	
+
+you should finally obtain the bitstream to import in your fmc driver folder.
+
+
 
 WRPC-SW (LM32 firmware)
 -----------------------
@@ -174,43 +203,24 @@ $ make
 
 You should obtain various files named wrc.bin, wrc.elf, wrc.vhd, wrc.ram
 
+You can therefore try to override it and go back to section [WR-NIC](#wr-nic-hdl-gateware).
+
+~~~~~{.bash}
+# Override the default embeded wrpc-sw 
+cp wrc.ram <wr_root_folder>/wr-nic/syn/spec
+~~~~~~~~~~~
+
 
 > ***Notes***: These steps are a simple resume on how to compile the 
 firware specifically for the wr-nic, you should also look at the [wrpc.pdf] to understand how to use it
 and how to compile for other configurations.
 
-	
-WR-NIC (HDL-gateware)
-----------------------
-
-The final step is to prepare the WR-NIC bitstream (SPEC+FMC DIO) with 
-the wrpc-sw embeded inside.
-
-
-~~~~~~{.bash}
-## Checkout the code
-git clone git://ohwr.org/white-rabbit/wr-nic.git
-git checkout -b wr-nic-v1.0 wr-nic-v1.0
-
-## Import the wrc.ram from wrpc-sw to the wr-nic project
-cp wrpc-sw/wrc.ram wr-nic/syn/spec/
-
-## Go to the main directory
-cd wr-nic/syn/spec/
-
-## Synthetize using hdlmake
-hdlmake --fetch
-hdlmake --fetch
-hdlmake -l
-~~~~~~~~~~~	
-
-you should finally obtain the bitstream to import in your fmc driver folder.
 
 
 Software support and applications
 =================================
 
-This project could be used as starting demo with White-Rabbit technology, illustrating the timing capabilities of White-Rabbit technology. As already described, the current configuration allows to transform SPEC board on an Network Interface Card with White-Rabbit capabilities. In order of using it like this, some additional software is required: 
+This project could be used as starting demo with White-Rabbit technology, illustrating the timing capabilities of White-Rabbit technology. As already described, the current configuration allows to transform SPEC board on a Network Interface Card with White-Rabbit capabilities. In order of using it like this, some additional software is required: 
 
 * SPEC driver supporting the DIO card functionalities already described. 
 
