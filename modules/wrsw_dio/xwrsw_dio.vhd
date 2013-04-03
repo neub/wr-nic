@@ -157,17 +157,17 @@ architecture rtl of xwrsw_dio is
       -- 1: time given on tm_seconds_i and tm_cycles_i is valid (otherwise, don't timestamp)
       tm_time_valid_i : in std_logic;
       -- number of seconds
-      tm_utc_i        : in std_logic_vector(39 downto 0);
+      tm_tai_i        : in std_logic_vector(39 downto 0);
       -- number of clk_ref_i cycles
       tm_cycles_i     : in std_logic_vector(27 downto 0);
 
       ---------------------------------------------------------------------------
       -- Time tag output (clk_sys_i domain)
       ---------------------------------------------------------------------------
-      tag_utc_o      : out std_logic_vector(39 downto 0);
-      tag_cycles_o   : out std_logic_vector(27 downto 0);
+      tag_tai_o    : out std_logic_vector(39 downto 0);
+      tag_cycles_o : out std_logic_vector(27 downto 0);
       -- single-cycle pulse: strobe tag on tag_seconds_o and tag_cycles_o
-      tag_valid_p1_o : out std_logic
+      tag_valid_o  : out std_logic
     );
   end component;
 
@@ -456,12 +456,12 @@ begin
 --        tm_utc_i        => tm_seconds,  
 --        tm_cycles_i     => tm_cycles, 
         tm_time_valid_i => tm_time_valid_i,
-        tm_utc_i        => tm_seconds_i, 
+        tm_tai_i        => tm_seconds_i, 
         tm_cycles_i     => tm_cycles_i, 
 
-        tag_utc_o       => tag_seconds(i), 
-        tag_cycles_o    => tag_cycles(i), 
-        tag_valid_p1_o  => tag_valid_p1(i));
+        tag_tai_o    => tag_seconds(i), 
+        tag_cycles_o => tag_cycles(i), 
+        tag_valid_o  => tag_valid_p1(i));
 
   end generate gen_pulse_modules;       
 

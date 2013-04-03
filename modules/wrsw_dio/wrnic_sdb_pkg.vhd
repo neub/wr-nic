@@ -116,62 +116,62 @@ package wrnic_sdb_pkg is
   -- The definition need to be unique and be included into wishbone_pkg
   -------------------------------------------------------------------------------
 
-  constant c_xwb_onewire_master_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
-    sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"779c5443",
-    version       => x"00000001",
-    date          => x"20120305",
-    name          => "WR-1Wire-master    ")));	 
+--  constant c_xwb_onewire_master_sdb : t_sdb_device := (
+--    abi_class     => x"0000", -- undocumented device
+--    abi_ver_major => x"01",
+--    abi_ver_minor => x"01",
+--    wbd_endian    => c_sdb_endian_big,
+--    wbd_width     => x"7", -- 8/16/32-bit port granularity
+--    sdb_component => (
+--    addr_first    => x"0000000000000000",
+--    addr_last     => x"00000000000000ff",
+--    product => (
+--    vendor_id     => x"000000000000CE42", -- CERN
+--    device_id     => x"779c5443",
+--    version       => x"00000001",
+--    date          => x"20120305",
+--    name          => "WR-1Wire-master    ")));	 
 	 
 
   -------------------------------------------------------------------------------
   -- WB I2C MASTER --> TBD: move to wishbone_pkg
   -------------------------------------------------------------------------------
 
-  constant c_xwb_i2c_master_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
-    sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"123c5443",
-    version       => x"00000001",
-    date          => x"20000101",         -- UNKNOWN
-    name          => "WB-I2C-Master      ")));	 
+--  constant c_xwb_i2c_master_sdb : t_sdb_device := (
+--    abi_class     => x"0000", -- undocumented device
+--    abi_ver_major => x"01",
+--    abi_ver_minor => x"01",
+--    wbd_endian    => c_sdb_endian_big,
+--    wbd_width     => x"7", -- 8/16/32-bit port granularity
+--    sdb_component => (
+--    addr_first    => x"0000000000000000",
+--    addr_last     => x"00000000000000ff",
+--    product => (
+--    vendor_id     => x"000000000000CE42", -- CERN
+--    device_id     => x"123c5443",
+--    version       => x"00000001",
+--    date          => x"20000101",         -- UNKNOWN
+--    name          => "WB-I2C-Master      ")));	 
 
   -------------------------------------------------------------------------------
   -- WB GPIO --> TBD: move to wishbone_pkg
   -------------------------------------------------------------------------------
 
-  constant c_xwb_gpio_port_sdb : t_sdb_device := (
-    abi_class     => x"0000", -- undocumented device
-    abi_ver_major => x"01",
-    abi_ver_minor => x"01",
-    wbd_endian    => c_sdb_endian_big,
-    wbd_width     => x"7", -- 8/16/32-bit port granularity
-    sdb_component => (
-    addr_first    => x"0000000000000000",
-    addr_last     => x"00000000000000ff",
-    product => (
-    vendor_id     => x"000000000000CE42", -- CERN
-    device_id     => x"441c5143",
-    version       => x"00000001",
-    date          => x"20000101",         -- UNKNOWN
-    name          => "WB-GPIO-Port       ")));	 	 
+--  constant c_xwb_gpio_port_sdb : t_sdb_device := (
+--    abi_class     => x"0000", -- undocumented device
+--    abi_ver_major => x"01",
+--    abi_ver_minor => x"01",
+--    wbd_endian    => c_sdb_endian_big,
+--    wbd_width     => x"7", -- 8/16/32-bit port granularity
+--    sdb_component => (
+--    addr_first    => x"0000000000000000",
+--    addr_last     => x"00000000000000ff",
+--    product => (
+--    vendor_id     => x"000000000000CE42", -- CERN
+--    device_id     => x"441c5143",
+--    version       => x"00000001",
+--    date          => x"20000101",         -- UNKNOWN
+--    name          => "WB-GPIO-Port       ")));	 	 
 
 ------------------------------------------------------------------------------
 -- SDB re-declaration of bridges function to include product info
