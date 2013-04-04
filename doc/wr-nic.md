@@ -147,6 +147,20 @@ are going to embedded into our *HDL* gateware. It is not needed to recompile it,
 lm32 behaviour you can look at the [WRPC](#wrpc-sw-lm32-firmware) section to check how to build it.
 
 
+HDLMake
+-------------
+
+In order to synthetize the HDL for wr-nic you need to have installed the `hdlmake` tool.
+For more information on how to install and use it, you can look at the [hdlmake.pdf]
+
+To generate the wr-nic bitstream we have used latest commit in the isyp branch.
+
+	cd <path-hdl-make>
+	git checkout 20c784d
+
+> Notes: the synthetization can work with other hdlmake verison but if you obtain any errors we
+recommand you to use the same version as our.
+
 	
 WR-NIC (HDL-gateware)
 ----------------------
@@ -159,15 +173,19 @@ the wrpc-sw (`wrc.ram` file) embeded inside.
 ## Checkout the code
 git clone git://ohwr.org/white-rabbit/wr-nic.git
 cd wr-nic
-git checkout -b wr-nic-v1.0 wr-nic-v1.0
+##git checkout -b wr-nic-v1.0 wr-nic-v1.0
+
+## Create and update the submodules
+git submodule init
+git submodule update
+patch -p0 < 0001-Comment_ECA_for_Xilinx.patch
 
 ## Go to the main directory
 cd wr-nic/syn/spec/
 
 ## Synthetize using hdlmake
-hdlmake --fetch
-hdlmake --fetch
-hdlmake -l
+hdlmake --make-ise --ise-proj
+make
 ~~~~~~~~~~~	
 
 you should finally obtain the bitstream to import in your fmc driver folder.

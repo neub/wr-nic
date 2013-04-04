@@ -1,0 +1,13 @@
+diff --git ip_cores/wr-cores/Manifest.py ip_cores/wr-cores/Manifest.py
+index 72b6614..e2064f7 100644
+--- ip_cores/wr-cores/Manifest.py
++++ ip_cores/wr-cores/Manifest.py
+@@ -9,7 +9,7 @@ modules =  {"local" :
+ 												"modules/wr_endpoint",
+ 												"modules/wr_pps_gen",
+ 												"modules/wr_dacs",
+-												"modules/wr_eca",
++#												"modules/wr_eca",
+ 												"modules/wr_tlu",
+ 												"modules/wrc_core",
+ 												"platform" ],
