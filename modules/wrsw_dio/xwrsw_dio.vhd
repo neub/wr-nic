@@ -52,6 +52,7 @@ entity xwrsw_dio is
     rst_n_i          : in  std_logic;
 		
     dio_clk_i        : in std_logic;
+	dio_pps_i        : in std_logic;
     dio_in_i         : in std_logic_vector(4 downto 0);
     dio_out_o        : out std_logic_vector(4 downto 0);
     dio_oe_n_o       : out std_logic_vector(4 downto 0);
@@ -283,8 +284,26 @@ architecture rtl of xwrsw_dio is
     dio_trigh4_seconds_o                     : out    std_logic_vector(7 downto 0);
 -- Port for std_logic_vector field: 'cycles field' in reg: 'fmc-dio 4 cycles to  trigger a pulse generation'
     dio_cyc4_cyc_o                           : out    std_logic_vector(27 downto 0);
--- Port for std_logic_vector field: 'outmode' in reg: 'FMC-DIO output configuration register. '
-    dio_out_mode_o                           : out    std_logic_vector(4 downto 0);
+-- Port for unsigned field: 'channel' in reg: 'FMC-DIO input/output configuration register. '
+    dio_iomode_ch0_o                         : out    std_logic_vector(3 downto 0);
+    dio_iomode_ch0_i                         : in     std_logic_vector(3 downto 0);
+    dio_iomode_ch0_load_o                    : out    std_logic;
+-- Port for unsigned field: 'channel1' in reg: 'FMC-DIO input/output configuration register. '
+    dio_iomode_ch1_o                         : out    std_logic_vector(3 downto 0);
+    dio_iomode_ch1_i                         : in     std_logic_vector(3 downto 0);
+    dio_iomode_ch1_load_o                    : out    std_logic;
+-- Port for unsigned field: 'channel2' in reg: 'FMC-DIO input/output configuration register. '
+    dio_iomode_ch2_o                         : out    std_logic_vector(3 downto 0);
+    dio_iomode_ch2_i                         : in     std_logic_vector(3 downto 0);
+    dio_iomode_ch2_load_o                    : out    std_logic;
+-- Port for unsigned field: 'channel3' in reg: 'FMC-DIO input/output configuration register. '
+    dio_iomode_ch3_o                         : out    std_logic_vector(3 downto 0);
+    dio_iomode_ch3_i                         : in     std_logic_vector(3 downto 0);
+    dio_iomode_ch3_load_o                    : out    std_logic;
+-- Port for unsigned field: 'channel4' in reg: 'FMC-DIO input/output configuration register. '
+    dio_iomode_ch4_o                         : out    std_logic_vector(3 downto 0);
+    dio_iomode_ch4_i                         : in     std_logic_vector(3 downto 0);
+    dio_iomode_ch4_load_o                    : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
     dio_latch_time_ch0_o                     : out    std_logic;
 -- Port for MONOSTABLE field: 'Sincle-cycle strobe' in reg: 'Time-programmable output strobe signal'
@@ -330,7 +349,8 @@ architecture rtl of xwrsw_dio is
   -- Constants declaration
   ------------------------------------------------------------------------------
 
-  constant c_WB_SLAVES_DIO  : integer := 4;
+  constant c_WB_SLAVES_DIO  : integer := 4;	-- Number of WB slaves in DIO
+  constant c_IOMODE_NB : integer := 4;			-- Number of bit per channel for iomode reg
 
   ------------------------------------------------------------------------------
   -- Signals declaration
@@ -370,7 +390,6 @@ architecture rtl of xwrsw_dio is
   -- Fifos no-empty interrupts
   signal irq_nempty          : std_logic_vector (4 downto 0);
 
-
   -- DEBUG SIGNALS FOR USING seconds time values from dummy_time instead WRPC
   signal tm_seconds             : std_logic_vector (39 downto 0);
   signal tm_cycles              : std_logic_vector (27 downto 0);
@@ -398,7 +417,9 @@ architecture rtl of xwrsw_dio is
   signal dio_pulse_prog      : std_logic_vector(4 downto 0);
   signal dio_pulse_immed     : std_logic_vector(4 downto 0);
   signal dio_pulse_immed_stb : std_logic_vector(4 downto 0);
-  signal dio_out_mode        : std_logic_vector(4 downto 0);
+  signal dio_iomode_reg   	  : std_logic_vector(19 downto 0);
+  signal dio_iomode_o   	  : std_logic_vector(19 downto 0);
+  signal dio_iomode_load_o	  : std_logic_vector(4 downto 0);
   signal wb_dio_irq          : std_logic;
   
 -------------------------------------------------------------------------------
@@ -592,17 +613,19 @@ begin
   end generate immediate_output_with_pulse_length;
 
   gen_pio_assignment: for i in 0 to 4 generate
-    gpio_in(4*i)     <= dio_in_i(i);
+    gpio_in(c_IOMODE_NB*i)     <= dio_in_i(i);
     dio_pulse(i) <= '1' when dio_pulse_immed(i) = '1' else dio_pulse_prog(i);
-    dio_out_o(i) <= dio_pulse(i) when dio_out_mode(i) ='1' else gpio_out(4*i);
-    dio_oe_n_o(i)    <= gpio_out(4*i+1);
-    dio_term_en_o(i) <= gpio_out(4*i+2);
+    dio_out_o(i) <= dio_pps_i when (dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i) = "10")
+				else dio_pulse(i) when (dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i) = "01")
+				else gpio_out(c_IOMODE_NB*i);
+    dio_oe_n_o(i)    <= dio_iomode_reg(c_IOMODE_NB*i+2);
+    dio_term_en_o(i) <= dio_iomode_reg(c_IOMODE_NB*i+3);
   end generate gen_pio_assignment;
 
   dio_led_bot_o  <= gpio_out(28);
   dio_led_top_o  <= gpio_out(27);
   
-  gpio_in(29)    <= dio_clk_i;
+  --gpio_in(29)    <= dio_clk_i;
   dio_sdn_ck_n_o <= gpio_out(30);
   dio_sdn_n_o    <= gpio_out(31);
 
@@ -708,7 +731,23 @@ begin
       dio_trigh4_seconds_o    => trig_seconds(4)(39 downto 32),
       dio_cyc4_cyc_o          => trig_cycles(4),
 
-      dio_out_mode_o          => dio_out_mode,
+	  dio_iomode_ch0_i        => dio_iomode_reg(3  downto 0),
+	  dio_iomode_ch1_i        => dio_iomode_reg(7  downto 4),
+	  dio_iomode_ch2_i        => dio_iomode_reg(11 downto 8),
+	  dio_iomode_ch3_i        => dio_iomode_reg(15 downto 12),
+	  dio_iomode_ch4_i        => dio_iomode_reg(19 downto 16),
+
+	  dio_iomode_ch0_o        => dio_iomode_o(3 downto 0),
+	  dio_iomode_ch1_o        => dio_iomode_o(7 downto 4),
+	  dio_iomode_ch2_o        => dio_iomode_o(11 downto 8),
+	  dio_iomode_ch3_o        => dio_iomode_o(15 downto 12),
+	  dio_iomode_ch4_o        => dio_iomode_o(19 downto 16),
+
+	  dio_iomode_ch0_load_o   => dio_iomode_load_o(0),
+	  dio_iomode_ch1_load_o   => dio_iomode_load_o(1),
+	  dio_iomode_ch2_load_o   => dio_iomode_load_o(2),
+	  dio_iomode_ch3_load_o   => dio_iomode_load_o(3),
+	  dio_iomode_ch4_load_o   => dio_iomode_load_o(4),
 
       dio_latch_time_ch0_o    => trig_valid_p1(0),
       dio_latch_time_ch1_o    => trig_valid_p1(1),
@@ -717,49 +756,74 @@ begin
       dio_latch_time_ch4_o    => trig_valid_p1(4),
 
       dio_trig_rdy_i          => trig_ready,
-		
-		irq_trigger_ready_0_i   => trig_ready(0),
+
+      irq_trigger_ready_0_i   => trig_ready(0),
       irq_trigger_ready_1_i   => trig_ready(1),
       irq_trigger_ready_2_i   => trig_ready(2),
       irq_trigger_ready_3_i   => trig_ready(3),
       irq_trigger_ready_4_i   => trig_ready(4),      
 
-		dio_prog0_pulse_length_o=> pulse_length(0),
+      dio_prog0_pulse_length_o=> pulse_length(0),
       dio_prog1_pulse_length_o=> pulse_length(1),
       dio_prog2_pulse_length_o=> pulse_length(2),
       dio_prog3_pulse_length_o=> pulse_length(3),
       dio_prog4_pulse_length_o=> pulse_length(4),
 
-      dio_pulse_imm_0_o       => dio_pulse_immed_stb(0),		
-      dio_pulse_imm_1_o       => dio_pulse_immed_stb(1),		
-      dio_pulse_imm_2_o       => dio_pulse_immed_stb(2),		
-      dio_pulse_imm_3_o       => dio_pulse_immed_stb(3),		
+      dio_pulse_imm_0_o       => dio_pulse_immed_stb(0),
+      dio_pulse_imm_1_o       => dio_pulse_immed_stb(1),
+      dio_pulse_imm_2_o       => dio_pulse_immed_stb(2),
+      dio_pulse_imm_3_o       => dio_pulse_immed_stb(3),
       dio_pulse_imm_4_o       => dio_pulse_immed_stb(4)
    );
 
   -- seconds timestamped FIFO-no-empty interrupts
-  irq_fifos : for i in 0 to 4 generate
-    irq_nempty(i)     <= not dio_tsf_wr_empty(i);
+	irq_nempty(0)     <= not dio_tsf_wr_empty(0);
+	irq_nempty(1)     <= not dio_tsf_wr_empty(1);
+	irq_nempty(2)    <= not dio_tsf_wr_empty(2);
+	irq_nempty(3)     <= not dio_tsf_wr_empty(3);
 
-    process(clk_sys_i, rst_n_i) 
+	--disable interrupts when setup in clock mode.
+	irq_nempty(4)     <= not dio_tsf_wr_empty(4) when (dio_iomode_reg(18 downto 16) /= "110");
+
+  irq_fifos : for i in 0 to 4 generate
+    process(clk_sys_i)
       begin
         if rising_edge(clk_sys_i) then
           if rst_n_i = '0' then
             dio_tsf_wr_req(i)        <= '0';
             dio_tsf_tag_seconds(i)   <= (others => '0');
-            dio_tsf_tag_cycles(i)	 <= (others => '0');        
+            dio_tsf_tag_cycles(i)	 <= (others => '0');
           else
             if ((tag_valid_p1(i) = '1') AND (dio_tsf_wr_full(i)='0')) then
               dio_tsf_wr_req(i)      <='1';
               dio_tsf_tag_seconds(i) <=tag_seconds(i);
               dio_tsf_tag_cycles(i)  <=tag_cycles(i);
             else
-              dio_tsf_wr_req(i)      <='0';				
+              dio_tsf_wr_req(i)      <='0';
             end if;
           end if; 
         end if; 
       end process; 
     end generate irq_fifos;
+
+	process(clk_sys_i)
+	begin
+		if rising_edge(clk_sys_i) then
+			-- Set default configuration for each channel at reset
+			if rst_n_i = '0' then
+				dio_iomode_reg(2*c_IOMODE_NB+3 downto 2*c_IOMODE_NB) <= "0010"; -- mode 2 p
+				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "1100"; -- mode 3 I
+				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "1110"; -- mode 4 C
+			else
+			-- Set up register iomode for each channel
+				for i in 0 to 4 loop
+					if (dio_iomode_load_o(i) = '1') then
+					dio_iomode_reg(c_IOMODE_NB*i+3 downto c_IOMODE_NB*i) <= dio_iomode_o(c_IOMODE_NB*i+3 downto c_IOMODE_NB*i);
+					end if;
+				end loop;
+			end if;
+		end if;
+	end process;
 
 -----------------------------------------------------------------------------------
 ------ signals for debugging

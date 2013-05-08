@@ -531,20 +531,63 @@ peripheral {
 -- OUTPUT CONFIGURATION/CONTROL REGISTERS
 -----------------------------------------
 
--- Programmable output or GPIO selection
+-- Programmable IO mode selection
 	reg {
-		name = "FMC-DIO output configuration register. ";
-		description = "It allows to choose a programmable output or a standard GPIO output.";
-		prefix = "out";
-
+		name = "FMC-DIO input/output configuration register. ";
+		description = "It allows to choose the I/0 mode for each channel. \
+			- [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) WRPC core, 3 Undefined\
+			- [2]: Output Enable Negative (Input enable)\
+			- [3]: 50 Ohm termination enable";
+		prefix = "iomode";
 		field {
-			name = "outmode";
-			description = "1 for programmable, 0 for GPIO output mode";
-			prefix = "mode";
+			name = "channel0";
+			description = "Channel 0";
+			prefix = "ch0";
 			type = SLV;
-			size = 5; 
+			size = 4;
 			access_bus = READ_WRITE;
-			access_dev = READ_ONLY;
+			access_dev = READ_WRITE;
+			load = LOAD_EXT;
+		};
+		field {
+			name = "channel1";
+			description = "Channel 1";
+			prefix = "ch1";
+			type = SLV;
+			size = 4;
+			access_bus = READ_WRITE;
+			access_dev = READ_WRITE;
+			load = LOAD_EXT;
+		};
+		field {
+			name = "channel2";
+			description = "Channel 2";
+			prefix = "ch2";
+			type = SLV;
+			size = 4;
+			access_bus = READ_WRITE;
+			access_dev = READ_WRITE;
+			load = LOAD_EXT;
+		};
+		field {
+			name = "channel3";
+			description = "Channel 3";
+			prefix = "ch3";
+			type = SLV;
+			size = 4;
+			access_bus = READ_WRITE;
+			access_dev = READ_WRITE;
+			load = LOAD_EXT;
+		};
+		field {
+			name = "channel4";
+			description = "Channel 4: Can be used in clock mode";
+			prefix = "ch4";
+			type = SLV;
+			size = 4;
+			access_bus = READ_WRITE;
+			access_dev = READ_WRITE;
+			load = LOAD_EXT;
 		};
 	};
 
@@ -770,3 +813,4 @@ peripheral {
 	};
 
 };
+

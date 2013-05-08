@@ -369,6 +369,7 @@ architecture rtl of wr_nic_sdb_top is
       rst_n_i   : in std_logic;
 
       dio_clk_i      : in    std_logic;
+      dio_pps_i      : in    std_logic;
       dio_in_i       : in    std_logic_vector(4 downto 0);
       dio_out_o      : out   std_logic_vector(4 downto 0);
       dio_oe_n_o     : out   std_logic_vector(4 downto 0);
@@ -1085,6 +1086,7 @@ begin
       rst_n_i   => local_reset_n,
 
       dio_clk_i     => dio_clk,
+      dio_pps_i		=> pps,
       dio_in_i      => dio_in,
       dio_out_o     => dio_out,
       dio_oe_n_o    => dio_oe_n_o,

@@ -29,7 +29,7 @@
 <BODY>
 <h1 class="heading">wrsw_dio_wb</h1>
 <h3>FMC-DIO-5chttla</h3>
-<p></p>
+<p>This core for adding timing information to a standard GPIO based on WR-CORE information. <br>   <br>   Operation <br>   ~~~~~~~~~~ <br>  The registers used on this module allows to time-stamping input values, generate and immediate output or programmed output at a given time.  <br><br>      * Programmable output: Use seconds and cycles registers for specify trigger time for each channel. Strobe signal is mandatory to latch these values otherwise no output will be generated. <br>      * Immediate output could be generate by making active the corresponding bits of the 'Pulse generate immediately' register. <br>      * Pulse length can be adjusted by writing a integer value at corresponding registers. The duration will be its value x 8 ns. <br>      * There are some few clock cycles that the system is not ready to latch new time information to triggers. This could be checked by checking dio trigger signals. In addition to pooling, interrupts are generated. Note that because is no ready time is about 200 ns, it would almost always available for the PC. <br>     * To activate programmable or immediate output generation, please remember to set corresponding bits of the output configuration registers. Otherwise this system behaves as normal GPIO without additional timing features. <br>     * FIFOs store seconds and cycles values of time-stamped events. Note that the FIFO depth is 256 and that output generated signals will be also stored in the FIFOs in the same why that external input do. <br>     * Interrupts are handle based on EIC registers. FIFOs not empty as well as ready signals of each GPIO are the interrupt sources. <br><br>   Todo <br>   ~~~~ <br>      * Improve documentation. <br><br>   Known issues <br>   ~~~~~~~~~~~ <br>      * None</p>
 <h3>Contents:</h3>
 <span style="margin-left: 0px; ">1. <A href="#sect_1_0">Memory map summary</a></span><br/>
 <span style="margin-left: 0px; ">2. <A href="#sect_2_0">HDL symbol</a></span><br/>
@@ -49,7 +49,7 @@
 <span style="margin-left: 20px; ">3.13. <A href="#sect_3_13">fmc-dio 4 seconds-based trigger for pulse generation</a></span><br/>
 <span style="margin-left: 20px; ">3.14. <A href="#sect_3_14">fmc-dio 4 seconds-based trigger for pulse generation</a></span><br/>
 <span style="margin-left: 20px; ">3.15. <A href="#sect_3_15">fmc-dio 4 cycles to  trigger a pulse generation</a></span><br/>
-<span style="margin-left: 20px; ">3.16. <A href="#sect_3_16">FMC-DIO output configuration register. </a></span><br/>
+<span style="margin-left: 20px; ">3.16. <A href="#sect_3_16">FMC-DIO input/output configuration register. </a></span><br/>
 <span style="margin-left: 20px; ">3.17. <A href="#sect_3_17">Time-programmable output strobe signal</a></span><br/>
 <span style="margin-left: 20px; ">3.18. <A href="#sect_3_18">FMC-DIO time trigger is ready to accept a new trigger generation request</a></span><br/>
 <span style="margin-left: 20px; ">3.19. <A href="#sect_3_19">fmc-dio channel 0 Programmable/immediate output pulse length</a></span><br/>
@@ -375,13 +375,13 @@ CYC4
 REG
 </td>
 <td >
-<A href="#OUT">FMC-DIO output configuration register. </a>
+<A href="#IOMODE">FMC-DIO input/output configuration register. </a>
 </td>
 <td  class="td_code">
-dio_out
+dio_iomode
 </td>
 <td  class="td_code">
-OUT
+IOMODE
 </td>
 </tr>
 <tr class="tr_odd">
@@ -2643,7 +2643,7 @@ dio_cyc4_cyc_o[27:0]
 
 </td>
 <td  class="td_pblock_right">
-<b>FMC-DIO output configuration register. :</b>
+<b>FMC-DIO input/output configuration register. :</b>
 </td>
 <td  class="td_arrow_right">
 
@@ -2660,10 +2660,248 @@ dio_cyc4_cyc_o[27:0]
 
 </td>
 <td  class="td_pblock_right">
-dio_out_mode_o[4:0]
+dio_iomode_ch0_o[3:0]
 </td>
 <td  class="td_arrow_right">
 &rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch0_i[3:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch0_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch1_o[3:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch1_i[3:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch1_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch2_o[3:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch2_i[3:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch2_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch3_o[3:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch3_i[3:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch3_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch4_o[3:0]
+</td>
+<td  class="td_arrow_right">
+&rArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch4_i[3:0]
+</td>
+<td  class="td_arrow_right">
+&lArr;
+</td>
+</tr>
+<tr>
+<td  class="td_arrow_left">
+
+</td>
+<td  class="td_pblock_left">
+
+</td>
+<td  class="td_sym_center">
+
+</td>
+<td  class="td_pblock_right">
+dio_iomode_ch4_load_o
+</td>
+<td  class="td_arrow_right">
+&rarr;
 </td>
 </tr>
 <tr>
@@ -7893,15 +8131,15 @@ CYC
 </b>[<i>read/write</i>]: cycles field
 <br>Number of cycles in one second (depends on current clock frequency)
 </ul>
-<a name="OUT"></a>
-<h3><a name="sect_3_16">3.16. FMC-DIO output configuration register. </a></h3>
+<a name="IOMODE"></a>
+<h3><a name="sect_3_16">3.16. FMC-DIO input/output configuration register. </a></h3>
 <table cellpadding=0 cellspacing=0 border=0>
 <tr>
 <td >
 <b>HW prefix: </b>
 </td>
 <td  class="td_code">
-dio_out
+dio_iomode
 </td>
 </tr>
 <tr>
@@ -7917,7 +8155,7 @@ dio_out
 <b>C prefix: </b>
 </td>
 <td  class="td_code">
-OUT
+IOMODE
 </td>
 </tr>
 <tr>
@@ -7930,7 +8168,7 @@ OUT
 </tr>
 </table>
 <p>
-It allows to choose a programmable output or a standard GPIO output.
+It allows to choose the I/0 mode for each channel. <br>			- [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) WRPC core, 3 Undefined<br>			- [2]: Output Enable Negative (Input enable)<br>			- [3]: 50 Ohm termination enable
 </p>
 <table cellpadding=0 cellspacing=0 border=0>
 <tr>
@@ -8026,17 +8264,17 @@ It allows to choose a programmable output or a standard GPIO output.
 <td  class="td_unused">
 -
 </td>
-<td  class="td_unused">
--
+<td style="border: solid 1px black;" colspan=4  class="td_field">
+CH4[3:0]
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
 </tr>
 </table>
@@ -8068,29 +8306,29 @@ It allows to choose a programmable output or a standard GPIO output.
 </td>
 </tr>
 <tr>
-<td  class="td_unused">
--
+<td style="border: solid 1px black;" colspan=4  class="td_field">
+CH3[3:0]
 </td>
-<td  class="td_unused">
--
+<td style="border: solid 1px black;" colspan=4  class="td_field">
+CH2[3:0]
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
 </tr>
 </table>
@@ -8122,17 +8360,17 @@ It allows to choose a programmable output or a standard GPIO output.
 </td>
 </tr>
 <tr>
-<td  class="td_unused">
--
+<td style="border: solid 1px black;" colspan=4  class="td_field">
+CH1[3:0]
 </td>
-<td  class="td_unused">
--
+<td style="border: solid 1px black;" colspan=4  class="td_field">
+CH0[3:0]
 </td>
-<td  class="td_unused">
--
+<td >
+
 </td>
-<td style="border: solid 1px black;" colspan=5  class="td_field">
-MODE[4:0]
+<td >
+
 </td>
 <td >
 
@@ -8150,9 +8388,25 @@ MODE[4:0]
 </table>
 <ul>
 <li><b>
-MODE
-</b>[<i>read/write</i>]: outmode
-<br>1 for programmable, 0 for GPIO output mode
+CH0
+</b>[<i>read/write</i>]: channel0
+<br>Channel 0
+<li><b>
+CH1
+</b>[<i>read/write</i>]: channel1
+<br>Channel 1
+<li><b>
+CH2
+</b>[<i>read/write</i>]: channel2
+<br>Channel 2
+<li><b>
+CH3
+</b>[<i>read/write</i>]: channel3
+<br>Channel 3
+<li><b>
+CH4
+</b>[<i>read/write</i>]: channel4
+<br>Channel 4: Can be used in clock mode
 </ul>
 <a name="LATCH"></a>
 <h3><a name="sect_3_17">3.17. Time-programmable output strobe signal</a></h3>

@@ -18,6 +18,7 @@
 -- Revisions  :
 -- Date        Version  Author          Description
 -- 2012-07-25  0.1      JDiaz           Created
+-- 2013-05-23  0.2      Ben.R           Adding PPS
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -37,8 +38,9 @@ entity wrsw_dio is
     clk_sys_i        : in  std_logic;
     clk_ref_i        : in  std_logic;
     rst_n_i          : in  std_logic;
-		
+
     dio_clk_i        : in std_logic;
+    dio_pps_i        : in std_logic;
     dio_in_i         : in std_logic_vector(4 downto 0);
     dio_out_o        : out std_logic_vector(4 downto 0);
     dio_oe_n_o       : out std_logic_vector(4 downto 0);
@@ -47,12 +49,12 @@ entity wrsw_dio is
     dio_sdn_n_o      : out std_logic;
     dio_sdn_ck_n_o   : out std_logic;
     dio_led_top_o    : out std_logic;
-    dio_led_bot_o    : out std_logic;		
-		
+    dio_led_bot_o    : out std_logic;
+
     dio_scl_b        : inout std_logic;
     dio_sda_b        : inout std_logic;
-    dio_ga_o	     : out std_logic_vector(1 downto 0); 
-	 
+    dio_ga_o         : out std_logic_vector(1 downto 0); 
+
     tm_time_valid_i  : in std_logic;
     tm_seconds_i         : in std_logic_vector(39 downto 0);
     tm_cycles_i      : in std_logic_vector(27 downto 0);
@@ -71,12 +73,12 @@ entity wrsw_dio is
     wb_stall_o : out std_logic;
     wb_irq_o   : out std_logic;
     
-	 -- Debug signals for chipscope
+    -- Debug signals for chipscope
     TRIG0            : out std_logic_vector(31 downto 0);
     TRIG1            : out std_logic_vector(31 downto 0);
     TRIG2            : out std_logic_vector(31 downto 0);
     TRIG3            : out std_logic_vector(31 downto 0)
-		
+
   );
   end wrsw_dio; 
 
@@ -95,6 +97,7 @@ architecture rtl of wrsw_dio is
       rst_n_i   : in std_logic;
 
       dio_clk_i      : in    std_logic;
+      dio_pps_i      : in    std_logic;
       dio_in_i       : in    std_logic_vector(4 downto 0);
       dio_out_o      : out   std_logic_vector(4 downto 0);
       dio_oe_n_o     : out   std_logic_vector(4 downto 0);
@@ -108,7 +111,7 @@ architecture rtl of wrsw_dio is
       dio_scl_b : inout std_logic;
       dio_sda_b : inout std_logic;
       dio_ga_o  : out std_logic_vector(1 downto 0);
-		
+
       tm_time_valid_i : in std_logic;
       tm_seconds_i        : in std_logic_vector(39 downto 0);
       tm_cycles_i     : in std_logic_vector(27 downto 0);
@@ -121,7 +124,7 @@ architecture rtl of wrsw_dio is
       slave_i                      : in  t_wishbone_slave_in;
       slave_o                      : out t_wishbone_slave_out
   );
-  end component;  --DIO core	
+  end component;  --DIO core
   
   signal wb_out : t_wishbone_slave_out;
   signal wb_in  : t_wishbone_slave_in;
@@ -139,21 +142,22 @@ U_WRAPPER_DIO : xwrsw_dio
       rst_n_i   => rst_n_i,
 
       dio_clk_i      => dio_clk_i,
+      dio_pps_i      => dio_clk_i,
       dio_in_i       => dio_in_i,
       dio_out_o      => dio_out_o,
       dio_oe_n_o     => dio_oe_n_o,
       dio_term_en_o  => dio_term_en_o,
       
-		dio_onewire_b  => dio_onewire_b,
+      dio_onewire_b  => dio_onewire_b,
       dio_sdn_n_o    => dio_sdn_n_o,
       dio_sdn_ck_n_o => dio_sdn_ck_n_o,
-		dio_led_top_o  => dio_led_top_o,
+      dio_led_top_o  => dio_led_top_o,
       dio_led_bot_o  => dio_led_bot_o,
 
       dio_scl_b      => dio_scl_b,
       dio_sda_b      => dio_sda_b,
       dio_ga_o       => dio_ga_o,
-		
+
       tm_time_valid_i => tm_time_valid_i,
       tm_seconds_i    => tm_seconds_i,
       tm_cycles_i     => tm_cycles_i,
@@ -161,7 +165,7 @@ U_WRAPPER_DIO : xwrsw_dio
       slave_i         => wb_in,
       slave_o         => wb_out
       
-		-- Chipscope, debugging signals
+      -- Chipscope, debugging signals
       --TRIG0           => TRIG0,
       --TRIG1           => TRIG1,
       --TRIG2           => TRIG2,
