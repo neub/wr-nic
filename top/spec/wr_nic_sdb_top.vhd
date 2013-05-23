@@ -28,8 +28,9 @@
 -- 2012-02-08  1.0      greg.d          Created
 -- 2012-02-20  1.1      greg.d          added GN4124 to wrsw_nic DMA connection
 -- 2012-03-10  1.2      rafa.r          added dio_core
--- 2012-06-25  1.3         jdiaz                  New dio_functionality
--- 2012-07-06  1.4         jdiaz           Updating of files and integration test
+-- 2012-06-25  1.3      jdiaz           New dio_functionality
+-- 2012-07-06  1.4      jdiaz           Updating of files and integration test
+-- 2012-07-06  1.5      ben.r           Adding PPS to dio & reset 
 -------------------------------------------------------------------------------
 -- TODO:
 -- testing
@@ -311,6 +312,14 @@ architecture rtl of wr_nic_sdb_top is
       );
   end component;  --  gn4124_core
 
+  -- Generic Reset (PCIe & Standalone)
+  component spec_reset_gen
+    port (
+      clk_sys_i        : in  std_logic;
+      rst_pcie_n_a_i   : in  std_logic;
+      rst_button_n_a_i : in  std_logic;
+      rst_n_o          : out std_logic);
+  end component;
 
   -- NIC
   component xwrsw_nic
@@ -445,6 +454,7 @@ architecture rtl of wr_nic_sdb_top is
   signal p2l_pll_locked : std_logic;
 
   -- Reset
+  signal rst_a : std_logic;
   signal rst : std_logic;
 
   -- DMA wishbone bus -- NOT IN USE
@@ -637,8 +647,12 @@ begin
       CLKFBIN  => pllout_clk_fb_dmtd,
       CLKIN    => clk_20m_vcxo_buf);    -- 20 MHz
 
-
-  local_reset_n <= L_RST_N;
+  U_Reset_Gen : spec_reset_gen
+    port map (
+      clk_sys_i        => clk_sys,
+      rst_pcie_n_a_i   => L_RST_N,
+      rst_button_n_a_i => button1_i,
+      rst_n_o          => local_reset_n);
 
   cmp_clk_sys_buf : BUFG
     port map (
@@ -718,12 +732,14 @@ begin
       master_o   => cbar_master_o
       );                
 
-
+  ------------------------------------------------------------------------------
+  -- Active high reset
+  ------------------------------------------------------------------------------
+  rst <= not(L_RST_N);
 
   ------------------------------------------------------------------------------
   -- Gennun Core
   ------------------------------------------------------------------------------
-
   U_Gennum_Core : gn4124_core
     port map
     (
