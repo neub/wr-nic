@@ -315,9 +315,9 @@ architecture rtl of wr_nic_sdb_top is
   component xwrsw_nic
     generic
       (
-        --    g_use_dma             : boolean                        := false;
         g_interface_mode      : t_wishbone_interface_mode      := CLASSIC;
-        g_address_granularity : t_wishbone_address_granularity := WORD
+        g_address_granularity : t_wishbone_address_granularity := WORD;
+        g_src_cyc_on_stall    : boolean
         );
     port (
       clk_sys_i : in std_logic;
@@ -921,9 +921,9 @@ begin
   -------------------------------------
   U_NIC : xwrsw_nic
     generic map(
-      --g_use_dma             => g_nic_usedma,
       g_interface_mode      => PIPELINED,
-      g_address_granularity => BYTE)
+      g_address_granularity => BYTE,
+      g_src_cyc_on_stall    => true)
     port map(
       clk_sys_i => clk_sys,
       rst_n_i   => local_reset_n,
