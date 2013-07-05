@@ -95,7 +95,8 @@ use work.wrnic_sdb_pkg.all;
 entity wr_nic_sdb_top is
   generic
     (
-      g_nic_usedma : boolean := false);
+      g_nic_usedma : boolean := false;
+      g_simulation : integer := 0);
   port
     (
       -- Global ports
@@ -835,7 +836,7 @@ begin
   -------------------------------------
   U_WR_CORE : xwr_core
     generic map (
-      g_simulation                => 0,
+      g_simulation                => g_simulation,
       g_phys_uart                 => true,
       g_virtual_uart              => true,
       g_with_external_clock_input => true,
@@ -1009,7 +1010,7 @@ begin
 
   U_GTP : wr_gtp_phy_spartan6
     generic map (
-      g_simulation => 0)
+      g_simulation => g_simulation)
     port map (
       gtp_clk_i => gtp_dedicated_clk,
 
