@@ -163,8 +163,6 @@ GN412X_BFM
 
    task automatic readback(ref uint64_t value);
       @(posedge cmd_rddata_valid);
-      $display("Rdbk: %x", cmd_rddata);
-      
       value = cmd_rddata;
       @(negedge cmd_rddata_valid);
      endtask // readback
@@ -187,8 +185,6 @@ class CBusAccessor_Gennum extends CBusAccessor;
       
       for(i=0;i<addr.size();i++)
         begin
-           $display("GN-write %x %x\n", addr[i], data[i]);
-           
            $sformat(cmd,"wr FF000000%08X F %08X", addr[i], data[i]);
            send_cmd(cmd);
         end
@@ -199,8 +195,6 @@ class CBusAccessor_Gennum extends CBusAccessor;
       int    i;
       uint64_t tmp;
       
-
-      $display("rd %x\n", addr[0]);
       
 
       if(size != 4)
@@ -209,10 +203,10 @@ class CBusAccessor_Gennum extends CBusAccessor;
       for(i=0;i<addr.size();i++)
         begin
            $sformat(cmd,"rd FF000000%08X F", addr[i]);
-         //  fork
+           fork
            send_cmd(cmd);
            readback(tmp);
-         //  join
+           join
            
            data[i] = tmp;
            
@@ -257,7 +251,7 @@ endinterface
   .l_wr_rdy   (IF_NAME.L2P.l_wr_rdy),\
   .p_rd_d_rdy (IF_NAME.L2P.p_rd_d_rdy),\
   .tx_error   (IF_NAME.L2P.tx_error),\
-  .vc_rdy     (IF_NAME.L2P.vc_rdy)
+  .vc_rdy     (IF_NAME.P2L.vc_rdy)
 
 `endif //  `ifndef __GN4124_BFM_SVH
     
