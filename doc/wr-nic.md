@@ -1,5 +1,5 @@
 % White-Rabbit  NIC Gateware
-% Javier Díaz Univ. of Granada, Rafael Rodriguez Seven Solutions
+% Javier Díaz Univ. of Granada, Rafael Rodriguez & Benoit Rat Seven Solutions
 % 14 Dec. 2012
 
 Introduction
@@ -70,7 +70,7 @@ The `DIO Core` block is the HDL block that access to the fmc-dio-5chls mezzanine
 
 The different submodules description are:  
 
-* `GPIO:` It allows to enable/disable the output drivers and the termination resistors.
+* `GPIO:` Set the state (0/1) of the I/O when in GPIO out mode 
 
 * `I2C:` It allows to set the threshold of the ADCMP604 fast LVDS comparator and to access to write/read data to the EEPROM memory (24AA64). Please note that already commented, current release do not allow to access I2C signals of the FMC-DIO card from this HDL block. This is assigned to WRPC and therefore it should be handled inside its memory maps (concretely, inside WRPC `Syscon` device). This could change for future releases.
 
@@ -87,6 +87,7 @@ The different submodules description are:
 	2. FIFOs to store the timestamps of input signals
 	3. Interrupt control registers that allow to configure the interrupts  generated when there are data in the FIFOs.
 	4. Monostable register, which generates a single clock cycle-long
+	5. Update the mode of the drivers: the termination resistors and if it is connected to GPIO, DIO core or WRPC.
 
 DIO Configuration & Control
 ==========================
@@ -104,7 +105,20 @@ Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging.
 
 In order to use input/output channels as previously described, the following actions are required:  
 
-* Standard GPIO output generation is selected by default. In order to use monostable output (time-programmed or immediate), each channel should be properly configured to the `dio_out_mode register`. A value of 1 indicates that channel will be used for programmable output, otherwise (0 by default), channel will use the values assigned by the GPIO logic block. 
+* The I/O mode of each channel controlled by the `dio_iomode` register:
+    * [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) WRPC core, 3 Undefined
+    * [2]: Output Enable Negative (Input enable)
+    * [3]: 50 Ohm termination enable.
+    
+By default the register is set with:
+
+#. 0x0 (GPIO out without termination),
+#. 0x0 (...)
+#. 0x2 (WRPC out a.k.a direct PPS without termination)
+#. 0xC (Input with termination for PPS signal)
+#. 0xE: Clock[^clkinput] input with termination.
+
+[^clkinput]: The Clock input is similar the DIO input excepting that no interrupt will be generated to the PCIe core. It is used in GranMaster mode.
 
 * Time-programmable pulse generation: Generate a programmed input at any time at channel X (X between 0 and 4 identifies the requested channel). For this purpose you need to perform the following actions:
 	* Set the required time. This means to provide the 40 bits for the time value and the number of cycles (28 bits). This 		requires to write the registers `dio_trigX_seconds, dio_trighX_seconds` (high part of the time value) and `dio_cyc0_cyc`.
@@ -122,6 +136,7 @@ A detailed information about the memory maps and related registers names are ava
 
 Interrupt handling
 ------------------
+
 The VIC module block is in charge of handling the different interrupts and provide proper registers to inform of the source of each interruption. The main interrupt signal is communicated to the PC using the gn4124 chip and gn4124 and GPIO-8. A proper core in the FPGA uses the irq_req_p1_i signal to activate this external GPIO pin which needs to be assigned at the low-level hardware. 
 
 The base address, as shown on the memory map figure is 0x00060000. It handles the following interrupts sources:  
@@ -173,12 +188,11 @@ the wrpc-sw (`wrc.ram` file) embeded inside.
 ## Checkout the code
 git clone git://ohwr.org/white-rabbit/wr-nic.git
 cd wr-nic
-##git checkout -b wr-nic-v1.0 wr-nic-v1.0
+git checkout -b wr-nic-v1.1 wr-nic-v1.1
 
 ## Create and update the submodules
 git submodule init
 git submodule update
-patch -p0 < 0001-Comment_ECA_for_Xilinx.patch
 
 ## Go to the main directory
 cd wr-nic/syn/spec/
@@ -206,7 +220,7 @@ export CROSS_COMPILE="<your_path_to_lm32>/lm32/bin/lm32-elf-";
 #Clone the repository
 $ git clone git://ohwr.org/hdl-core-lib/wr-cores/wrpc-sw.git 
 $ cd wrpc-sw
-$ git checkout -b wr-nic-v1.0 wr-nic-v1.0 
+$ git checkout -b wr-nic-v1.1 wr-nic-v1.1 
 ~~~~~~~~~~
 
 And finally configure & compile it
@@ -261,7 +275,7 @@ There are some considerations about the gateware properties that need to be well
 
 * Timestamping granularity of inputs DIO channel is limited to 8ns so there is not any error if further accuracy is not obtained. Nevertheless, note White-Rabbit will still synchronize the system clock with subnanosecond accuracy.  
 
-* Currently virtual UART is not running but it is expected to be solved very soon. 
+* We have used Physical UART instead of running Virtual UART. 
 
 
 Further information will be provided in future releases.   

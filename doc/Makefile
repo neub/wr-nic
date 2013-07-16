@@ -26,6 +26,9 @@ TEX=$(SRC:.md=.tex)
 OPTIONS=-f markdown --toc --number-sections --smart --reference-links
 TEMPLATE=pandoc.latex 
 
+## Obtain the version
+VERSION = $(shell git describe --always --dirty=+ | sed  's;^wr-switch-sw-;;')
+DATE	= $(shell date +"%d %b. %Y")
 
 ifneq "$(TEMPLATE)" ""
 TEMPLATEARG=--template=$(TEMPLATE)
@@ -45,7 +48,7 @@ DIR_%:
 
 pdf/%.pdf: %.md Makefile $(TEMPLATE) DIR_pdf
 	pandoc $(OPTIONS) --latex-engine=xelatex  --highlight-style=haddock $(TEMPLATEARG) \
--V lang=english -V fontsize=11pt -V documentclass=article -V bg-color=238,245,240 -o $@ $<
+-V lang=english -V fontsize=11pt -V documentclass=article -V bg-color=238,245,240 -V date="$(DATE) - $(VERSION)" -o $@ $<
 
 %.tex: %.md Makefile $(TEMPLATE) 
 	@echo "$(dir $@) $< $^ $(TEX)"
