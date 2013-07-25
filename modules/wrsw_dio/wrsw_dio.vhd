@@ -142,7 +142,7 @@ U_WRAPPER_DIO : xwrsw_dio
       rst_n_i   => rst_n_i,
 
       dio_clk_i      => dio_clk_i,
-      dio_pps_i      => dio_clk_i,
+      dio_pps_i      => dio_pps_i,
       dio_in_i       => dio_in_i,
       dio_out_o      => dio_out_o,
       dio_oe_n_o     => dio_oe_n_o,

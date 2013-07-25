@@ -615,11 +615,14 @@ begin
   gen_pio_assignment: for i in 0 to 4 generate
     gpio_in(c_IOMODE_NB*i)     <= dio_in_i(i);
     dio_pulse(i) <= '1' when dio_pulse_immed(i) = '1' else dio_pulse_prog(i);
-    dio_out_o(i) <= dio_pps_i when (dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i) = "10")
-				else dio_pulse(i) when (dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i) = "01")
-				else gpio_out(c_IOMODE_NB*i);
     dio_oe_n_o(i)    <= dio_iomode_reg(c_IOMODE_NB*i+2);
     dio_term_en_o(i) <= dio_iomode_reg(c_IOMODE_NB*i+3);
+    with dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i)
+	 select dio_out_o(i) <=
+		gpio_out(c_IOMODE_NB*i) when "00", --GPIO out as also 4 bits per channel
+		dio_pulse(i) when "01",
+		dio_pps_i when "10",
+		'1' when others;	--Error output will stay at one (similar as GPIO set to one)
   end generate gen_pio_assignment;
 
   dio_led_bot_o  <= gpio_out(28);
