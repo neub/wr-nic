@@ -6,7 +6,7 @@
 -- Author     : Rafael Rodriguez, Javier Díaz
 -- Company    : Seven Solutions
 -- Created    : 2012-03-03
--- Last update: 2012-03-20
+-- Last update: 2013-08-07
 -- Platform   : FPGA-generic
 -- Standard   : VHDL
 -------------------------------------------------------------------------------
@@ -23,8 +23,8 @@
 -- Date        Version  Author          Description
 -- 2012-03-03  0.1      Rafa.r          Created
 -- 2012-03-08  0.1      JDiaz           Added wrsw_dio_wb
--- 2012-07-05  0.2		JDiaz           Modified wrsw_dio_wb, modified interface
--- 2012-07-20  0.2		JDiaz           Include sdb support
+-- 2012-07-05  0.2      JDiaz           Modified wrsw_dio_wb, modified interface
+-- 2012-07-20  0.2      JDiaz           Include sdb support
 -------------------------------------------------------------------------------
 --     Memory map:
 --       0x000: DIO-ONEWIRE
@@ -815,8 +815,8 @@ begin
 			-- Set default configuration for each channel at reset
 			if rst_n_i = '0' then
 				dio_iomode_reg(2*c_IOMODE_NB+3 downto 2*c_IOMODE_NB) <= "0010"; -- mode 2 p
-				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "1100"; -- mode 3 I
-				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "1110"; -- mode 4 C
+				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "0100"; -- mode 3 I
+				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "0110"; -- mode 4 C
 			else
 			-- Set up register iomode for each channel
 				for i in 0 to 4 loop
