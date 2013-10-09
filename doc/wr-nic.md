@@ -202,7 +202,10 @@ hdlmake --make-ise --ise-proj
 make
 ~~~~~~~~~~~	
 
-you should finally obtain the bitstream to import in your fmc driver folder.
+
+> **Notes**: To use the generated gateware with the spec-sw package you should 
+rename it (`wr_nic_dio_top.bin`) to `wr_nic_dio.bin` and place it in the 
+`/lib/firmware/fmc` folder.
 
 
 
