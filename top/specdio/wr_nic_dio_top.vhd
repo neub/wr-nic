@@ -93,7 +93,7 @@ use work.endpoint_pkg.all;
 use work.wrnic_sdb_pkg.all;
 
 
-entity wr_nic_sdb_top is
+entity wr_nic_dio_top is
   generic
     (
       g_nic_usedma : boolean := false;
@@ -218,9 +218,9 @@ entity wr_nic_sdb_top is
       uart_txd_o : out std_logic
       );
 
-end wr_nic_sdb_top;
+end wr_nic_dio_top;
 
-architecture rtl of wr_nic_sdb_top is
+architecture rtl of wr_nic_dio_top is
 
   ------------------------------------------------------------------------------
   -- Components declaration
@@ -923,7 +923,7 @@ begin
 
       tm_dac_value_o       => open,
       tm_dac_wr_o          => open,
-      tm_clk_aux_lock_en_i => (others=>'0'),
+      tm_clk_aux_lock_en_i => (others => '0'),
       tm_clk_aux_locked_o  => open,
       tm_time_valid_o      => tm_time_valid,
       tm_tai_o             => tm_seconds,

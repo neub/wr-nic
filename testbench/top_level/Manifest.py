@@ -5,5 +5,5 @@ vlog_opt="+incdir+../../sim +incdir+gn4124_bfm +incdir+../../sim/wr-hdl +incdir+
 
 files = [ "main.sv" ]
 
-modules = { "local" :  [ "../..", "../../top/spec", "./gn4124_bfm"] }
+modules = { "local" :  [ "../..", "../../top/specdio", "./gn4124_bfm"] }
 

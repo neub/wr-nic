@@ -21,7 +21,7 @@ def main(default_directory="."):
 
    # Configure the FPGA using the program fpga_loader
    path_fpga_loader = './fpga_loader'
-   path_firmware = '../syn/spec/wr_nic_top.bin'
+   path_firmware = '../syn/specdio/wr_nic_dio_top.bin'
    firmware_loader = os.path.join(default_directory, path_fpga_loader)
    bitstream = os.path.join(default_directory, path_firmware)
    print "Loading firmware: %s" % (firmware_loader + ' ' + bitstream)
