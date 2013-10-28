@@ -591,10 +591,10 @@ NET "dio_p_i[1]" IOSTANDARD=LVDS_25;
 NET "dio_n_i[1]" LOC =T11;
 NET "dio_n_i[1]" IOSTANDARD=LVDS_25;
 
-NET "dio_p_i[0]" LOC =C19;
-NET "dio_p_i[0]" IOSTANDARD=LVDS_25;
-NET "dio_n_i[0]" LOC =A19;
-NET "dio_n_i[0]" IOSTANDARD=LVDS_25;
+# NET "dio_p_i[0]" LOC =C19;
+# NET "dio_p_i[0]" IOSTANDARD=LVDS_25;
+# NET "dio_n_i[0]" LOC =A19;
+# NET "dio_n_i[0]" IOSTANDARD=LVDS_25;
 
 NET "dio_led_top_o" LOC= AA12;
 NET "dio_led_top_o" IOSTANDARD=LVCMOS25;

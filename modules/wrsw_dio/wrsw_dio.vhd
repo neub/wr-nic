@@ -40,7 +40,7 @@ entity wrsw_dio is
     rst_n_i          : in  std_logic;
 
     dio_clk_i        : in std_logic;
-    dio_pps_i        : in std_logic;
+   -- dio_pps_i        : in std_logic;
     dio_in_i         : in std_logic_vector(4 downto 0);
     dio_out_o        : out std_logic_vector(4 downto 0);
     dio_oe_n_o       : out std_logic_vector(4 downto 0);
@@ -97,7 +97,7 @@ architecture rtl of wrsw_dio is
       rst_n_i   : in std_logic;
 
       dio_clk_i      : in    std_logic;
-      dio_pps_i      : in    std_logic;
+  --    dio_pps_i      : in    std_logic;
       dio_in_i       : in    std_logic_vector(4 downto 0);
       dio_out_o      : out   std_logic_vector(4 downto 0);
       dio_oe_n_o     : out   std_logic_vector(4 downto 0);
@@ -142,7 +142,7 @@ U_WRAPPER_DIO : xwrsw_dio
       rst_n_i   => rst_n_i,
 
       dio_clk_i      => dio_clk_i,
-      dio_pps_i      => dio_pps_i,
+     -- dio_pps_i      => dio_pps_i,
       dio_in_i       => dio_in_i,
       dio_out_o      => dio_out_o,
       dio_oe_n_o     => dio_oe_n_o,

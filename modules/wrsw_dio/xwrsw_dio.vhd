@@ -52,7 +52,7 @@ entity xwrsw_dio is
     rst_n_i          : in  std_logic;
 		
     dio_clk_i        : in std_logic;
-	dio_pps_i        : in std_logic;
+	--dio_pps_i        : in std_logic;
     dio_in_i         : in std_logic_vector(4 downto 0);
     dio_out_o        : out std_logic_vector(4 downto 0);
     dio_oe_n_o       : out std_logic_vector(4 downto 0);
@@ -621,11 +621,15 @@ begin
 	 select dio_out_o(i) <=
 		gpio_out(c_IOMODE_NB*i) when "00", --GPIO out as also 4 bits per channel
 		dio_pulse(i) when "01",
-		dio_pps_i when "10",
+		--dio_pps_i when "10",
 		'1' when others;	--Error output will stay at one (similar as GPIO set to one)
   end generate gen_pio_assignment;
 
-  dio_led_bot_o  <= gpio_out(28);
+  dio_led_bot_o  <=  dio_iomode_reg(c_IOMODE_NB*0+3) OR 
+							dio_iomode_reg(c_IOMODE_NB*1+3) OR
+							dio_iomode_reg(c_IOMODE_NB*2+3) OR
+							dio_iomode_reg(c_IOMODE_NB*3+3) OR
+							dio_iomode_reg(c_IOMODE_NB*4+3);
   dio_led_top_o  <= gpio_out(27);
   
   --gpio_in(29)    <= dio_clk_i;

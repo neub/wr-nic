@@ -378,7 +378,7 @@ architecture rtl of wr_nic_dio_top is
       rst_n_i   : in std_logic;
 
       dio_clk_i      : in    std_logic;
-      dio_pps_i      : in    std_logic;
+      --dio_pps_i      : in    std_logic;
       dio_in_i       : in    std_logic_vector(4 downto 0);
       dio_out_o      : out   std_logic_vector(4 downto 0);
       dio_oe_n_o     : out   std_logic_vector(4 downto 0);
@@ -502,7 +502,7 @@ architecture rtl of wr_nic_dio_top is
   signal dac_hpll_data    : std_logic_vector(15 downto 0);
   signal dac_dpll_data    : std_logic_vector(15 downto 0);
 
-  signal pps : std_logic;
+  --signal pps : std_logic;
 
   signal phy_tx_data      : std_logic_vector(7 downto 0);
   signal phy_tx_k         : std_logic;
@@ -516,9 +516,14 @@ architecture rtl of wr_nic_dio_top is
   signal phy_rst          : std_logic;
   signal phy_loopen       : std_logic;
 
-  signal dio_in  : std_logic_vector(4 downto 0);
-  signal dio_out : std_logic_vector(4 downto 0);
   signal dio_clk : std_logic;
+  signal dio_in  : std_logic_vector(4 downto 1);
+  signal dio_out : std_logic_vector(4 downto 1);
+  --first channel is reserved for PPS out
+  signal dio_out_pps : std_logic; 
+--  attribute iob: string;
+--  attribute iob of dio_out_pps: signal is "true";
+  
 
   signal local_reset_n  : std_logic;
   signal button1_synced : std_logic_vector(2 downto 0);
@@ -928,7 +933,7 @@ begin
       tm_time_valid_o      => tm_time_valid,
       tm_tai_o             => tm_seconds,
       tm_cycles_o          => tm_cycles,
-      pps_p_o              => pps,
+      pps_p_o              => dio_out_pps,
 
       dio_o       => open,
       rst_aux_n_o => open
@@ -1101,12 +1106,17 @@ begin
       clk_ref_i => clk_125m_pllref,
       rst_n_i   => local_reset_n,
 
-      dio_clk_i     => dio_clk,
-      dio_pps_i		=> pps,
-      dio_in_i      => dio_in,
-      dio_out_o     => dio_out,
-      dio_oe_n_o    => dio_oe_n_o,
-      dio_term_en_o => dio_term_en_o,
+      dio_clk_i     			=> dio_clk,
+      --dio_pps_i				=> dio_out_pps, --CHECK
+		--Connect only the last 4 channels to not disturb pps_out 
+		--and keep generic dio_core
+      dio_in_i(0)				=> open,
+      dio_in_i(4 downto 1)		=> dio_in, 
+      dio_out_o(0)				=> open,
+      dio_out_o(4 downto 1)	    => dio_out,
+      dio_oe_n_o(0)				=> open,
+      dio_oe_n_o(4 downto 1)	=> dio_oe_n_o(4 downto 1),
+      dio_term_en_o 			=> dio_term_en_o,
 
       dio_onewire_b  => dio_onewire_b,
       dio_sdn_n_o    => dio_sdn_n_o,
@@ -1132,7 +1142,7 @@ begin
 --      TRIG3           => TRIG3,               
       );
 
-  gen_dio_iobufs : for i in 0 to 4 generate
+  gen_dio_iobufs : for i in 1 to 4 generate
     U_ibuf : IBUFDS
       generic map (
         DIFF_TERM => true)
@@ -1149,6 +1159,19 @@ begin
         OB => dio_n_o(i)
         );
   end generate gen_dio_iobufs;
+  
+  -- first channel is reserved for PPS out only
+  dio_oe_n_o(0) <= '0';
+  
+	U_obuf_pps : OBUFDS
+	port map (
+	  I  => dio_out_pps,
+	  O  => dio_p_o(0),
+	  OB => dio_n_o(0)
+	  );
+
+	--- end specific code for pps_out
+  
   U_input_buffer : IBUFDS
     generic map (
       DIFF_TERM => true)
