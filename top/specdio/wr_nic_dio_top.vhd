@@ -82,7 +82,7 @@ use work.gencores_pkg.all;
 use work.wrcore_pkg.all;
 use work.wr_fabric_pkg.all;
 use work.wr_xilinx_pkg.all;
---use work.etherbone_pkg.all;
+use work.etherbone_pkg.all;
 
 --library UNISIM;
 --use UNISIM.vcomponents.all;
@@ -351,6 +351,26 @@ architecture rtl of wr_nic_dio_top is
       );
   end component;
 
+  -- Etherbone core
+
+ -- component eb_ethernet_slave
+ --  generic(
+ --   g_sdb_address    : std_logic_vector(63 downto 0);
+ --   g_timeout_cycles : natural;
+ --   g_mtu            : natural);
+ --  port(
+ --   clk_i       : in  std_logic;
+ --   nRst_i      : in  std_logic;
+ --   snk_i       : in  t_wrf_sink_in;
+ --   snk_o       : out t_wrf_sink_out;
+ --   src_o       : out t_wrf_source_out;
+ --   src_i       : in  t_wrf_source_in;
+ --   cfg_slave_o : out t_wishbone_slave_out;
+ --   cfg_slave_i : in  t_wishbone_slave_in;
+ --   master_o    : out t_wishbone_master_out;
+ --   master_i    : in  t_wishbone_master_in);
+ -- end component;
+
   component xwrsw_tx_tsu
     generic (
       g_num_ports           : integer                        := 10;
@@ -542,16 +562,43 @@ architecture rtl of wr_nic_dio_top is
   signal tm_time_valid : std_logic;
   signal tm_seconds    : std_logic_vector(39 downto 0);
   signal tm_cycles     : std_logic_vector(27 downto 0);
+  
+  -------------------
+  -- Etherbone
+  -------------------
+  
+  signal etherbone_cfg_in  : t_wishbone_slave_in; 
+  signal etherbone_cfg_out : t_wishbone_slave_out;
+	
+  ------------------------
+  -- to wr-core's fabric
+  ------------------------
+	
+  signal ep_src_out : t_wrf_source_out;
+  signal ep_src_in  : t_wrf_source_in;
+  signal ep_snk_out : t_wrf_sink_out;
+  signal ep_snk_in  : t_wrf_sink_in;
+  
+  -----------------------------------
+  -- To multiplexer (Etherbone/NIC)
+  -----------------------------------
+   
+  signal mux_src_out : t_wrf_source_out_array(1 downto 0);
+  signal mux_src_in  : t_wrf_source_in_array(1 downto 0);
+  signal mux_snk_out : t_wrf_sink_out_array(1 downto 0);
+  signal mux_snk_in  : t_wrf_sink_in_array(1 downto 0);
+  signal mux_class   : t_wrf_mux_class(1 downto 0);
+
 
   -- DIO core
   --signal wb_irq_data_fifo_dio : std_logic; -- T.B.DELETED
   -------------------
   -- NIC
   -------------------
-  signal nic_src_out : t_wrf_source_out;
-  signal nic_src_in  : t_wrf_source_in;
-  signal nic_snk_out : t_wrf_sink_out;
-  signal nic_snk_in  : t_wrf_sink_in;
+--  signal nic_src_out : t_wrf_source_out;
+--  signal nic_src_in  : t_wrf_source_in;
+--  signal nic_snk_out : t_wrf_sink_out;
+--  signal nic_snk_in  : t_wrf_sink_in;
   signal nic_dma_in  : t_wishbone_slave_in;
   signal nic_dma_out : t_wishbone_slave_out;
   signal csr_ack     : std_logic;
@@ -573,8 +620,8 @@ architecture rtl of wr_nic_dio_top is
 
   constant c_topbar_sdb_address : t_wishbone_address := x"00063000";
 
-  signal cbar_slave_i  : t_wishbone_slave_in;
-  signal cbar_slave_o  : t_wishbone_slave_out;
+  signal cbar_slave_i  : t_wishbone_slave_in_array(1 downto 0);
+  signal cbar_slave_o  : t_wishbone_slave_out_array(1 downto 0);
   signal cbar_master_i : t_wishbone_master_in_array(4 downto 0);
   signal cbar_master_o : t_wishbone_master_out_array(4 downto 0);
 
@@ -719,7 +766,7 @@ begin
   ------------------------------------------------------------------------------
   WB_TOP_INTERCON : xwb_sdb_crossbar
     generic map(
-      g_num_masters => 1,
+      g_num_masters => 2,
       g_num_slaves  => 5,
       g_registered  => true,
       g_wraparound  => true,
@@ -730,8 +777,8 @@ begin
       clk_sys_i  => clk_sys,
       rst_n_i    => local_reset_n,
       -- Master connections
-      slave_i(0) => cbar_slave_i,
-      slave_o(0) => cbar_slave_o,
+      slave_i => cbar_slave_i,
+      slave_o => cbar_slave_o,
       -- Slave conenctions
       master_i   => cbar_master_i,
       master_o   => cbar_master_o
@@ -799,14 +846,14 @@ begin
       -- CSR wishbone interface (master pipelined)
       csr_clk_i   => clk_sys,
       csr_adr_o   => cbar_slave_adr_words,
-      csr_dat_o   => cbar_slave_i.dat,
-      csr_sel_o   => cbar_slave_i.sel,
-      csr_stb_o   => cbar_slave_i.stb,
-      csr_we_o    => cbar_slave_i.we,
-      csr_cyc_o   => cbar_slave_i.cyc,
-      csr_dat_i   => cbar_slave_o.dat,
+      csr_dat_o   => cbar_slave_i(0).dat,
+      csr_sel_o   => cbar_slave_i(0).sel,
+      csr_stb_o   => cbar_slave_i(0).stb,
+      csr_we_o    => cbar_slave_i(0).we,
+      csr_cyc_o   => cbar_slave_i(0).cyc,
+      csr_dat_i   => cbar_slave_o(0).dat,
       csr_ack_i   => csr_ack,
-      csr_stall_i => cbar_slave_o.stall,
+      csr_stall_i => cbar_slave_o(0).stall,
 
       ---------------------------------------------------------
       -- L2P DMA Interface (Pipelined Wishbone master)
@@ -823,11 +870,11 @@ begin
       --dma_stall_i => dma_stall
       );                
 
-  csr_ack <= (cbar_slave_o.ack or cbar_slave_o.err);
+  csr_ack <= (cbar_slave_o(0).ack or cbar_slave_o(0).err);
 
   -- From words to bytes. TODO: change to adapter block
-  cbar_slave_i.adr (18 downto 0)  <= cbar_slave_adr_words(16 downto 0) & "00";
-  cbar_slave_i.adr (31 downto 19) <= (others => '0');  -- SPEC memory space is 1 MB
+  cbar_slave_i(0).adr (18 downto 0)  <= cbar_slave_adr_words(16 downto 0) & "00";
+  cbar_slave_i(0).adr (31 downto 19) <= (others => '0');  -- SPEC memory space is 1 MB
 
   ---------------------------------------------
   --   Miscelaneous stuff (i2c, onewire, etc..)
@@ -867,7 +914,8 @@ begin
       g_dpram_initf               => "wrc.ram",  --Path to the lm32 file (wrc.ram) of the wrpc_sw repository
       g_dpram_size                => 90112/4,  -- 20480, it is the old value, it does not fit anymore 
       g_interface_mode            => PIPELINED,
-      g_address_granularity       => BYTE)
+      g_address_granularity       => BYTE,
+		g_aux_sdb                 	 => c_etherbone_sdb)
     port map (
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
@@ -918,10 +966,15 @@ begin
       slave_i => cbar_master_o(0),  --cbar_slave_i, --
       slave_o => cbar_master_i(0),  --cbar_slave_o, --
 
-      wrf_src_o => nic_snk_in,
-      wrf_src_i => nic_snk_out,
-      wrf_snk_o => nic_src_in,
-      wrf_snk_i => nic_src_out,
+--      wrf_src_o => nic_snk_in,
+--      wrf_src_i => nic_snk_out,
+--      wrf_snk_o => nic_src_in,
+--      wrf_snk_i => nic_src_out,
+
+      wrf_src_o => ep_snk_in,
+      wrf_src_i => ep_snk_out,
+      wrf_snk_o => ep_src_in,
+      wrf_snk_i => ep_src_out,
 
       timestamps_o     => wrpc_ts_o,
       timestamps_ack_i => wrpc_ts_ack_i,
@@ -936,8 +989,32 @@ begin
       pps_p_o              => dio_out_pps,
 
       dio_o       => open,
-      rst_aux_n_o => open
+      rst_aux_n_o => open,
+
+
+      aux_master_o => etherbone_cfg_in,
+      aux_master_i => etherbone_cfg_out
       );
+		
+		
+  -------------------------------------
+  -- Etherbone core
+  -------------------------------------
+		
+  Etherbone : eb_ethernet_slave
+    generic map (
+      g_sdb_address => x"0000000000063000")
+    port map (
+      clk_i       => clk_sys,
+      nRst_i      => local_reset_n, 
+      src_o       => mux_src_out(0), 
+      src_i       => mux_src_in(0),
+      snk_o       => mux_snk_out(0),
+      snk_i       => mux_snk_in(0),
+      cfg_slave_o => etherbone_cfg_out,
+      cfg_slave_i => etherbone_cfg_in,
+      master_o    => cbar_slave_i(1),
+      master_i    => cbar_slave_o(1));
 
   -------------------------------------
   -- NIC
@@ -950,11 +1027,16 @@ begin
     port map(
       clk_sys_i => clk_sys,
       rst_n_i   => local_reset_n,
+		
+		snk_i => mux_snk_in(1),
+		snk_o => mux_snk_out(1),
+		src_i => mux_src_in(1),
+		src_o => mux_src_out(1),
 
-      snk_i => nic_snk_in,
-      snk_o => nic_snk_out,
-      src_i => nic_src_in,
-      src_o => nic_src_out,
+--      snk_i => nic_snk_in,
+--      snk_o => nic_snk_out,
+--      src_i => nic_src_in,
+--      src_o => nic_src_out,
 
       rtu_dst_port_mask_o => open,
       rtu_prio_o          => open,
@@ -1180,6 +1262,31 @@ begin
       I  => dio_clk_p_i,
       IB => dio_clk_n_i
       );
+		
+-----------------------------------------------------------------------------
+-- WBP MUX
+-----------------------------------------------------------------------------
+
+    U_WBP_Mux : xwrf_mux
+      generic map(
+        g_muxed_ports => 2)
+      port map (
+        clk_sys_i   => clk_sys,
+        rst_n_i     => local_reset_n,
+        ep_src_o    => ep_src_out,
+        ep_src_i    => ep_src_in,
+        ep_snk_o    => ep_snk_out,
+        ep_snk_i    => ep_snk_in,
+        mux_src_o   => mux_snk_in,
+        mux_src_i   => mux_snk_out,
+        mux_snk_o   => mux_src_in,
+        mux_snk_i   => mux_src_out,
+        mux_class_i => mux_class);
+ 		
+ 		
+mux_class(0)  <= x"20";
+mux_class(1)  <= x"80";
+
 
 
 -- .............................................
