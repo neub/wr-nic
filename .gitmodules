@@ -10,3 +10,6 @@
 [submodule "ip_cores/gn4124-core"]
 	path = ip_cores/gn4124-core
 	url = git://ohwr.org/hdl-core-lib/gn4124-core.git
+[submodule "ip_cores/etherbone-core"]
+	path = ip_cores/etherbone-core
+	url = git://ohwr.org/hdl-core-lib/etherbone-core.git
