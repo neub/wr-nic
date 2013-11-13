@@ -617,12 +617,15 @@ begin
     dio_pulse(i) <= '1' when dio_pulse_immed(i) = '1' else dio_pulse_prog(i);
     dio_oe_n_o(i)    <= dio_iomode_reg(c_IOMODE_NB*i+2);
     dio_term_en_o(i) <= dio_iomode_reg(c_IOMODE_NB*i+3);
-    with dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i)
-	 select dio_out_o(i) <=
-		gpio_out(c_IOMODE_NB*i) when "00", --GPIO out as also 4 bits per channel
-		dio_pulse(i) when "01",
-		--dio_pps_i when "10",
-		'1' when others;	--Error output will stay at one (similar as GPIO set to one)
+    dio_out_o(i) <= gpio_out(c_IOMODE_NB*i) when dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i)="00" else dio_pulse(i);
+    
+    --with dio_iomode_reg(c_IOMODE_NB*i+1 downto c_IOMODE_NB*i)
+	 --select dio_out_o(i) <=
+	--	gpio_out(c_IOMODE_NB*i) when "00", --GPIO out as also 4 bits per channel
+	--	dio_pulse(i) when "01",
+	--	--dio_pps_i when "10",
+	--	'1' when others;	--Error output will stay at one (similar as GPIO set to one)
+
   end generate gen_pio_assignment;
 
   dio_led_bot_o  <=  dio_iomode_reg(c_IOMODE_NB*0+3) OR 
@@ -818,8 +821,8 @@ begin
 		if rising_edge(clk_sys_i) then
 			-- Set default configuration for each channel at reset
 			if rst_n_i = '0' then
-				dio_iomode_reg(2*c_IOMODE_NB+3 downto 2*c_IOMODE_NB) <= "0010"; -- mode 2 p
-				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "0100"; -- mode 3 I
+				dio_iomode_reg(0*c_IOMODE_NB+3 downto 0*c_IOMODE_NB) <= "0000"; -- mode 0 0
+				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "0100"; -- mode 3 i
 				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "0110"; -- mode 4 C
 			else
 			-- Set up register iomode for each channel
