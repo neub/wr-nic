@@ -537,7 +537,7 @@ architecture rtl of wr_nic_dio_top is
   signal phy_loopen       : std_logic;
 
   signal dio_clk : std_logic;
-  signal dio_in  : std_logic_vector(4 downto 1);
+  signal dio_in  : std_logic_vector(4 downto 0); --ch0 in input mode added!
   signal dio_out : std_logic_vector(4 downto 1);
   --first channel is reserved for PPS out
   signal dio_out_pps : std_logic; 
@@ -1192,12 +1192,12 @@ begin
       --dio_pps_i				=> dio_out_pps, --CHECK
 		--Connect only the last 4 channels to not disturb pps_out 
 		--and keep generic dio_core
-      dio_in_i(0)				=> open,
-      dio_in_i(4 downto 1)		=> dio_in, 
+      -- dio_in_i(0)				=> open,
+      dio_in_i(4 downto 0)		=> dio_in, 
       dio_out_o(0)				=> open,
       dio_out_o(4 downto 1)	    => dio_out,
-      dio_oe_n_o(0)				=> open,
-      dio_oe_n_o(4 downto 1)	=> dio_oe_n_o(4 downto 1),
+      --dio_oe_n_o(0)				=> open,
+      dio_oe_n_o(4 downto 0)	=> dio_oe_n_o(4 downto 0),
       dio_term_en_o 			=> dio_term_en_o,
 
       dio_onewire_b  => dio_onewire_b,
@@ -1224,7 +1224,7 @@ begin
 --      TRIG3           => TRIG3,               
       );
 
-  gen_dio_iobufs : for i in 1 to 4 generate
+  gen_dio_ibufs : for i in 0 to 4 generate
     U_ibuf : IBUFDS
       generic map (
         DIFF_TERM => true)
@@ -1233,17 +1233,19 @@ begin
         I  => dio_p_i(i),
         IB => dio_n_i(i)
         );
+   end generate gen_dio_ibufs;
 
+   gen_dio_obufs: for i in 1 to 4 generate
     U_obuf : OBUFDS
       port map (
         I  => dio_out(i),
         O  => dio_p_o(i),
         OB => dio_n_o(i)
         );
-  end generate gen_dio_iobufs;
+  end generate gen_dio_obufs;
   
-  -- first channel is reserved for PPS out only
-  dio_oe_n_o(0) <= '0';
+  -- first channel is reserved for PPS out only but it is controlled by DIO core!!
+  --dio_oe_n_o(0) <= '0';
   
 	U_obuf_pps : OBUFDS
 	port map (
