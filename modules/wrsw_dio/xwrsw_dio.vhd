@@ -52,7 +52,7 @@ entity xwrsw_dio is
     rst_n_i          : in  std_logic;
 		
     dio_clk_i        : in std_logic;
-	--dio_pps_i        : in std_logic;
+	dio_pps_i        : in std_logic;
     dio_in_i         : in std_logic_vector(4 downto 0);
     dio_out_o        : out std_logic_vector(4 downto 0);
     dio_oe_n_o       : out std_logic_vector(4 downto 0);
@@ -422,6 +422,10 @@ architecture rtl of xwrsw_dio is
   signal dio_iomode_load_o	  : std_logic_vector(4 downto 0);
   signal wb_dio_irq          : std_logic;
   
+  -- DIO Led signals
+  
+  signal dio_led_bot_o_ch : std_logic_vector(4 downto 0);
+  
 -------------------------------------------------------------------------------
 -- rtl
 -------------------------------------------------------------------------------
@@ -628,12 +632,27 @@ begin
 
   end generate gen_pio_assignment;
 
-  dio_led_bot_o  <=  dio_iomode_reg(c_IOMODE_NB*0+3) OR 
+  dio_led_top_o  <=  dio_iomode_reg(c_IOMODE_NB*0+3) OR 
 							dio_iomode_reg(c_IOMODE_NB*1+3) OR
 							dio_iomode_reg(c_IOMODE_NB*2+3) OR
 							dio_iomode_reg(c_IOMODE_NB*3+3) OR
 							dio_iomode_reg(c_IOMODE_NB*4+3);
-  dio_led_top_o  <= gpio_out(27);
+  
+  --dio_led_top_o  <= gpio_out(27); --only to test!
+  
+  -- DIO bot led is enable by one pulse or pps signal!! (channel must be activated with output configuration)
+  
+  dio_led_bot_o_ch(0) <= (not dio_iomode_reg(c_IOMODE_NB*0+2) and dio_pps_i);
+  
+  dio_led_bot_asig: for i in 1 to 4 generate
+	dio_led_bot_o_ch(i) <= (not dio_iomode_reg(c_IOMODE_NB*i+2) and dio_pulse(i));
+  end generate dio_led_bot_asig;
+  
+  dio_led_bot_o <= dio_led_bot_o_ch(0) 
+					or dio_led_bot_o_ch(1) 
+					or dio_led_bot_o_ch(2) 
+					or dio_led_bot_o_ch(3) 
+					or dio_led_bot_o_ch(4);
   
   --gpio_in(29)    <= dio_clk_i;
   dio_sdn_ck_n_o <= gpio_out(30);
