@@ -216,68 +216,57 @@ static void pfilter_load()
 
 void pfilter_init_default()
 {
-	pfilter_new();
-	pfilter_nop();
+	 pfilter_new();
+        pfilter_nop();
+        pfilter_cmp(0, 0xffff, 0xffff, MOV, 1);
+        pfilter_cmp(1, 0xffff, 0xffff, AND, 1);
+        pfilter_cmp(2, 0xffff, 0xffff, AND, 1); /* r1 = 1 when dst mac is broadcast */
+        pfilter_cmp(0, 0x011b, 0xffff, MOV, 2); 
+        pfilter_cmp(1, 0x1900, 0xffff, AND, 2);
+        pfilter_cmp(2, 0x0000, 0xffff, AND, 2); /* r2 = 1 when dst mac is PTP multicast (01:1b:19:00:00:00) */
+        pfilter_cmp(0, EP->MACH & 0xffff, 0xffff, MOV, 3); 
+        pfilter_cmp(1, EP->MACL >> 16, 0xffff, AND, 3);
+        pfilter_cmp(2, EP->MACL & 0xffff, 0xffff, AND, 3); /* r3 = 1 when the packet is unicast to our own MAC */
+        pfilter_cmp(6, 0x0800, 0xffff, MOV, 4); /* r4 = 1 when ethertype = IPv4 */ 
+        pfilter_cmp(6, 0x88f7, 0xffff, MOV, 5); /* r5 = 1 when ethertype = PTPv2 */
+        pfilter_cmp(6, 0x0806, 0xffff, MOV, 6); /* r6 = 1 when ethertype = ARP */
 
-	pfilter_cmp(0, 0xffff, 0xffff, MOV, 1);
-	pfilter_cmp(1, 0xffff, 0xffff, AND, 1);
-	pfilter_cmp(2, 0xffff, 0xffff, AND, 1);	/* r1 = 1 when dst mac is broadcast */
-	pfilter_cmp(0, 0x011b, 0xffff, MOV, 2);
-	pfilter_cmp(1, 0x1900, 0xffff, AND, 2);
-	pfilter_cmp(2, 0x0000, 0xffff, AND, 2);	/* r2 = 1 when dst mac is PTP multicast (01:1b:19:00:00:00) */
-	pfilter_cmp(0, EP->MACH & 0xffff, 0xffff, MOV, 3);
-	pfilter_cmp(1, EP->MACL >> 16, 0xffff, AND, 3);
-	pfilter_cmp(2, EP->MACL & 0xffff, 0xffff, AND, 3);	/* r3 = 1 when the packet is unicast to our own MAC */
-	pfilter_cmp(6, 0x0800, 0xffff, MOV, 4);	/* r4 = 1 when ethertype = IPv4 */
-	pfilter_cmp(6, 0x88f7, 0xffff, MOV, 5);	/* r5 = 1 when ethertype = PTPv2 */
-	pfilter_cmp(6, 0x0806, 0xffff, MOV, 6);	/* r6 = 1 when ethertype = ARP */
-	pfilter_cmp(6, 0xdbff, 0xffff, MOV, 9);	/* r9 = 1 when ethertype = streamer */
-
-	/* Ethernet = 14 bytes, Offset to type in IP: 8 bytes = 22/2 = 11 */
-	pfilter_cmp(11, 0x0001, 0x00ff, MOV, 7);	/* r7 = 1 when IP type = ICMP */
-	pfilter_cmp(11, 0x0011, 0x00ff, MOV, 8);	/* r8 = 1 when IP type = UDP */
-
-#ifdef CONFIG_ETHERBONE
-	pfilter_logic3(10, 3, OR, 0, AND, 4);	/* r10 = IP(unicast) */
-	pfilter_logic3(11, 1, OR, 3, AND, 4);	/* r11 = IP(unicast+broadcast) */
-
-	pfilter_logic3(14, 1, AND, 6, OR, 5);	/* r14 = ARP(broadcast) or PTPv2 */
-	pfilter_logic3(15, 10, AND, 7, OR, 14);	/* r15 = ICMP/IP(unicast) or ARP(broadcast) or PTPv2 */
-
-	/* Ethernet = 14 bytes, IPv4 = 20 bytes, offset to dport: 2 = 36/2 = 18 */
-	pfilter_cmp(18, 0x0044, 0xffff, MOV, 14);	/* r14 = 1 when dport = BOOTPC */
-	pfilter_logic3(14, 14, AND, 8, AND, 11);	/* r14 = BOOTP/UDP/IP(unicast|broadcast) */
-	pfilter_logic2(15, 14, OR, 15);	/* r15 = BOOTP/UDP/IP(unicast|broadcast) or ICMP/IP(unicast) or ARP(broadcast) or PTPv2 */
-
-	// Checking for Etherbone packets (only with destination port)
-
-	pfilter_cmp(18,0xebd0,0xffff,MOV,6); /* r6 = 1 when dport = ETHERBONE */ 
+        /* Ethernet = 14 bytes, Offset to type in IP: 8 bytes = 22/2 = 11 */
+        pfilter_cmp(11,0x0001, 0x00ff, MOV, 7); /* r7 = 1 when IP type = ICMP */
+        pfilter_cmp(11,0x0011, 0x00ff, MOV, 8); /* r8 = 1 when IP type = UDP */
+        pfilter_cmp(11,0x0006,0x00ff,MOV,9); /* r9 = 1 when IP type = TCP */
         
-	//pfilter_cmp(21,0x4e6f,0xffff,MOV,16); /* r16 = 1 when magic number = ETHERBONE */
-    //pfilter_logic2(6,6,AND,16);
+        pfilter_logic3(10,  3, OR,   0, AND, 4); /* r10 = IP(unicast) */
+        pfilter_logic3(11,  1, OR,   3, AND, 4); /* r11 = IP(unicast+broadcast) */
+        
+        pfilter_logic3(14,  1, AND,  6, OR,  5); /* r14 = ARP(broadcast) or PTPv2 */
+        pfilter_logic3(15, 10, AND,  7, OR, 14); /* r15 = ICMP/IP(unicast) or ARP(broadcast) or PTPv2 */
+        
+        /* Ethernet = 14 bytes, IPv4 = 20 bytes, offset to dport: 2 = 36/2 = 18 */
+        pfilter_cmp(18, 0x0044, 0xffff, MOV, 14); /* r14 = 1 when dport = BOOTPC */
+        pfilter_cmp(18,0xebd0,0xffff,MOV,6); /* r6 = 1 when dport = ETHERBONE */ 
+        pfilter_logic3(14, 14, AND, 8, AND, 11);  /* r14 = BOOTP/UDP/IP(unicast|broadcast) */
+        pfilter_logic2(15,14, OR, 15);   /* r15 = BOOTP/UDP/IP(unicast|broadcast) or ICMP/IP(unicast) or ARP(broadcast) or PTPv2 */
 
-	//pfilter_logic3(20, 11, AND, 8, OR, 15);	/* r16 = Something we accept */
+        pfilter_cmp(21,0x4e6f,0xffff,MOV,9); /* r9 = 1 when magic number = ETHERBONE */
+        pfilter_logic2(6,6,AND,9);
 
-	//pfilter_logic3(R_DROP, 20, OR, 9, NOT, 0);	/* None match? drop */
+        // ASIGN CLASSES
+        
+        pfilter_logic2(R_CLASS(0), 15, MOV, 0); /* class 0: ICMP/IP(unicast) or ARP(broadcast) or PTPv2 => PTP LM32 core */
 
-	pfilter_logic2(R_CLASS(7), 11, AND, 8);	/* class 7: UDP/IP(unicast|broadcast) => external fabric */
-	pfilter_logic2(R_CLASS(6), 1, AND, 9);	/* class 6: streamer broadcasts => external fabric */
-	pfilter_logic2(R_CLASS(5), 6, OR, 0); /* class 5: Etherbone packet => Etherbone Core */
-	pfilter_logic2(R_CLASS(0), 15, MOV, 0);	/* class 0: ICMP/IP(unicast) or ARP(broadcast) or PTPv2 => PTP LM32 core */
+        /* ETHERBONE ASIGN CLASS */
+        /* ----------------------------------------------------------------------------------- */
 
-#else
-	pfilter_logic3(10, 3, OR, 2, AND, 5);	/* r10 = PTP (multicast or unicast) */
-	pfilter_logic2(11, 1, AND, 9);		/* r11 = streamer broadcast */
-	pfilter_logic3(12, 10, OR, 11, NOT, 0); /* r12 = all non-PTP and non-streamer traffic */
+        pfilter_logic2(R_CLASS(5), 6, OR, 0); /* class 5: Etherbone packet => Etherbone Core */
 
-	pfilter_logic2(R_CLASS(7), 12, MOV, 0);	/* class 7: all non PTP and non-streamer
-						   traffic => external fabric */
-	pfilter_logic2(R_CLASS(6), 11, MOV, 0); /* class 6: streamer broadcasts =>
-						   external fabric */
-	pfilter_logic2(R_CLASS(0), 10, MOV, 0); /* class 0: PTP frames => LM32 */
-	
-#endif
+        /* ----------------------------------------------------------------------------------- */
 
-	pfilter_load();
+        pfilter_logic2(R_CLASS(7),0,NOT,0);             /* class 7: enables by default to NIC */
+
+
+        pfilter_load();
+
+
 
 }
