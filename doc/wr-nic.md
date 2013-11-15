@@ -1,10 +1,10 @@
 % White-Rabbit  NIC Gateware
-% Javier Díaz Univ. of Granada, Rafael Rodriguez & Benoit Rat Seven Solutions
-% 14 Dec. 2012
+% Javier Díaz & Miguel Jiménez Univ. of Granada, Rafael Rodriguez & Benoit Rat Seven Solutions
+% 20 Nov. 2013
 
 Introduction
 =========================
-The White-Rabbit Network Interface Card  (WR-NIC) project is concerned with the development of gateware and software to make the combination of a SPEC and a DIO mezzanine behave as a Network Interface Card (NIC) under Linux. Basic demo uses two SPEC boards, one configured as grandmaster and one as slave. Different  simple use cases will be provided as basic demo.  
+The White-Rabbit Network Interface Card  (WR-NIC) project is concerned with the development of gateware to make the combination of a SPEC and a DIO mezzanine behave as a Network Interface Card (NIC) under Linux. Basic demo uses two SPEC boards, one configured as grandmaster and one as slave. Different  simple use cases will be provided as basic demo.  
 This document focuses on the description of the project gateware. This manual is part of the associated hardware project, hosted at <http://www.ohwr.org/projects/wr-nic/repository>, whose git repository hosts the latest version.
 
 ![Basic wr-nic project elements](./img/wrnic_components.png)
@@ -18,14 +18,14 @@ Note that the WR-NIC project inherits many codes and working methodology of many
 
 In addition to these projects, software support is provided from the project: 
 1. Software (driver, fmc-bus and NIC working examples) <http://www.ohwr.org/projects/spec-sw>. This project requires a "golden  FPGA gateware" (spec-init.bin) which is available at <http://www.ohwr.org/projects/spec-sw/files>
-2. Starting kit tutorial. A quick overview about the global project (mainly tutorials and applications examples). It is available at 
+2. Starting kit tutorial. A quick overview about the global project (mainly tutorials and applications examples). It is available at <http://www.ohwr.org/projects/wr-starting-kit>.
 
 
 Gateware elements
 =====================
 The main block modules of the architecture are described on next figure. 
 
-![Main HDL blocks of the wr-nic gateware](./img/wr_nic_blocks2.png)
+![Main HDL blocks of the wr-nic gateware](./img/wr_nic_arch.png)
 
 Here is a quick description of each block:
 
@@ -36,6 +36,8 @@ The `GN4124 core` is a bridge between the GN4124 PCIe interface chip and the int
 * The `WRPC (White Rabbit PTP Core)` communicates with the outside world through the SFP socket in the SPEC, typically using fiber optics. It deals with the WR PTP using an internal LM32 CPU running a portable PTP stack. It forwards/receives non-PTP frames to/from the NIC block, using two pipelined Wishbone interfaces (master and slave for forwarding and receiving respectively). It also provides time information to other cores (not represented in the diagram), and time-tags for transmitted and received frames that can be read through Wishbone for diagnostics purposes. Future versions will include the PPSi library instead of the current PTP stack. 
 * The `NIC core` ensures communication between the host and the WRPC. More precisely, it interrupts the host and provides a descriptor that the host can use to fetch incoming frames. For outgoing frames, it receives a descriptor from the host, fetches the frame using PCIe via the GN4124 core and sends it to the WRPC using a pipelined Wishbone interface.
 * The `TxTSU module` collect timestamps with associated Ethernet frame identifiers and puts them in a shared FIFO (port identifier is also included although not required for the SPEC card because only one Ethernet port is available but it is included to provide a common descriptor with the switch data). A IRQ is triggered when FIFO is not empty so drivers could read TX timestamps and frame/port identifiers. 
+* The `Etherbone core` allows remote configuration of device memory map with UDP/TCP network packets.
+* The `MUX module` re-direct packets from WRPC in order to its class. Class 7 is for NIC core and Class 5 for Etherbone core.
 
 In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the whole system works.   
 Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources (in fact it could be required to reduce blockram utilization, for instance of NIC or wr_core module in order to use Chipscope on the project, otherwise design is overmapped). 
@@ -44,11 +46,11 @@ WRPC (White Rabbit PTP Core)
 ----------------------------
 The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible the White-Rabbit timing functionalities on the White-Rabbit nodes. It is a black-box standalone WR-PTP protocol core, incorporating a CPU LM32, WR MAC and PLLs. It could be configure to work on 3 different operations modes:  
 
-* Grandmaster: WRPC locks to an external 10 MHz and PPS signal provided for instance from a Cesium clock / GPS. This signals are provided from the channel 4 (PPS) and channel 5 (10 MHz) lemo connectors of the DIO card.
+* `Grandmaster`: WRPC locks to an external 10 MHz and PPS signal provided for instance from a Cesium clock / GPS. This signals are provided from the channel 4 (PPS) and channel 5 (10 MHz) lemo connectors of the DIO card.
 
-* Master: the systems uses the VCO oscillators of the SPEC board basically on a free running modes. 
+* `Master`: the systems uses the VCO oscillators of the SPEC board basically on a free running modes. 
 
-* Slaves: The clock information is recovered from the Ethernet connections and the local clock uses the DDMTD method to follow the external clock.  
+* `Slaves`: The clock information is recovered from the Ethernet connections and the local clock uses the DDMTD method to follow the external clock.  
 
 In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 8 ns. 
 
@@ -106,17 +108,21 @@ Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging.
 In order to use input/output channels as previously described, the following actions are required:  
 
 * The I/O mode of each channel controlled by the `dio_iomode` register:
-    * [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) WRPC core, 3 Undefined
+    * [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) Undefined, 3 (11) Undefined
     * [2]: Output Enable Negative (Input enable)
     * [3]: 50 Ohm termination enable.
-    
+
+
+> Notes: Channel 0 output is reserved to work as 1-PPS signal from WRPC. It is necessary because there is a delay beetwen input PPS signal and output one. So, `P mode` has been removed from configuration options.
+   
+ 
 By default the register is set with:
 
-#. 0x0 (GPIO out without termination),
+#. 0x0 (GPIO out without termination)
 #. 0x0 (...)
-#. 0x2 (WRPC out a.k.a direct PPS without termination)
-#. 0xC (Input with termination for PPS signal)
-#. 0xE: Clock[^clkinput] input with termination.
+#. 0x0 (...)
+#. 0x4 (Input without termination)
+#. 0x6: Clock[^clkinput] input without termination.
 
 [^clkinput]: The Clock input is similar the DIO input excepting that no interrupt will be generated to the PCIe core. It is used in GranMaster mode.
 
@@ -229,7 +235,7 @@ $ git checkout -b wr-nic-v1.1 wr-nic-v1.1
 And finally configure & compile it
 
 ~~~~~~{.bash}
-# Configuring the project for SPEC
+# Configuring the project for SPEC with Etherbone support
 $ make wrnic_defconfig
 
 # Compile
@@ -264,6 +270,47 @@ This project could be used as starting demo with White-Rabbit technology, illust
 Both elements are described in the software manual of the WR-NIC project and it is out of the scope of current document to describe them with further details. The corresponding links are provided at the introduction section of this document. Please read that document in order to have a complete understanding of the NIC project. 
 
 
+Remote configuration of spec card
+=================================
+
+In new release of wr-nic, Etherbone core is added. This IP-core allows remote configuration of device with UDP/TCP packets. It is very interesting when we use spec card in standalone configuration because we can not use drivers to configure it.
+It is important to remember wrpc has a packet filter and we have to add new rules (see `dev/ep_pfilter.c` in `wrpc-sw` repository) in order to clasify Etherbone incoming packets and redirect to Etherbone core. For this reason, we have set class 5 for this purpose.
+
+~~~~~{.c}
+#define R_CLASS(x) (24 + x)
+#define R_DROP 23
+
+void pfilter_init_default()
+{
+	 pfilter_new();
+	 
+	 ...
+	 
+     pfilter_cmp(11,0x0006,0x00ff,MOV,9); /* r9 = 1 when IP type = TCP */
+    
+     ...   
+     
+     pfilter_cmp(18,0xebd0,0xffff,MOV,6); /* r6 = 1 when dport = ETHERBONE */ 
+     
+     ...
+     
+     pfilter_cmp(21,0x4e6f,0xffff,MOV,9); /* r9 = 1 when magic number = ETHERBONE */
+     pfilter_logic2(6,6,AND,9); /* r6 = 1 when packet is an Etherbone packet */
+
+	 ...
+	
+     pfilter_logic2(R_CLASS(5), 6, OR, 0); /* class 5: => Etherbone Core */
+
+	 ...
+     
+     pfilter_load();
+
+
+
+}
+~~~~~~~~~~~
+
+> ***Notes***: As you can see above, you must classify an Etherbone packet by its destination port and by presence of magic number but we only check destination port number for memory restrictions of packet filter.
 
 Troubleshooting
 ===============
@@ -282,7 +329,6 @@ There are some considerations about the gateware properties that need to be well
 
 
 Further information will be provided in future releases.   
-
 
 
 [wr-nic]: http://www.ohwr.org/projects/wr-nic/
