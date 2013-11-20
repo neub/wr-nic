@@ -840,9 +840,9 @@ begin
 		if rising_edge(clk_sys_i) then
 			-- Set default configuration for each channel at reset
 			if rst_n_i = '0' then
-				dio_iomode_reg(0*c_IOMODE_NB+3 downto 0*c_IOMODE_NB) <= "0000"; -- mode 0 0
+				dio_iomode_reg(0*c_IOMODE_NB+3 downto 0*c_IOMODE_NB) <= "0000"; -- mode 0 p
 				dio_iomode_reg(3*c_IOMODE_NB+3 downto 3*c_IOMODE_NB) <= "0100"; -- mode 3 i
-				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "0110"; -- mode 4 C
+				dio_iomode_reg(4*c_IOMODE_NB+3 downto 4*c_IOMODE_NB) <= "0110"; -- mode 4 c
 			else
 			-- Set up register iomode for each channel
 				for i in 0 to 4 loop

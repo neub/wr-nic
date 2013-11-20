@@ -108,7 +108,7 @@ Note that dio channels time base work wth 8 ns accuracy for inputs time-tagging.
 In order to use input/output channels as previously described, the following actions are required:  
 
 * The I/O mode of each channel controlled by the `dio_iomode` register:
-    * [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) Undefined, 3 (11) Undefined
+    * [0-1]: The two first bit correspond to which signal its connected: 0 (00) GPIO, 1 (01) DIO core, 2 (10) Clock, 3 (11) Undefined
     * [2]: Output Enable Negative (Input enable)
     * [3]: 50 Ohm termination enable.
 
@@ -118,8 +118,8 @@ In order to use input/output channels as previously described, the following act
  
 By default the register is set with:
 
+1. 0x0 (PPS Output without termination)
 #. 0x0 (GPIO out without termination)
-#. 0x0 (...)
 #. 0x0 (...)
 #. 0x4 (Input without termination)
 #. 0x6: Clock[^clkinput] input without termination.
