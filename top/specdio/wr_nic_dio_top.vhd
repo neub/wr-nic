@@ -541,8 +541,8 @@ architecture rtl of wr_nic_dio_top is
   signal dio_out : std_logic_vector(4 downto 1);
   --first channel is reserved for PPS out
   signal dio_out_pps : std_logic; 
---  attribute iob: string;
---  attribute iob of dio_out_pps: signal is "true";
+  attribute iob: string;
+  attribute iob of dio_out_pps: signal is "true";
   
 
   signal local_reset_n  : std_logic;
