@@ -915,7 +915,8 @@ begin
       g_dpram_size                => 90112/4,  -- 20480, it is the old value, it does not fit anymore 
       g_interface_mode            => PIPELINED,
       g_address_granularity       => BYTE,
-		g_aux_sdb                 	 => c_etherbone_sdb)
+	   g_aux_sdb                   => c_etherbone_sdb,
+	   g_vuart_fifo_size		   => 1512)
     port map (
       clk_sys_i  => clk_sys,
       clk_dmtd_i => clk_dmtd,
