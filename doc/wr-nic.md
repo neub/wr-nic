@@ -2,10 +2,10 @@
 % Javier Díaz & Miguel Jiménez Univ. of Granada, Rafael Rodriguez & Benoit Rat Seven Solutions
 % 27 Jan. 2014
 
-What is new in release v1.2?
+What is new in release v2.0?
 =========================
 
-In this section, we detail what is new in release v1.2 comparing with older versions:
+In this section, we detail what is new in `release-v2.0` comparing with older versions:
 
 1. Etherbone core has been added in WR NIC project design to allow remote configuration over the network using TCP/UDP packets.
 2. First DIO channel output is reserved for 1-PPS signal of WRPC. It has been done because we detected an offset between 1-PPS input signal and 1-PPS output signal for Grandmaster configuration.
@@ -21,11 +21,11 @@ This document focuses on the description of the project gateware. This manual is
 
 Note that the WR-NIC project inherits many codes and working methodology of many other projects. Specially important to highly the following ones: 
 
-1. White-Rabbit core collection: [wr-cores]. Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU (LatticeMicro 32, LM32), WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
-2. Software for White-Rabbit PTP core: [wrpc-sw] (a subproject of the previous one)
-3. Gennum GN4124 core: [GN4124]. This project shows how to configure and control the gn4124 chip in order to comunicate the SPEC carrier through PCIe interface.
-4. The platform independent core collection: [general-cores]. This project contains several useful IP cores such as memories, synchronizer circuits, uart modules, Wishbone crossbar, etc.
-5. Etherbone core: [etherbone]. This gateware module allows to access Wishbone peripheral memory map using the Ethernet interface. This make possible to read device data as well as read/write configuration registers across the network. 
+1. White-Rabbit core collection (d85255b): [wr-cores]. Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU (LatticeMicro 32, LM32), WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
+2. Software for White-Rabbit PTP core (9f3bcfa): [wrpc-sw] (a subproject of the previous one)
+3. Gennum GN4124 core (3844fe5): [GN4124]. This project shows how to configure and control the gn4124 chip in order to comunicate the SPEC carrier through PCIe interface.
+4. The platform independent core collection (76f2e5d): [general-cores]. This project contains several useful IP cores such as memories, synchronizer circuits, uart modules, Wishbone crossbar, etc.
+5. Etherbone core (08b55da): [etherbone]. This gateware module allows to access Wishbone peripheral memory map using the Ethernet interface. This make possible to read device data as well as read/write configuration registers across the network. 
 
 In addition to these projects, software support is provided from the project: 
 
@@ -52,7 +52,7 @@ Here is a quick description of each block:
 * The `MUX module` is a multiplexer used to route packets from Endpoint to its destination core. Latter is different depending on the type of packet. Each packet is classified by one configurable packet processor located into WRPC. This core has a filter rule table and allows to define up to 8 different packet classes. For wr-nic project, three classes have been defined: Class 7 is for NIC core, Class 5 for Etherbone one and Class 0 for LM32.
 
 In the next sections we provide a little more information about `DIO core` and the `WRPC (White Rabbit PTP Core)` in order to understand better how the complete system works.   
-Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources (in fact it could be required to reduce blockram utilization, for instance of NIC or wr_core module in order to use Chipscope on the project, otherwise design could be overmapped). 
+Finally, it is important to know that current HDL code contains commented code to activate on-chip logic analyzer circuitry for debugging based on Chipscope of Xilinx. Top file as well as different peripherals include the signals TRIG0 - TRIG3 to help on this purpose. Nevertheless, by default they are commented to avoid wasting unnecessary resources (in fact it could be required to reduce blockram utilization, for instance of NIC or wr\_core module in order to use Chipscope on the project, otherwise design could be overmapped). 
 
 WRPC (White Rabbit PTP Core)
 ----------------------------
@@ -66,7 +66,7 @@ The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible th
 
 In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 16 ns. 
 
-Please note that the current gateware contains the LM32 binary firmware (as part of the FPGA). Therefore no additional LM32 upload programming is required if default code is appropiate for your project. The embedded binary corresponds to the `wr-nic-v1.2` release available at: [wrpc-sw-repo].
+Please note that the current gateware contains the LM32 binary firmware (as part of the FPGA). Therefore no additional LM32 upload programming is required if default code is appropiate for your project. The embedded binary corresponds to the `wrpc-v2.1-for-wrnic` release available at: [wrpc-sw-repo].
 
 It is important to remark that for this release the I2C bus of the FMC-DIO card is connected to WRPC. This is needed because current implementation of WRPC store configuration data on the FMC-DIO card EEPROM. Please be aware that for future releases this could change.
  
@@ -145,18 +145,18 @@ In order to use input/output channels as previously described, the following act
 	* Arming the trigger. You need to write a `1` at the corresponding bit of the `dio_latch_time_chX` bit field.  
 	After these operations, an output with the programmed tick-length will be presented on the desired channel at the requested time. It is not necessary to do software reset to the register.   
 
-* Immediate pulse generation: An immediate pulse is generated at the output of each of the card channels just by writing a corresponding `1` at the bit field dio_pulse_imm_X when output mode is set to programmable outputs. No reset is required.
+* Immediate pulse generation: An immediate pulse is generated at the output of each of the card channels just by writing a corresponding `1` at the bit field dio\_pulse\_imm\_X when output mode is set to programmable outputs. No reset is required.
 
-* Variable pulse length: both output modes, time-programmable as well as immediate allows to configure the output length. By writing the value of the registers dio_progX_pulse_length the width of the output pulse could be controlled. The register uses the 28 low significant bits and allow a time duration equal to register_value x 16 ns.
+* Variable pulse length: both output modes, time-programmable as well as immediate allows to configure the output length. By writing the value of the registers dio\_progX\_pulse\_length the width of the output pulse could be controlled. The register uses the 28 low significant bits and allow a time duration equal to register\_value x 16 ns.
 
 * Input time-tagging: for each of the 5 inputs, if a `1` is detected at this channel, a precise time information is stored on logic FIFOs including the 40 bits time counters and 28 bits more for the cycles (fifo depth is 256 each one). Currently this information is collected even for pins configured in output mode, GPIO, immediate or time-programmable configurations but it is straightforward to change this at the HDL code. For accessing this information you need to read `dio_tsfX_tag_seconds` (32 low bits), `dio_tsfX_tag_secondsh` (high bits), `dio_tsfX_tag_cycles`. Each time the time tag of any channel is stored, the `fifo not empty` flag generates an interruption to the PC. In the next section we describe these mechanisms. 
 
-A detailed information about the memory maps and related registers names are available by generating html documentation of the different wishbone slaves. Download the related .wb file and generate the HTML documentation using wbgen2 tool (for instance wbgen2 -D diocore.htm wr_nic.wb).
+A detailed information about the memory maps and related registers names are available by generating html documentation of the different wishbone slaves. Download the related .wb file and generate the HTML documentation using wbgen2 tool (for instance wbgen2 -D diocore.htm wr\_nic.wb).
 
 Interrupt handling
 ------------------
 
-The VIC module block is in charge of handling the different interrupts and provide proper registers to inform of the source of each interruption. The main interrupt signal is communicated to the PC using the gn4124 chip and gn4124 and GPIO-8. A proper core in the FPGA uses the irq_req_p1_i signal to activate this external GPIO pin which needs to be assigned at the low-level hardware. 
+The VIC module block is in charge of handling the different interrupts and provide proper registers to inform of the source of each interruption. The main interrupt signal is communicated to the PC using the gn4124 chip and gn4124 and GPIO-8. A proper core in the FPGA uses the irq\_req\_p1\_i signal to activate this external GPIO pin which needs to be assigned at the low-level hardware. 
 
 The base address, as shown on the memory map figure is 0x00060000. It handles the following interrupts sources:
 
@@ -203,7 +203,7 @@ This step show you how to prepare the WR-NIC bitstream (SPEC+FMC DIO) with the w
 ## Checkout the code
 git clone git://ohwr.org/white-rabbit/wr-nic.git
 cd wr-nic
-git checkout -b wr-nic-v1.2 wr-nic-v1.2
+git checkout -b wr-nic-v2.0 wr-nic-v2.0
 
 ## Create and update the submodules
 git submodule init
@@ -234,7 +234,7 @@ export CROSS_COMPILE="<your_path_to_lm32>/lm32/bin/lm32-elf-";
 #Clone the repository
 $ git clone git://ohwr.org/hdl-core-lib/wr-cores/wrpc-sw.git 
 $ cd wrpc-sw
-$ git checkout -b wr-nic-v1.2 wr-nic-v1.2
+$ git checkout -b wrpc-v2.1-for-wrnic wrpc-v2.1-for-wrnic
 ~~~~~~~~~~
 
 And finally configure & compile it
@@ -258,7 +258,7 @@ cp wrc.ram <wr_root_folder>/wr-nic/syn/spec
 
 
 > ***Notes***: These steps are a simple resume on how to compile the 
-firware specifically for the wr-nic, you should also look at the wrpc-v2.0.pdf documentation located at attachment section in [wrpc] to understand how to use it and how to compile for other configurations.
+firware specifically for the wr-nic, you should also look at the wrpc-v2.0.pdf documentation located at attachments section in [wrpc] to understand how to use it and how to compile for other configurations.
 
 
 
@@ -286,7 +286,7 @@ WR NIC project has been designed to work in a PCI co-processor configured as a s
 
 Two things are needed in order to the packets reach the Etherbone core:
 
-* WRPC has an filter packet processor (IP core) to decide which packets are accepted and which are discarded. Packets are classified in one class choosen between eight different classes. This class stores information about to where a packet must be delivered. So, we have to modify filter rules (see dev/ep_pfilter.c in wrpc-sw-2.1 release) in order to accept Etherbone traffic. We have assigned class 5 to distinguish it from another type of traffic. Moreover, DROP instruction has been removed in order to avoid any packet to be discarded (because a conventional NIC receives all type of packages). We have used a WRNIC macro not to interfere with configurations needed for other projects.
+* WRPC has an filter packet processor (IP core) to decide which packets are accepted and which are discarded. Packets are classified in one class choosen between eight different classes. This class stores information about to where a packet must be delivered. So, we have to modify filter rules (see dev/ep\_pfilter.c in wrpc-sw-2.1 release) in order to accept Etherbone traffic. We have assigned class 5 to distinguish it from another type of traffic. Moreover, DROP instruction has been removed in order to avoid any packet to be discarded (because a conventional NIC receives all type of packages). We have used a WRNIC macro not to interfere with configurations needed for other projects.
 
 ~~~~~{.c}
 #define R_CLASS(x) (24 + x)
@@ -299,43 +299,50 @@ pfilter_new();
     
 ...
     
-#ifdef CONFIG_WRNIC
+#ifdef CONFIG_ETHERBONE
+
 	/* r10 = IP(unicast) */
-	pfilter_logic3(10,  3, OR,   0, AND, 4);
+	pfilter_logic3(10, 3, OR, 0, AND, 4);
+	
 	/* r11 = IP(unicast+broadcast) */
-	pfilter_logic3(11,  1, OR,   3, AND, 4);
-       
+	pfilter_logic3(11, 1, OR, 3, AND, 4);
+
 	/* r14 = ARP(broadcast) or PTPv2 */
-	pfilter_logic3(14,  1, AND,  6, OR,  5); 
+	pfilter_logic3(14, 1, AND, 6, OR, 5);
+	
 	/* r15 = ICMP/IP(unicast) or ARP(broadcast) or PTPv2 */
-	pfilter_logic3(15, 10, AND,  7, OR, 14); 
-        
+	pfilter_logic3(15, 10, AND, 7, OR, 14);	
+
 	/* Ethernet = 14 bytes, IPv4 = 20 bytes, offset to dport: 2 = 36/2 = 18 */
 	/* r14 = 1 when dport = BOOTPC */
 	pfilter_cmp(18, 0x0044, 0xffff, MOV, 14);
-        
-	/* r6 = 1 when dport = ETHERBONE */ 
-	pfilter_cmp(18,0xebd0,0xffff,MOV,6);
-                
+
 	/* r14 = BOOTP/UDP/IP(unicast|broadcast) */
 	pfilter_logic3(14, 14, AND, 8, AND, 11);
+
 	/* r15 = BOOTP/UDP/IP(unicast|broadcast) or ICMP/IP(unicast) or ARP(broadcast) 
 	or PTPv2 */
-	pfilter_logic2(15,14, OR, 15);
+	pfilter_logic2(15, 14, OR, 15);
+	
+	#ifdef CONFIG_NIC_PFILTER
+        
+		/* r6 = 1 when dport = ETHERBONE */ 
+		pfilter_cmp(18,0xebd0,0xffff,MOV,6); 
 
-	/* r9 = 1 when magic number = ETHERBONE */
-	pfilter_cmp(21,0x4e6f,0xffff,MOV,9); 
-	pfilter_logic2(6,6,AND,9);
+		/* r9 = 1 when magic number = ETHERBONE */
+		//pfilter_cmp(21,0x4e6f,0xffff,MOV,9);
+		//pfilter_logic2(6,6,AND,9);
 
-	/* class 0: ICMP/IP(unicast) or ARP(broadcast) or PTPv2 => PTP LM32 core */
-	pfilter_logic2(R_CLASS(0), 15, MOV, 0);
+		/* class 0: ICMP/IP(unicast) or ARP(broadcast) or PTPv2 => PTP LM32 core */
+		pfilter_logic2(R_CLASS(0), 15, MOV, 0);
 
-	/* class 5: Etherbone packet => Etherbone Core */
-	pfilter_logic2(R_CLASS(5), 6, OR, 0);
+		/* class 5: Etherbone packet => Etherbone Core */
+		pfilter_logic2(R_CLASS(5), 6, OR, 0); 
 
-	/* class 7: Any other packet => NIC Core */
-	pfilter_logic3(R_CLASS(7), 15, OR, 6, NOT, 0);
-#else
+		/* class 7: Rest => NIC Core */
+		pfilter_logic3(R_CLASS(7), 15, OR, 6, NOT, 0); 
+	
+	#else
 
 ...
      
@@ -360,7 +367,7 @@ Second step is the calibration of all other devices in your network. To do it, y
 
 We have needed the following equipment in order to calibrate:
 
-+ An osciloscope (RIGOL DS 6062).
++ An oscilloscope (RIGOL DS 6062).
 + Two SPEC v4 boards with DIO FMC card (same gateware and software is required for pre-calibration process).
 + A WR Switch (18 ports, HW: 3.3, GW: 3.3). You can find the WR Switch v3.3 calibration parameters used by us in [wr-calibration].
 + Two LEMO links (1 meter, they should be same length or you must be know their time delays to compensate the error they introduce).
