@@ -1,31 +1,52 @@
 % White-Rabbit  NIC Gateware
 % Javier Díaz & Miguel Jiménez Univ. of Granada, Rafael Rodriguez & Benoit Rat Seven Solutions
-% 27 Jan. 2014
+% 14 Feb. 2014
 
-What is new in release v2.0?
+What is new in wr-nic-v2.0?
 =========================
 
-In this section, we detail what is new in `release-v2.0` comparing with older versions:
+In this section, we detail what is new in `wr-nic-v2.0` comparing with older versions:
 
 1. Etherbone core has been added in WR NIC project design to allow remote configuration over the network using TCP/UDP packets.
 2. First DIO channel output is reserved for 1-PPS signal of WRPC. It has been done because we detected an offset between 1-PPS input signal and 1-PPS output signal for Grandmaster configuration.
 3. Calibration process was performed to fullfil clock delay restriction (less than 1 ns).
 4. DIO register structure has been changed. A number of bits has been increased in order to define new modes for DIO channels.
+5. The WRPC support has been changed to incorporate the following features (see [wrpc-v2.1-changes]):
+	- WRPC-SW:
+		- The WRPC packet filter has been configured with new filter rules in order to allow Etherbone packets reach Etherbone core and to avoid dropping incomming packets. A new Kconfig parameter has been defined (`NIC_PFILTER`) not to interfere with the other packet filter configurations.
+		- A new WRPC command has been added (`refresh`). This command allows to set the update period of gui and stat commands. 
+		- The Grand-Master lock mechanism has been implemented.
+		- The t24p calibration is executed every time a WRPC is set to Slave mode.
+		- A new commands have been added to set time manually.
+		- The MAC address is set by default if it can not get a value from 1-wire device.
+		- PPSi is default configuration instead ptp-noposix now. It adds compatibility with more PTP devices. 
+	- WRPC:
+		- A new generic parameter has been added to the WRPC interface. the `g_vuart_fifo_size` allows to set the UART fifo size of WRPC.
+		- A separate 1-PPS output has been added for driving LED.
+		- The reset module has been improved.
+		- A new interface has been added for new t24p procedure.
+		- The SoftPLL mode has been updated (multichannel and selectable phase detector mode).
+
+The complete list of new WRPC features can be found in [wrpc-v2.1-changes].
 
 Introduction
 =========================
 The White-Rabbit Network Interface Card  (WR-NIC) project is concerned with the development of gateware to make the combination of a SPEC card and a DIO mezzanine behave as a Network Interface Card (NIC) under Linux.A basic demo is available at the Starting-kit project example that uses two SPEC boards, one configured as Grandmaster and one as slave. Different  simple use cases are provided as basic examples and are available at [starting-kit].  
-This document focuses on the description of the project gateware. This manual is part of the associated hardware project, hosted at [wr-nic-repo], which git repository hosts the latest version. You can find more information about SPEC card at [spec]/[spec-sw] and about FMC DIO card in [fmc-dio-5ch].
+This document focuses on the description of the project gateware. This manual is part of the associated hardware project, hosted at [wr-nic-repository], which git repository hosts the latest version. You can find more information about SPEC card at [spec]/[spec-sw] and about FMC DIO card in [fmc-dio-5ch].
 
-![Basic wr-nic project elements](./img/wrnic_components.png)
+\begin{figure}[H]
+\centering
+\Oldincludegraphics[width=16cm]{img/wrnic_components.png}
+\caption{Basic wr-nic project elements}
+\end{figure}
 
 Note that the WR-NIC project inherits many codes and working methodology of many other projects. Specially important to highly the following ones: 
 
-1. White-Rabbit core collection (d85255b): [wr-cores]. Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU (LatticeMicro 32, LM32), WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
-2. Software for White-Rabbit PTP core (9f3bcfa): [wrpc-sw] (a subproject of the previous one)
-3. Gennum GN4124 core (3844fe5): [GN4124]. This project shows how to configure and control the gn4124 chip in order to comunicate the SPEC carrier through PCIe interface.
-4. The platform independent core collection (76f2e5d): [general-cores]. This project contains several useful IP cores such as memories, synchronizer circuits, uart modules, Wishbone crossbar, etc.
-5. Etherbone core (08b55da): [etherbone]. This gateware module allows to access Wishbone peripheral memory map using the Ethernet interface. This make possible to read device data as well as read/write configuration registers across the network. 
+1. White-Rabbit core collection (commit d85255b): [wr-cores]. Look at the WR PTP Core. It is a black-box standalone WR-PTP protocol core, incorporating a CPU (LatticeMicro 32, LM32), WR MAC and PLLs. It is also convenient to look at TxTSU and NIC project. For further details, search for its related wbgen2 files (extension .wb). 
+2. Software for White-Rabbit PTP core (commit 9f3bcfa): [wrpc-sw] (a subproject of the previous one)
+3. Gennum GN4124 core (commit 3844fe5): [GN4124]. This project shows how to configure and control the gn4124 chip in order to comunicate the SPEC carrier through PCIe interface.
+4. The platform independent core collection (commit 76f2e5d): [general-cores]. This project contains several useful IP cores such as memories, synchronizer circuits, uart modules, Wishbone crossbar, etc.
+5. Etherbone core (commit 08b55da): [etherbone]. This gateware module allows to access Wishbone peripheral memory map using the Ethernet interface. This make possible to read device data as well as read/write configuration registers across the network. 
 
 In addition to these projects, software support is provided from the project: 
 
@@ -37,7 +58,11 @@ Gateware elements
 =====================
 The main block modules of the architecture are described on next figure. 
 
-![Main HDL blocks of the wr-nic gateware](./img/wr_nic_arch.png)
+\begin{figure}[H]
+\centering
+\Oldincludegraphics[width=18cm]{img/wr_nic_arch.png}
+\caption{Main HDL blocks of the wr-nic gateware}
+\end{figure}
 
 Here is a quick description of each block:
 
@@ -66,23 +91,23 @@ The `WRPC (White Rabbit PTP Core)` block is the HDL block that makes possible th
 
 In this project, WRPC provides the timing information used for accurate output generation and input time stamping of the DIO signals. Note that this data is provided with an accuracy of 16 ns. 
 
-Please note that the current gateware contains the LM32 binary firmware (as part of the FPGA). Therefore no additional LM32 upload programming is required if default code is appropiate for your project. The embedded binary corresponds to the `wrpc-v2.1-for-wrnic` release available at: [wrpc-sw-repo].
+Please note that the current gateware contains the LM32 binary firmware (as part of the FPGA). Therefore no additional LM32 upload programming is required if default code is appropiate for your project. The embedded binary corresponds to the `wrpc-v2.1-for-wrnic` release available at: [wrpc-sw-repository].
 
 It is important to remark that for this release the I2C bus of the FMC-DIO card is connected to WRPC. This is needed because current implementation of WRPC store configuration data on the FMC-DIO card EEPROM. Please be aware that for future releases this could change.
  
-The whole description of the core goes beyond the scope of this documentation but the additional information is available at: [wrpc] and in: 
-
-> G. Daniluk, White Rabbit PTP Core the sub-nanosecond time synchronization over Ethernet, 2012.
-M.Sc thesis describing the development and implementation of the first standalone HDL module handling the sub-nanosecond synchronization over a regular Ethernet - the White Rabbit PTP Core.
-Available at: `http://www.ohwr.org/attachments/1368/GD_mgr.pdf` 
+The whole description of the core goes beyond the scope of this documentation but the additional information is available at: [wrpc] and in: [GD-mgr].
 
 DIO core
 ----------
 The `DIO Core` block is the HDL block that access to the fmc-dio-5chnls mezzanine card. The core goes beyond a standard GPIO core to include advanced functionalities related with timing. Their main elements are shown on the next figure. 
 
-![Main DIO Core block elements](./img/diocore2.png)
+\begin{figure}[H]
+\centering
+\Oldincludegraphics[width=18cm]{img/diocore2.png}
+\caption{Main DIO Core block elements}
+\end{figure}
 
-> ***Notes***: Channel 0 output is reserved to work as 1-PPS signal from WRPC. It is necessary to reduce gateware delay beetwen input PPS signal and output one in Grandmaster configuration. So, `P mode` has been removed from configuration options.
+> ***Notes***: In the previous release we define the DIO channel `P mode` as a DIO channel mode that allows to generate a 1-PPS WRPC signal output. This was possible for all DIO channels. In the current design, channel 0 output is reserved to work on this mode and no other channels can generate this output. For this reason, the `P mode` has been removed and it is no longer used.
 
 The different submodules description are:  
 
@@ -108,13 +133,21 @@ The different submodules description are:
 As we told in earlier section, we changed connections for channel 0 of DIO core. For its output, we connected 1-PPS output signal from WRPC. In addition, you can configure this channel in order to use it as
 user input channel but output is reserved to PPS signal. 
 
-![PPS signal output for channel 0 of DIO](./img/diocore_pps2.png)
+\begin{figure}[H]
+\centering
+\Oldincludegraphics[width=18cm]{img/diocore_pps.png}
+\caption{PPS signal output for channel 0 of DIO}
+\end{figure}
 
 DIO Configuration & Control
 ==========================
 Accessing to the different system elements is as simple as doing a read/write memory access. The memory map of the different elements of the board are shown in the next figure.  
 
-![Memory map](./img/memorymap.png)
+\begin{figure}[H]
+\centering
+\Oldincludegraphics[width=18cm]{img/memorymap.png}
+\caption{Memory map}
+\end{figure}
 
 Any address within this memory space may be addressed by the PC to configure corresponding module (WRPTP, NIC, TxTSU, etc...). Many of them are already well described in related project so we skip their descriptions to focus on new additions. In next paragraphs we just focus on the DIO core which is the new block added to the OHWR and required for this project. 
 
@@ -132,12 +165,12 @@ In order to use input/output channels as previously described, the following act
 	+ [3]\: 50 Ohm termination enable.
 
 	1. 0x0 (PPS Output without termination)
-	#. 0x0 (GPIO out without termination)
-	#. 0x0 (...)
-	#. 0x4 (Input without termination)
-	#. 0x6: Clock[^clkinput] input without termination.
+	2. 0x0 (GPIO out without termination)
+	3. 0x0 (...)
+	4. 0x4 (Input without termination)
+	5. 0x6: Clock[^clkinput] input without termination.
 
-[^clkinput]: The Clock input is similar the DIO input excepting that no interrupt will be generated to the PCIe core. It is used in Grandmaster mode.
+[^clkinput]: The Clock input is similar the DIO input excepting that no interrupt will be generated to the PCIe core. It is used in Grandmaster mode as 10 MHz input channel.
 
 * Time-programmable pulse generation: Generate a programmed output at any time at channel X (X between 1 and 4 identifies the requested channel, channel 0 is reserved for PPS output). For this purpose you need to perform the following actions:
 	* Set the required time. This means to provide the 40 bits for the time value and the number of cycles (28 bits). This requires to write the registers `dio_trigX_seconds, dio_trighX_seconds` (high part of the time value) and `dio_cyc0_cyc`.
@@ -184,7 +217,7 @@ HDLMake
 In order to synthetize the HDL for wr-nic you need to have installed the `hdlmake` tool.
 For more information on how to install and use it, you can look at the [hdlmake]
 
-To generate the wr-nic bitstream we have used latest commit in the isyp branch. 
+To generate the wr-nic bitstream we have used latest commit in the `isyp` branch. 
 
 ~~~~~~{.bash}
 cd <path-hdl-make>
@@ -223,9 +256,9 @@ make
 WRPC-SW (LM32 firmware)
 -----------------------
 
-You can download it from file section of [wr-nic] or you can try to compile it following the instructions below:
+This step is not necessary because a precompiled `wrc.ram` is already provided (in file section of [wr-nic]). However, if you want to re-compile it, you should follow instructions below:
 
-You should first installed the **lm32** compiler as suggested in wrpc-v2.0.pdf documentation located at attachment section in [wrpc], then you can compile executing the following commands:
+You should first installed the **lm32** compiler as suggested in `wrpc-v2.0.pdf` documentation located at attachment section in [wrpc], then you can compile executing the following commands:
 
 ~~~~~~{.bash}
 #Set up CROSS_COMPILE variable for this terminal
@@ -354,7 +387,7 @@ pfilter_load();
 * A route mechanism to reach Etherbone core must be added. It is implemented with a MUX IP core component that can re-direct one packet depending on its class. We have placed one MUX between WRPC (fabric interface) and NIC. So, packets from WRPC fabric interface can reach the NIC or the Etherbone core.
 
 Thanks to the Etherbone core and its software library, we can access the device using network packets.
-One interesting application is to allow access in the same way we connect to it via the USB serial port. University of Granada has developped a high-level library based on Etherbone that allows you to define devices configuration files with this associated operations. This files can be loaded with CALoE methods and user can evoke device operations as C functions (using CALoE API of course). This library is a beta version and you can find it in starting kit repository (ugr branch).
+One interesting application is to allow access in the same way we connect to it via the USB serial port. University of Granada has developped a high-level library based on Etherbone that allows you to define devices configuration files with this associated operations. This files can be loaded with CALoE methods and user can evoke device operations as C functions (using CALoE API of course). This library is a beta version and you can find it in [starting-kit] repository (ugr branch).
 
 WR NIC calibration
 ==================
@@ -372,6 +405,7 @@ We have needed the following equipment in order to calibrate:
 + A WR Switch (18 ports, HW: 3.3, GW: 3.3). You can find the WR Switch v3.3 calibration parameters used by us in [wr-calibration].
 + Two LEMO links (1 meter, they should be same length or you must be know their time delays to compensate the error they introduce).
 + A LEMO-BNC adapter.
++ A SMC-BNC adapter.
 + Two optical fiber links. One of then with 2 meters and another with 5 kilometers.
 + Two SFPs, red (AXGE-3454-0531) and blue (AXGE-1254-0531).
 + A LC-LC adapter.
@@ -434,6 +468,9 @@ Future work
 References
 ============
 
+* G. Daniluk, White Rabbit PTP Core the sub-nanosecond time synchronization over Ethernet, 2012.
+M.Sc thesis describing the development and implementation of the first standalone HDL module handling the sub-nanosecond synchronization over a regular Ethernet - the White Rabbit PTP Core.
+Available at: [GD-mgr]
 * Open Hardware Repository website at [ohwr]
 * White Rabbit NIC project at [wr-nic]
 * Starting kit project at [starting-kit]
@@ -448,15 +485,16 @@ References
 * FMC DIO card of 5 channels at [fmc-dio-5ch]
 * White Rabbit procedure calibration at [wr-calibration]
 * HDLmake tool project at [hdlmake]
+* WRPC release 2.1 changes at [wrpc-v2.1-changes]
 
 [ohwr]: http://www.ohwr.org/
 [wr-nic]: http://www.ohwr.org/projects/wr-nic/
-[wr-nic-repo]: http://www.ohwr.org/projects/wr-nic/repository
+[wr-nic-repository]: http://www.ohwr.org/projects/wr-nic/repository
 [starting-kit]: http://www.ohwr.org/projects/wr-starting-kit
 [wr-cores]: http://www.ohwr.org/projects/wr-cores
 [wrpc]: http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_core
 [wrpc-sw]: http://www.ohwr.org/projects/wrpc-sw
-[wrpc-sw-repo]: http://www.ohwr.org/projects/wrpc-sw/repository
+[wrpc-sw-repository]: http://www.ohwr.org/projects/wrpc-sw/repository
 [GN4124]: http://www.ohwr.org/projects/gn4124-core
 [general-cores]: http://www.ohwr.org/projects/general-cores
 [etherbone]: http://www.ohwr.org/projects/etherbone-core
@@ -466,3 +504,5 @@ References
 [fmc-dio-5ch]: http://www.ohwr.org/projects/fmc-dio-5chttla
 [wr-calibration]: http://www.ohwr.org/projects/white-rabbit/wiki/Calibration
 [hdlmake]: http://www.ohwr.org/projects/hdl-make
+[GD-mgr]: http://www.ohwr.org/attachments/1368
+[wrpc-v2.1-changes]: http://www.ohwr.org/projects/wr-cores/wiki/Wrpc_release-v21
