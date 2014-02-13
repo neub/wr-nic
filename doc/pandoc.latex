@@ -149,8 +149,9 @@ $endif$
 %% Tables
 $if(tables)$
 \usepackage{ctable}
-\usepackage{float} % provides the H option for float placement
 $endif$
+
+\usepackage{float} % provides the H option for float placement
 
 %% Images 
 \usepackage{graphicx}
